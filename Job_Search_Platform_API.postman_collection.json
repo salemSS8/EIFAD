@@ -1,0 +1,1918 @@
+{
+    "info": {
+        "_postman_id": "job-search-platform-api",
+        "name": "Job Search Platform API",
+        "description": "Complete API collection for the Job Search Platform. Contains 55 endpoints organized by domain.\n\n**Base URL**: http://localhost:8000/api\n\n**Authentication**: Laravel Sanctum (Bearer Token)",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8000/api",
+            "type": "string"
+        },
+        {
+            "key": "token",
+            "value": "",
+            "type": "string"
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "🌐 Public",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/health",
+                            "host": ["{{base_url}}"],
+                            "path": ["health"]
+                        },
+                        "description": "Check API health status and database connection."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🔐 Authentication",
+            "item": [
+                {
+                    "name": "Register (Traditional)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.data && jsonData.data.token) {",
+                                    "    pm.collectionVariables.set('token', jsonData.data.token);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"full_name\": \"Ahmed Mohammed\",\n    \"email\": \"user@example.com\",\n    \"password\": \"Password123\",\n    \"password_confirmation\": \"Password123\",\n    \"phone\": \"+967771234567\",\n    \"role\": \"JobSeeker\",\n    \"gender\": \"Male\",\n    \"date_of_birth\": \"1990-01-15\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/register",
+                            "host": ["{{base_url}}"],
+                            "path": ["auth", "register"]
+                        },
+                        "description": "Register a new user. Required: full_name, email, password (min 8 chars with letters+numbers), password_confirmation, phone, role (JobSeeker/Employer)."
+                    }
+                },
+                {
+                    "name": "Login (Traditional)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.data && jsonData.data.token) {",
+                                    "    pm.collectionVariables.set('token', jsonData.data.token);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/login",
+                            "host": ["{{base_url}}"],
+                            "path": ["auth", "login"]
+                        },
+                        "description": "Login with email and password. Token is automatically saved."
+                    }
+                },
+                {
+                    "name": "Register with Firebase",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.data && jsonData.data.token) {",
+                                    "    pm.collectionVariables.set('token', jsonData.data.token);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"firebase_token\": \"YOUR_FIREBASE_ID_TOKEN\",\n    \"role\": \"JobSeeker\",\n    \"name\": \"Ahmed Mohammed\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/register/firebase",
+                            "host": ["{{base_url}}"],
+                            "path": ["auth", "register", "firebase"]
+                        },
+                        "description": "Register using Firebase Authentication."
+                    }
+                },
+                {
+                    "name": "Login with Firebase",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.data && jsonData.data.token) {",
+                                    "    pm.collectionVariables.set('token', jsonData.data.token);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"firebase_token\": \"YOUR_FIREBASE_ID_TOKEN\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/login/firebase",
+                            "host": ["{{base_url}}"],
+                            "path": ["auth", "login", "firebase"]
+                        },
+                        "description": "Login using Firebase Authentication."
+                    }
+                },
+                {
+                    "name": "Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/auth/logout",
+                            "host": ["{{base_url}}"],
+                            "path": ["auth", "logout"]
+                        },
+                        "description": "Logout and invalidate current token."
+                    }
+                },
+                {
+                    "name": "Get Current User",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/auth/me",
+                            "host": ["{{base_url}}"],
+                            "path": ["auth", "me"]
+                        },
+                        "description": "Get authenticated user's data with profile."
+                    }
+                },
+                {
+                    "name": "Forgot Password",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"user@example.com\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/forgot-password",
+                            "host": ["{{base_url}}"],
+                            "path": ["auth", "forgot-password"]
+                        },
+                        "description": "Request password reset code. Sends 6-digit code to email (valid for 60 minutes)."
+                    }
+                },
+                {
+                    "name": "Reset Password",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"user@example.com\",\n    \"token\": \"123456\",\n    \"password\": \"NewPassword123\",\n    \"password_confirmation\": \"NewPassword123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/reset-password",
+                            "host": ["{{base_url}}"],
+                            "path": ["auth", "reset-password"]
+                        },
+                        "description": "Reset password with 6-digit code. Password must be 8+ chars with letters and numbers."
+                    }
+                },
+                {
+                    "name": "Send Verification Code",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"user@example.com\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/send-verification",
+                            "host": ["{{base_url}}"],
+                            "path": ["auth", "send-verification"]
+                        },
+                        "description": "Send account verification code to email (valid for 60 minutes)."
+                    }
+                },
+                {
+                    "name": "Verify Account",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"user@example.com\",\n    \"token\": \"123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/verify-account",
+                            "host": ["{{base_url}}"],
+                            "path": ["auth", "verify-account"]
+                        },
+                        "description": "Verify account with 6-digit code. Activates user account."
+                    }
+                },
+                {
+                    "name": "Change Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"current_password\": \"OldPassword123\",\n    \"new_password\": \"NewPassword456\",\n    \"new_password_confirmation\": \"NewPassword456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/change-password",
+                            "host": ["{{base_url}}"],
+                            "path": ["auth", "change-password"]
+                        },
+                        "description": "Change password for authenticated user. Requires current password."
+                    }
+                },
+                {
+                    "name": "Set Role (Two-Step Registration)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"role\": \"JobSeeker\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/set-role",
+                            "host": ["{{base_url}}"],
+                            "path": ["auth", "set-role"]
+                        },
+                        "description": "Set role for users who registered without a role. Used in two-step registration flow."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "📝 Profile",
+            "item": [
+                {
+                    "name": "Get Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/profile",
+                            "host": ["{{base_url}}"],
+                            "path": ["profile"]
+                        },
+                        "description": "Get current user's profile (JobSeeker or Company)."
+                    }
+                },
+                {
+                    "name": "Create/Update Profile (Job Seeker)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"personal_photo\": \"/photos/profile.jpg\",\n    \"location\": \"Sana'a, Yemen\",\n    \"profile_summary\": \"Experienced software developer with 5+ years...\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/profile",
+                            "host": ["{{base_url}}"],
+                            "path": ["profile"]
+                        },
+                        "description": "Create or update job seeker profile."
+                    }
+                },
+                {
+                    "name": "Create/Update Profile (Employer)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"company_name\": \"Tech Solutions\",\n    \"organization_name\": \"Tech Solutions LLC\",\n    \"address\": \"Sana'a, Yemen\",\n    \"description\": \"Leading technology company...\",\n    \"logo_path\": \"/logos/tech.png\",\n    \"website_url\": \"https://techsolutions.com\",\n    \"established_year\": 2015,\n    \"employee_count\": 50,\n    \"field_of_work\": \"Information Technology\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/profile",
+                            "host": ["{{base_url}}"],
+                            "path": ["profile"]
+                        },
+                        "description": "Create or update company profile."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🔔 Notifications",
+            "item": [
+                {
+                    "name": "Get Notifications",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/notifications",
+                            "host": ["{{base_url}}"],
+                            "path": ["notifications"]
+                        },
+                        "description": "Get user's notifications."
+                    }
+                },
+                {
+                    "name": "Mark Notification as Read",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/notifications/1/read",
+                            "host": ["{{base_url}}"],
+                            "path": ["notifications", "1", "read"]
+                        },
+                        "description": "Mark a specific notification as read."
+                    }
+                },
+                {
+                    "name": "Mark All Notifications as Read",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/notifications/mark-all-read",
+                            "host": ["{{base_url}}"],
+                            "path": ["notifications", "mark-all-read"]
+                        },
+                        "description": "Mark all notifications as read."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "📄 CV Management",
+            "item": [
+                {
+                    "name": "Get All CVs",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/cvs",
+                            "host": ["{{base_url}}"],
+                            "path": ["cvs"]
+                        },
+                        "description": "Get all CVs for current user."
+                    }
+                },
+                {
+                    "name": "Get CV Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/cvs/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["cvs", "1"]
+                        },
+                        "description": "Get CV with all related data (skills, education, experience, languages)."
+                    }
+                },
+                {
+                    "name": "Create CV",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"Software Developer CV\",\n    \"personal_summary\": \"Experienced full-stack developer with expertise in Laravel, React, and mobile development.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/cvs",
+                            "host": ["{{base_url}}"],
+                            "path": ["cvs"]
+                        },
+                        "description": "Create a new CV."
+                    }
+                },
+                {
+                    "name": "Update CV",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"Updated CV Title\",\n    \"personal_summary\": \"Updated summary...\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/cvs/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["cvs", "1"]
+                        },
+                        "description": "Update a CV."
+                    }
+                },
+                {
+                    "name": "Delete CV",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/cvs/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["cvs", "1"]
+                        },
+                        "description": "Delete a CV."
+                    }
+                },
+                {
+                    "name": "Add Skill to CV",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"skill_id\": 5,\n    \"skill_level\": \"Expert\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/cvs/1/skills",
+                            "host": ["{{base_url}}"],
+                            "path": ["cvs", "1", "skills"]
+                        },
+                        "description": "Add a skill to CV."
+                    }
+                },
+                {
+                    "name": "Remove Skill from CV",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/cvs/1/skills/5",
+                            "host": ["{{base_url}}"],
+                            "path": ["cvs", "1", "skills", "5"]
+                        },
+                        "description": "Remove a skill from CV."
+                    }
+                },
+                {
+                    "name": "Add Education to CV",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"institution\": \"Sana'a University\",\n    \"degree_name\": \"Bachelor's Degree\",\n    \"major\": \"Computer Science\",\n    \"graduation_year\": 2020\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/cvs/1/education",
+                            "host": ["{{base_url}}"],
+                            "path": ["cvs", "1", "education"]
+                        },
+                        "description": "Add education to CV."
+                    }
+                },
+                {
+                    "name": "Remove Education from CV",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/cvs/1/education/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["cvs", "1", "education", "1"]
+                        },
+                        "description": "Remove education from CV."
+                    }
+                },
+                {
+                    "name": "Add Experience to CV",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"job_title\": \"Senior Developer\",\n    \"company_name\": \"Tech Corp\",\n    \"start_date\": \"2018-01-01\",\n    \"end_date\": \"2023-12-31\",\n    \"responsibilities\": \"Leading development team, code reviews, architecture design...\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/cvs/1/experience",
+                            "host": ["{{base_url}}"],
+                            "path": ["cvs", "1", "experience"]
+                        },
+                        "description": "Add work experience to CV."
+                    }
+                },
+                {
+                    "name": "Remove Experience from CV",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/cvs/1/experience/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["cvs", "1", "experience", "1"]
+                        },
+                        "description": "Remove experience from CV."
+                    }
+                },
+                {
+                    "name": "Add Language to CV",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"language_id\": 1,\n    \"language_level\": \"Native\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/cvs/1/languages",
+                            "host": ["{{base_url}}"],
+                            "path": ["cvs", "1", "languages"]
+                        },
+                        "description": "Add language to CV."
+                    }
+                },
+                {
+                    "name": "Remove Language from CV",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/cvs/1/languages/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["cvs", "1", "languages", "1"]
+                        },
+                        "description": "Remove language from CV."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "💼 Jobs (Public)",
+            "item": [
+                {
+                    "name": "Search Jobs",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/jobs?keyword=developer&location=Sana'a&work_type=full_time&workplace_type=remote&salary_min=500&salary_max=2000&per_page=15",
+                            "host": ["{{base_url}}"],
+                            "path": ["jobs"],
+                            "query": [
+                                {
+                                    "key": "keyword",
+                                    "value": "developer",
+                                    "description": "Search in title and description"
+                                },
+                                {
+                                    "key": "location",
+                                    "value": "Sana'a",
+                                    "description": "Filter by location"
+                                },
+                                {
+                                    "key": "work_type",
+                                    "value": "full_time",
+                                    "description": "full_time, part_time, contract"
+                                },
+                                {
+                                    "key": "workplace_type",
+                                    "value": "remote",
+                                    "description": "remote, onsite, hybrid"
+                                },
+                                {
+                                    "key": "salary_min",
+                                    "value": "500",
+                                    "description": "Minimum salary"
+                                },
+                                {
+                                    "key": "salary_max",
+                                    "value": "2000",
+                                    "description": "Maximum salary"
+                                },
+                                {
+                                    "key": "per_page",
+                                    "value": "15",
+                                    "description": "Items per page (max 50)"
+                                }
+                            ]
+                        },
+                        "description": "Search and filter jobs. All parameters are optional."
+                    }
+                },
+                {
+                    "name": "Get Job Details",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/jobs/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["jobs", "1"]
+                        },
+                        "description": "Get job details with company and skills."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "⭐ Favorites",
+            "item": [
+                {
+                    "name": "Get Favorite Jobs",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/favorites",
+                            "host": ["{{base_url}}"],
+                            "path": ["favorites"]
+                        },
+                        "description": "Get user's favorite jobs."
+                    }
+                },
+                {
+                    "name": "Add Job to Favorites",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/favorites/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["favorites", "1"]
+                        },
+                        "description": "Add a job to favorites."
+                    }
+                },
+                {
+                    "name": "Remove Job from Favorites",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/favorites/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["favorites", "1"]
+                        },
+                        "description": "Remove a job from favorites."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "📬 Applications (Job Seeker)",
+            "item": [
+                {
+                    "name": "Get My Applications",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/applications",
+                            "host": ["{{base_url}}"],
+                            "path": ["applications"]
+                        },
+                        "description": "Get job seeker's applications."
+                    }
+                },
+                {
+                    "name": "Get Application Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/applications/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["applications", "1"]
+                        },
+                        "description": "Get application details."
+                    }
+                },
+                {
+                    "name": "Apply to Job",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"job_id\": 1,\n    \"cv_id\": 1,\n    \"notes\": \"I am very interested in this position because...\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/applications",
+                            "host": ["{{base_url}}"],
+                            "path": ["applications"]
+                        },
+                        "description": "Apply to a job."
+                    }
+                },
+                {
+                    "name": "Withdraw Application",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/applications/1/withdraw",
+                            "host": ["{{base_url}}"],
+                            "path": ["applications", "1", "withdraw"]
+                        },
+                        "description": "Withdraw an application."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🏢 Employer",
+            "item": [
+                {
+                    "name": "Get My Jobs",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/employer/jobs",
+                            "host": ["{{base_url}}"],
+                            "path": ["employer", "jobs"]
+                        },
+                        "description": "Get employer's job listings."
+                    }
+                },
+                {
+                    "name": "Create Job",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"Full Stack Developer\",\n    \"description\": \"We are looking for an experienced full stack developer...\",\n    \"responsibilities\": \"- Design and develop web applications\\n- Work with team members\\n- Code reviews\",\n    \"requirements\": \"- 3+ years experience\\n- Laravel, React\\n- English proficiency\",\n    \"location\": \"Sana'a, Yemen\",\n    \"workplace_type\": \"Remote\",\n    \"work_type\": \"full_time\",\n    \"salary_min\": 500,\n    \"salary_max\": 1500,\n    \"currency\": \"USD\",\n    \"skills\": [\n        {\n            \"skill_id\": 1,\n            \"required_level\": \"Advanced\",\n            \"is_mandatory\": true\n        },\n        {\n            \"skill_id\": 2,\n            \"required_level\": \"Intermediate\",\n            \"is_mandatory\": false\n        }\n    ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/employer/jobs",
+                            "host": ["{{base_url}}"],
+                            "path": ["employer", "jobs"]
+                        },
+                        "description": "Create a new job listing (created as Draft)."
+                    }
+                },
+                {
+                    "name": "Update Job",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"Title\": \"Senior Full Stack Developer\",\n    \"Description\": \"Updated job description...\",\n    \"SalaryMin\": 600,\n    \"SalaryMax\": 1800\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/employer/jobs/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["employer", "jobs", "1"]
+                        },
+                        "description": "Update a job listing."
+                    }
+                },
+                {
+                    "name": "Publish Job",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/employer/jobs/1/publish",
+                            "host": ["{{base_url}}"],
+                            "path": ["employer", "jobs", "1", "publish"]
+                        },
+                        "description": "Publish a job (change status to Active)."
+                    }
+                },
+                {
+                    "name": "Delete Job",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/employer/jobs/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["employer", "jobs", "1"]
+                        },
+                        "description": "Delete a job listing."
+                    }
+                },
+                {
+                    "name": "Get Job Applications",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/employer/jobs/1/applications",
+                            "host": ["{{base_url}}"],
+                            "path": ["employer", "jobs", "1", "applications"]
+                        },
+                        "description": "Get applications for a specific job."
+                    }
+                },
+                {
+                    "name": "Update Application Status",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"status\": \"Shortlisted\",\n    \"notes\": \"Great candidate, schedule interview\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/employer/applications/1/status",
+                            "host": ["{{base_url}}"],
+                            "path": ["employer", "applications", "1", "status"]
+                        },
+                        "description": "Update application status. Status options: Pending, Reviewed, Shortlisted, Interviewing, Offered, Hired, Rejected"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🏬 Companies",
+            "item": [
+                {
+                    "name": "Get Companies",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/companies",
+                            "host": ["{{base_url}}"],
+                            "path": ["companies"]
+                        },
+                        "description": "Get list of verified companies."
+                    }
+                },
+                {
+                    "name": "Get Company Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/companies/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["companies", "1"]
+                        },
+                        "description": "Get company details with job listings."
+                    }
+                },
+                {
+                    "name": "Follow Company",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/companies/1/follow",
+                            "host": ["{{base_url}}"],
+                            "path": ["companies", "1", "follow"]
+                        },
+                        "description": "Follow a company (job seekers only)."
+                    }
+                },
+                {
+                    "name": "Unfollow Company",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/companies/1/follow",
+                            "host": ["{{base_url}}"],
+                            "path": ["companies", "1", "follow"]
+                        },
+                        "description": "Unfollow a company."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "📚 Courses",
+            "item": [
+                {
+                    "name": "Get Courses",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/courses",
+                            "host": ["{{base_url}}"],
+                            "path": ["courses"]
+                        },
+                        "description": "Get active courses."
+                    }
+                },
+                {
+                    "name": "Get Course Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/courses/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["courses", "1"]
+                        },
+                        "description": "Get course details."
+                    }
+                },
+                {
+                    "name": "Enroll in Course",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/courses/1/enroll",
+                            "host": ["{{base_url}}"],
+                            "path": ["courses", "1", "enroll"]
+                        },
+                        "description": "Enroll in a course (job seekers only)."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "💬 Messaging",
+            "item": [
+                {
+                    "name": "Get Conversations",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/conversations",
+                            "host": ["{{base_url}}"],
+                            "path": ["conversations"]
+                        },
+                        "description": "Get user's conversations."
+                    }
+                },
+                {
+                    "name": "Get Conversation Messages",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/conversations/1/messages",
+                            "host": ["{{base_url}}"],
+                            "path": ["conversations", "1", "messages"]
+                        },
+                        "description": "Get messages in a conversation."
+                    }
+                },
+                {
+                    "name": "Send Message",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"content\": \"Hello! I'm interested in discussing the position further.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/conversations/1/messages",
+                            "host": ["{{base_url}}"],
+                            "path": ["conversations", "1", "messages"]
+                        },
+                        "description": "Send a message in a conversation."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🛠 Skills & Languages",
+            "item": [
+                {
+                    "name": "Get Skills",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/skills?category_id=1&search=java",
+                            "host": ["{{base_url}}"],
+                            "path": ["skills"],
+                            "query": [
+                                {
+                                    "key": "category_id",
+                                    "value": "1",
+                                    "description": "Filter by category"
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "java",
+                                    "description": "Search by skill name"
+                                }
+                            ]
+                        },
+                        "description": "Get all skills. Optional filters: category_id, search."
+                    }
+                },
+                {
+                    "name": "Get Skill Categories",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/skill-categories",
+                            "host": ["{{base_url}}"],
+                            "path": ["skill-categories"]
+                        },
+                        "description": "Get skill categories with skills count."
+                    }
+                },
+                {
+                    "name": "Get Languages",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/languages",
+                            "host": ["{{base_url}}"],
+                            "path": ["languages"]
+                        },
+                        "description": "Get all languages."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🛡️ Admin Panel",
+            "item": [
+                {
+                    "name": "Get All Users",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/users?search=&role=&status=",
+                            "host": ["{{base_url}}"],
+                            "path": ["admin", "users"],
+                            "query": [
+                                {
+                                    "key": "search",
+                                    "value": "",
+                                    "description": "Search by name or email"
+                                },
+                                {
+                                    "key": "role",
+                                    "value": "",
+                                    "description": "Filter by role (JobSeeker, Employer, Admin)"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "",
+                                    "description": "Filter by status (active, blocked, unverified)"
+                                }
+                            ]
+                        },
+                        "description": "Get all users with search and filter options."
+                    }
+                },
+                {
+                    "name": "Get User Statistics",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/users/statistics",
+                            "host": ["{{base_url}}"],
+                            "path": ["admin", "users", "statistics"]
+                        },
+                        "description": "Get system statistics: total users, job seekers, employers, blocked, etc."
+                    }
+                },
+                {
+                    "name": "Get User Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/users/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["admin", "users", "1"]
+                        },
+                        "description": "Get detailed information about a specific user."
+                    }
+                },
+                {
+                    "name": "Create User (Admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"full_name\": \"New User\",\n    \"email\": \"newuser@example.com\",\n    \"password\": \"Password123\",\n    \"role\": \"JobSeeker\",\n    \"phone\": \"+967771234567\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/admin/users",
+                            "host": ["{{base_url}}"],
+                            "path": ["admin", "users"]
+                        },
+                        "description": "Create a new user as admin."
+                    }
+                },
+                {
+                    "name": "Update User",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"full_name\": \"Updated Name\",\n    \"email\": \"updated@example.com\",\n    \"is_verified\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/admin/users/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["admin", "users", "1"]
+                        },
+                        "description": "Update user information."
+                    }
+                },
+                {
+                    "name": "Block User",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"reason\": \"مخالفة شروط الاستخدام\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/admin/users/1/block",
+                            "host": ["{{base_url}}"],
+                            "path": ["admin", "users", "1", "block"]
+                        },
+                        "description": "Block a user. Requires reason."
+                    }
+                },
+                {
+                    "name": "Unblock User",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/users/1/unblock",
+                            "host": ["{{base_url}}"],
+                            "path": ["admin", "users", "1", "unblock"]
+                        },
+                        "description": "Unblock a user."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "📚 Employer Courses",
+            "item": [
+                {
+                    "name": "Get My Courses",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/employer/courses",
+                            "host": ["{{base_url}}"],
+                            "path": ["employer", "courses"]
+                        },
+                        "description": "Get all courses for current employer."
+                    }
+                },
+                {
+                    "name": "Create Course",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"Laravel Advanced Course\",\n    \"topics\": \"API, Testing, Security, Performance\",\n    \"duration\": \"40 hours\",\n    \"location\": \"Online\",\n    \"trainer\": \"Dr. Ahmed Mohammed\",\n    \"fees\": 150.00,\n    \"start_date\": \"2024-03-01\",\n    \"status\": \"Draft\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/employer/courses",
+                            "host": ["{{base_url}}"],
+                            "path": ["employer", "courses"]
+                        },
+                        "description": "Create a new course ad."
+                    }
+                },
+                {
+                    "name": "Update Course",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"Updated Course Title\",\n    \"fees\": 200.00\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/employer/courses/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["employer", "courses", "1"]
+                        },
+                        "description": "Update a course ad."
+                    }
+                },
+                {
+                    "name": "Publish Course",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/employer/courses/1/publish",
+                            "host": ["{{base_url}}"],
+                            "path": ["employer", "courses", "1", "publish"]
+                        },
+                        "description": "Publish a course (change status to Active)."
+                    }
+                },
+                {
+                    "name": "Close Course",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/employer/courses/1/close",
+                            "host": ["{{base_url}}"],
+                            "path": ["employer", "courses", "1", "close"]
+                        },
+                        "description": "Close a course (stop accepting enrollments)."
+                    }
+                },
+                {
+                    "name": "Delete Course",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/employer/courses/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["employer", "courses", "1"]
+                        },
+                        "description": "Delete a course ad."
+                    }
+                },
+                {
+                    "name": "Get Course Enrollments",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/employer/courses/1/enrollments",
+                            "host": ["{{base_url}}"],
+                            "path": ["employer", "courses", "1", "enrollments"]
+                        },
+                        "description": "Get all enrollments for a course."
+                    }
+                },
+                {
+                    "name": "Notify Course Participants",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"تذكير بموعد الدورة\",\n    \"message\": \"نذكركم بأن الدورة تبدأ غداً الساعة 10 صباحاً\",\n    \"type\": \"reminder\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/employer/courses/1/notify",
+                            "host": ["{{base_url}}"],
+                            "path": ["employer", "courses", "1", "notify"]
+                        },
+                        "description": "Send notification to all enrolled participants. Types: reminder, update, cancellation, info."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🎓 Job Seeker Courses",
+            "item": [
+                {
+                    "name": "Get All Courses",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/courses",
+                            "host": ["{{base_url}}"],
+                            "path": ["courses"]
+                        },
+                        "description": "Get all active courses."
+                    }
+                },
+                {
+                    "name": "Get Course Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/courses/1",
+                            "host": ["{{base_url}}"],
+                            "path": ["courses", "1"]
+                        },
+                        "description": "Get course details."
+                    }
+                },
+                {
+                    "name": "Get My Enrollments",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/courses/my-enrollments",
+                            "host": ["{{base_url}}"],
+                            "path": ["courses", "my-enrollments"]
+                        },
+                        "description": "Get courses I'm enrolled in."
+                    }
+                },
+                {
+                    "name": "Enroll in Course",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/courses/1/enroll",
+                            "host": ["{{base_url}}"],
+                            "path": ["courses", "1", "enroll"]
+                        },
+                        "description": "Enroll in a course."
+                    }
+                },
+                {
+                    "name": "Unenroll from Course",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/courses/1/enroll",
+                            "host": ["{{base_url}}"],
+                            "path": ["courses", "1", "enroll"]
+                        },
+                        "description": "Cancel enrollment from a course."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "📝 Profile (Extended)",
+            "item": [
+                {
+                    "name": "Delete Profile",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/profile",
+                            "host": ["{{base_url}}"],
+                            "path": ["profile"]
+                        },
+                        "description": "Delete user profile (JobSeeker or Company)."
+                    }
+                }
+            ]
+        }
+    ]
+}

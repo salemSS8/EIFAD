@@ -7,10 +7,16 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Domain\User\Models\User>
  */
 class UserFactory extends Factory
 {
+    /**
+     * The name of the factory's corresponding model.
+     *
+     * @var string
+     */
+    protected $model = \App\Domain\User\Models\User::class;
     /**
      * The current password being used by the factory.
      */
@@ -24,11 +30,15 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'FullName' => fake()->name(),
+            'Email' => fake()->unique()->safeEmail(),
+            'IsVerified' => true,
+            'PasswordHash' => static::$password ??= Hash::make('password'),
+            'Phone' => fake()->phoneNumber(),
+            'Gender' => fake()->randomElement(['Male', 'Female']),
+            'DateOfBirth' => fake()->date(),
+            'CreatedAt' => now(),
+            'AuthProvider' => 'email',
         ];
     }
 
@@ -37,8 +47,8 @@ class UserFactory extends Factory
      */
     public function unverified(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
+        return $this->state(fn(array $attributes) => [
+            'IsVerified' => false,
         ]);
     }
 }

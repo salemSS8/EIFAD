@@ -18,6 +18,14 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \Database\Factories\UserFactory::new();
+    }
+
     protected $table = 'user';
     protected $primaryKey = 'UserID';
     public $timestamps = false;
@@ -31,7 +39,7 @@ class User extends Authenticatable
         'DateOfBirth',
         'IsVerified',
         'CreatedAt',
-        'FirebaseUID',
+        'ProviderID',
         'AuthProvider',
         'Avatar',
         'IsBlocked',

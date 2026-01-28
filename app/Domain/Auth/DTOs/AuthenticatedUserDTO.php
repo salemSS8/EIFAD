@@ -11,7 +11,7 @@ readonly class AuthenticatedUserDTO
         public int $userId,
         public string $email,
         public ?string $name,
-        public string $role,
+        public ?string $role,
         public string $sanctumToken,
         public ?string $firebaseUid = null,
     ) {}

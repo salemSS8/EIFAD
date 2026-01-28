@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Domain\Communication\Models\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Notification Controller - Manages user notifications.
@@ -13,13 +13,16 @@ use Illuminate\Http\Request;
 class NotificationController extends Controller
 {
     /**
-     * Get user's notifications.
+     * Get user notifications.
      */
     public function index(Request $request): JsonResponse
     {
-        $notifications = Notification::where('UserID', $request->user()->UserID)
+        $limit = $request->input('limit', 20);
+
+        $notifications = DB::table('notification')
+            ->where('UserID', $request->user()->UserID)
             ->orderByDesc('CreatedAt')
-            ->paginate(20);
+            ->paginate($limit);
 
         return response()->json($notifications);
     }
@@ -29,11 +32,14 @@ class NotificationController extends Controller
      */
     public function markAsRead(Request $request, int $id): JsonResponse
     {
-        $notification = Notification::where('NotificationID', $id)
+        $updated = DB::table('notification')
+            ->where('NotificationID', $id)
             ->where('UserID', $request->user()->UserID)
-            ->firstOrFail();
+            ->update(['ReadAt' => now()]);
 
-        $notification->update(['IsRead' => true]);
+        if (!$updated) {
+            return response()->json(['message' => 'Notification not found or unauthorized'], 404);
+        }
 
         return response()->json(['message' => 'Notification marked as read']);
     }
@@ -43,9 +49,10 @@ class NotificationController extends Controller
      */
     public function markAllAsRead(Request $request): JsonResponse
     {
-        Notification::where('UserID', $request->user()->UserID)
-            ->where('IsRead', false)
-            ->update(['IsRead' => true]);
+        DB::table('notification')
+            ->where('UserID', $request->user()->UserID)
+            ->whereNull('ReadAt')
+            ->update(['ReadAt' => now()]);
 
         return response()->json(['message' => 'All notifications marked as read']);
     }

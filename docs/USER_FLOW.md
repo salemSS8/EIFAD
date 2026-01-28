@@ -154,7 +154,8 @@ GET /api/employer/jobs → وظائفي
 POST /api/employer/jobs → إنشاء وظيفة (Draft)
 PUT /api/employer/jobs/{id} → تعديل
 POST /api/employer/jobs/{id}/publish → نشر (Active)
-DELETE /api/employer/jobs/{id} → حذف/إغلاق
+POST /api/employer/jobs/{id}/close → إغلاق (Closed)
+DELETE /api/employer/jobs/{id} → حذف
 ```
 
 ### 4. إدارة الطلبات

@@ -1168,6 +1168,24 @@
                     }
                 },
                 {
+                    "name": "Close Job",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/employer/jobs/1/close",
+                            "host": ["{{base_url}}"],
+                            "path": ["employer", "jobs", "1", "close"]
+                        },
+                        "description": "Close a job (change status to Closed)."
+                    }
+                },
+                {
                     "name": "Delete Job",
                     "request": {
                         "method": "DELETE",

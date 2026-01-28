@@ -298,6 +298,28 @@ class JobController extends Controller
     }
 
     /**
+     * Close a job (change status to Closed).
+     */
+    public function close(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+        $company = $user->companyProfile;
+
+        $job = JobAd::where('JobAdID', $id)
+            ->where('CompanyID', $company->CompanyID)
+            ->firstOrFail();
+
+        $job->update([
+            'Status' => 'Closed',
+        ]);
+
+        return response()->json([
+            'message' => 'Job closed successfully',
+            'data' => $job->fresh(),
+        ]);
+    }
+
+    /**
      * Delete a job listing.
      */
     public function destroy(Request $request, int $id): JsonResponse

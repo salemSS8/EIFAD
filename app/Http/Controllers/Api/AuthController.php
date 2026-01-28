@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Domain\Auth\Actions\LoginWithFirebaseAction;
-use App\Domain\Auth\Actions\RegisterWithFirebaseAction;
 use App\Domain\Auth\Actions\LogoutAction;
 use App\Domain\User\Models\User;
 use App\Domain\User\Models\Role;
@@ -20,39 +18,6 @@ use Illuminate\Support\Facades\DB;
  */
 class AuthController extends Controller
 {
-    /**
-     * Register a new user with Firebase token.
-     */
-    public function registerWithFirebase(
-        Request $request,
-        RegisterWithFirebaseAction $action
-    ): JsonResponse {
-        $request->validate([
-            'firebase_token' => 'required|string',
-            'role' => 'required|in:JobSeeker,Employer',
-            'name' => 'nullable|string|max:255',
-        ]);
-
-        try {
-            $result = $action->execute(
-                $request->input('firebase_token'),
-                $request->input('role'),
-                $request->only(['name'])
-            );
-
-            return response()->json([
-                'message' => 'Registration successful',
-                'data' => $result->toArray(),
-            ], 201);
-        } catch (BusinessRuleException $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-                'errors' => $e->getErrors(),
-            ], 422);
-        }
-    }
-
-
     /**
      * Register with email and password (traditional auth).
      * 
@@ -202,27 +167,36 @@ class AuthController extends Controller
     }
 
     /**
-     * Login with Firebase token.
+     * Redirect to social provider authentication page.
+     * Note: For an API, this will return the redirect URL. Frontend should use it.
      */
-    public function loginWithFirebase(
-        Request $request,
-        LoginWithFirebaseAction $action
-    ): JsonResponse {
-        $request->validate([
-            'firebase_token' => 'required|string',
+    public function redirectToProvider($provider): JsonResponse
+    {
+        return response()->json([
+            'url' => \Laravel\Socialite\Facades\Socialite::driver($provider)->stateless()->redirect()->getTargetUrl(),
         ]);
+    }
 
+    /**
+     * Handle callback from social provider.
+     */
+    public function handleProviderCallback(
+        $provider,
+        \App\Domain\Auth\Actions\SocialLoginAction $action
+    ): JsonResponse {
         try {
-            $result = $action->execute($request->input('firebase_token'));
+            $socialUser = \Laravel\Socialite\Facades\Socialite::driver($provider)->stateless()->user();
+
+            $result = $action->execute($socialUser, $provider);
 
             return response()->json([
                 'message' => 'Login successful',
                 'data' => $result->toArray(),
             ]);
-        } catch (BusinessRuleException $e) {
+        } catch (\Exception $e) {
             return response()->json([
-                'message' => $e->getMessage(),
-                'errors' => $e->getErrors(),
+                'message' => 'Authentication failed',
+                'error' => $e->getMessage(),
             ], 401);
         }
     }

@@ -1380,6 +1380,26 @@ Authorization: Bearer {token}
 
 ---
 
+### Close Job
+
+#### `POST /api/employer/jobs/{id}/close`
+
+إغلاق وظيفة (تغيير الحالة إلى Closed).
+
+**Response (200):**
+
+```json
+{
+    "message": "Job closed successfully",
+    "data": {
+        "JobAdID": 6,
+        "Status": "Closed"
+    }
+}
+```
+
+---
+
 ### Delete Job
 
 #### `DELETE /api/employer/jobs/{id}`

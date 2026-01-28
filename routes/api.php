@@ -35,8 +35,10 @@ Route::get('/health', fn() => response()->json([
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/register/firebase', [AuthController::class, 'registerWithFirebase']);
-    Route::post('/login/firebase', [AuthController::class, 'loginWithFirebase']);
+
+    // Social Authentication
+    Route::get('/login/{provider}', [AuthController::class, 'redirectToProvider']);
+    Route::get('/login/{provider}/callback', [AuthController::class, 'handleProviderCallback']);
 
     // Password Reset
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
@@ -143,6 +145,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/', [JobController::class, 'store']);
             Route::put('/{id}', [JobController::class, 'update']);
             Route::post('/{id}/publish', [JobController::class, 'publish']);
+            Route::post('/{id}/close', [JobController::class, 'close']);
             Route::delete('/{id}', [JobController::class, 'destroy']);
 
             // Applications for a job
@@ -309,5 +312,16 @@ Route::middleware('auth:sanctum')->group(function () {
                 'data' => $message,
             ], 201);
         });
+    });
+
+
+    // =========================================
+    // Notifications
+    // =========================================
+
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::put('/read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::put('/{id}/read', [NotificationController::class, 'markAsRead']);
     });
 });

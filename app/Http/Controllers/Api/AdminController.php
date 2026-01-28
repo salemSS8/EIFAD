@@ -17,10 +17,21 @@ use Illuminate\Support\Facades\Hash;
 class AdminController extends Controller
 {
     /**
+     * Ensure user is Admin.
+     */
+    private function ensureIsAdmin(Request $request)
+    {
+        if (!$request->user()->roles()->where('RoleName', 'Admin')->exists()) {
+            abort(403, 'Unauthorized access');
+        }
+    }
+
+    /**
      * Get all users with pagination and filters.
      */
     public function index(Request $request): JsonResponse
     {
+        $this->ensureIsAdmin($request);
         $query = User::with('roles');
 
         // Search by name or email
@@ -58,8 +69,9 @@ class AdminController extends Controller
     /**
      * Get a specific user details.
      */
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
+        $this->ensureIsAdmin($request);
         $user = User::with(['roles', 'jobSeekerProfile', 'companyProfile'])
             ->where('UserID', $id)
             ->firstOrFail();
@@ -72,6 +84,7 @@ class AdminController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $this->ensureIsAdmin($request);
         $request->validate([
             'full_name' => 'required|string|max:255',
             'email' => 'required|email|unique:user,Email',
@@ -132,6 +145,7 @@ class AdminController extends Controller
      */
     public function update(Request $request, int $id): JsonResponse
     {
+        $this->ensureIsAdmin($request);
         $user = User::where('UserID', $id)->firstOrFail();
 
         $request->validate([
@@ -173,6 +187,7 @@ class AdminController extends Controller
      */
     public function block(Request $request, int $id): JsonResponse
     {
+        $this->ensureIsAdmin($request);
         $user = User::where('UserID', $id)->firstOrFail();
 
         $request->validate([
@@ -206,8 +221,9 @@ class AdminController extends Controller
     /**
      * Unblock a user.
      */
-    public function unblock(int $id): JsonResponse
+    public function unblock(Request $request, int $id): JsonResponse
     {
+        $this->ensureIsAdmin($request);
         $user = User::where('UserID', $id)->firstOrFail();
 
         if (!$user->IsBlocked) {
@@ -231,8 +247,9 @@ class AdminController extends Controller
     /**
      * Get user statistics.
      */
-    public function statistics(): JsonResponse
+    public function statistics(Request $request): JsonResponse
     {
+        $this->ensureIsAdmin($request);
         $stats = [
             'total_users' => User::count(),
             'job_seekers' => User::whereHas('roles', fn($q) => $q->where('RoleName', 'JobSeeker'))->count(),

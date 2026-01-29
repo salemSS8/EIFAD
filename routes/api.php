@@ -28,7 +28,7 @@ use App\Http\Controllers\Api\CourseController;
 Route::get('/health', fn() => response()->json([
     'status' => 'ok',
     'timestamp' => now(),
-    'database' => 'final_project_database',
+    'database' => DB::connection()->getDatabaseName(),
 ]));
 
 // Authentication

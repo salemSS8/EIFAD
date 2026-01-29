@@ -136,89 +136,89 @@
                     }
                 },
                 {
-                    "name": "Register with Firebase",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "exec": [
-                                    "var jsonData = pm.response.json();",
-                                    "if (jsonData.data && jsonData.data.token) {",
-                                    "    pm.collectionVariables.set('token', jsonData.data.token);",
-                                    "}"
-                                ],
-                                "type": "text/javascript"
-                            }
-                        }
-                    ],
+                    "name": "Login with Google",
                     "request": {
-                        "auth": {
-                            "type": "noauth"
-                        },
-                        "method": "POST",
+                        "method": "GET",
                         "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
                             {
                                 "key": "Accept",
                                 "value": "application/json"
                             }
                         ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"firebase_token\": \"YOUR_FIREBASE_ID_TOKEN\",\n    \"role\": \"JobSeeker\",\n    \"name\": \"Ahmed Mohammed\"\n}"
-                        },
                         "url": {
-                            "raw": "{{base_url}}/auth/register/firebase",
+                            "raw": "{{base_url}}/auth/login/google",
                             "host": ["{{base_url}}"],
-                            "path": ["auth", "register", "firebase"]
+                            "path": ["auth", "login", "google"]
                         },
-                        "description": "Register using Firebase Authentication."
+                        "description": "Redirects to Google for authentication. Returns a JSON with the 'url' key containing the redirect URL."
                     }
                 },
                 {
-                    "name": "Login with Firebase",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "exec": [
-                                    "var jsonData = pm.response.json();",
-                                    "if (jsonData.data && jsonData.data.token) {",
-                                    "    pm.collectionVariables.set('token', jsonData.data.token);",
-                                    "}"
-                                ],
-                                "type": "text/javascript"
-                            }
-                        }
-                    ],
+                    "name": "Login with LinkedIn",
                     "request": {
-                        "auth": {
-                            "type": "noauth"
-                        },
-                        "method": "POST",
+                        "method": "GET",
                         "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
                             {
                                 "key": "Accept",
                                 "value": "application/json"
                             }
                         ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"firebase_token\": \"YOUR_FIREBASE_ID_TOKEN\"\n}"
-                        },
                         "url": {
-                            "raw": "{{base_url}}/auth/login/firebase",
+                            "raw": "{{base_url}}/auth/login/linkedin",
                             "host": ["{{base_url}}"],
-                            "path": ["auth", "login", "firebase"]
+                            "path": ["auth", "login", "linkedin"]
                         },
-                        "description": "Login using Firebase Authentication."
+                        "description": "Redirects to LinkedIn for authentication. Returns a JSON with the 'url' key containing the redirect URL."
+                    }
+                },
+                {
+                    "name": "Google Callback (Example)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/auth/login/google/callback?code=AUTH_CODE_FROM_GOOGLE",
+                            "query": [
+                                {
+                                    "key": "code",
+                                    "value": "AUTH_CODE_FROM_GOOGLE",
+                                    "description": "The code returned by Google after redirect"
+                                }
+                            ],
+                            "host": ["{{base_url}}"],
+                            "path": ["auth", "login", "google", "callback"]
+                        },
+                        "description": "Handle the callback from Google. This endpoint expects the 'code' parameter."
+                    }
+                },
+                {
+                    "name": "LinkedIn Callback (Example)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/auth/login/linkedin/callback?code=AUTH_CODE_FROM_LINKEDIN",
+                            "query": [
+                                {
+                                    "key": "code",
+                                    "value": "AUTH_CODE_FROM_LINKEDIN",
+                                    "description": "The code returned by LinkedIn after redirect"
+                                }
+                            ],
+                            "host": ["{{base_url}}"],
+                            "path": ["auth", "login", "linkedin", "callback"]
+                        },
+                        "description": "Handle the callback from LinkedIn. This endpoint expects the 'code' parameter."
                     }
                 },
                 {
@@ -283,7 +283,7 @@
                             "host": ["{{base_url}}"],
                             "path": ["auth", "forgot-password"]
                         },
-                        "description": "Request password reset code. Sends 6-digit code to email (valid for 60 minutes)."
+                        "description": "Request password reset code. Sends 6-digit code to email (valid for 60 minutes). Note: The code is sent via email and is NOT returned in the API response."
                     }
                 },
                 {
@@ -341,7 +341,7 @@
                             "host": ["{{base_url}}"],
                             "path": ["auth", "send-verification"]
                         },
-                        "description": "Send account verification code to email (valid for 60 minutes)."
+                        "description": "Send account verification code to email (valid for 60 minutes). Note: The code is sent via email and is NOT returned in the API response."
                     }
                 },
                 {

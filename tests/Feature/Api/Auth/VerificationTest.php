@@ -12,6 +12,12 @@ class VerificationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function setUp(): void
+    {
+        parent::setUp();
+        \Illuminate\Support\Facades\Mail::fake();
+    }
+
     public function test_user_can_request_verification_code()
     {
         $user = User::factory()->create([
@@ -24,11 +30,15 @@ class VerificationTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonStructure(['message', 'debug_token']);
+            ->assertJsonMissing(['debug_token']); // debug_token should be removed
 
         $this->assertDatabaseHas('email_verification_tokens', [
             'email' => 'verify@example.com',
         ]);
+
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\VerificationCodeMail::class, function ($mail) {
+            return $mail->hasTo('verify@example.com');
+        });
     }
 
     public function test_user_can_verify_account_with_valid_token()

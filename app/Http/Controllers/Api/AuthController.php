@@ -11,6 +11,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\VerificationCodeMail;
+use App\Mail\ResetPasswordCodeMail;
 
 /**
  * Authentication Controller - Thin controller for auth endpoints.
@@ -350,9 +353,16 @@ class AuthController extends Controller
             ]
         );
 
+        // Send email
+        try {
+            Mail::to($user->Email)->send(new ResetPasswordCodeMail($token));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Mail sending failed: ' . $e->getMessage());
+            // Continue even if mail fails in dev, or handle error
+        }
+
         return response()->json([
             'message' => 'تم إرسال رمز إعادة تعيين كلمة المرور إلى بريدك الإلكتروني',
-            'debug_token' => $token, // Remove in production
         ]);
     }
 
@@ -457,9 +467,15 @@ class AuthController extends Controller
             ]
         );
 
+        // Send email
+        try {
+            Mail::to($user->Email)->send(new VerificationCodeMail($token));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Mail sending failed: ' . $e->getMessage());
+        }
+
         return response()->json([
             'message' => 'تم إرسال رمز التحقق إلى بريدك الإلكتروني',
-            'debug_token' => $token, // Remove in production
         ]);
     }
 

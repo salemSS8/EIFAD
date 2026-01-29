@@ -12,6 +12,12 @@ class PasswordResetTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function setUp(): void
+    {
+        parent::setUp();
+        \Illuminate\Support\Facades\Mail::fake();
+    }
+
     public function test_user_can_request_password_reset_code()
     {
         $user = User::factory()->create([
@@ -23,11 +29,15 @@ class PasswordResetTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonStructure(['message', 'debug_token']);
+            ->assertJsonMissing(['debug_token']); // debug_token should be removed
 
         $this->assertDatabaseHas('password_reset_tokens', [
             'email' => 'reset@example.com',
         ]);
+
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\ResetPasswordCodeMail::class, function ($mail) {
+            return $mail->hasTo('reset@example.com');
+        });
     }
 
     public function test_user_can_reset_password_with_valid_token()

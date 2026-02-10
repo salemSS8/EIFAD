@@ -42,6 +42,7 @@ Route::prefix('auth')->group(function () {
 
     // Password Reset
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/verify-reset-code', [AuthController::class, 'verifyResetCode']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
     // Account Verification

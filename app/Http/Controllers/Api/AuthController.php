@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\VerificationCodeMail;
 use App\Mail\ResetPasswordCodeMail;
+use OpenApi\Attributes as OA;
 
 /**
  * Authentication Controller - Thin controller for auth endpoints.
@@ -21,17 +22,68 @@ use App\Mail\ResetPasswordCodeMail;
  */
 class AuthController extends Controller
 {
+    #[OA\Get(
+        path: "/health",
+        operationId: "healthCheck",
+        tags: ["Public"],
+        summary: "Check API health",
+        description: "Returns the health status of the API"
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Successful operation"
+    )]
+    public function healthCheck(): JsonResponse
+    {
+        return response()->json([
+            'status' => 'ok',
+            'timestamp' => now(),
+        ]);
+    }
+
     /**
-     * Register with email and password (traditional auth).
-     * 
-     * Validates:
-     * - Full name (required)
-     * - Email (required, valid format, unique)
-     * - Password (required, min 8 chars, must contain letters and numbers)
-     * - Password confirmation (required, must match)
-     * - Phone (required, valid format)
-     * - Role (required, JobSeeker or Employer)
+     * Register with email and password.
      */
+    #[OA\Post(
+        path: "/auth/register",
+        operationId: "register",
+        tags: ["Authentication"],
+        summary: "Register new user",
+        description: "Creates a new user account with email and password."
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["full_name", "email", "password", "password_confirmation", "phone"],
+            properties: [
+                new OA\Property(property: "full_name", type: "string", example: "John Doe"),
+                new OA\Property(property: "email", type: "string", format: "email", example: "user@example.com"),
+                new OA\Property(property: "password", type: "string", format: "password", example: "Password123", description: "Must contain letters and numbers, min 8 chars"),
+                new OA\Property(property: "password_confirmation", type: "string", format: "password", example: "Password123"),
+                new OA\Property(property: "phone", type: "string", example: "+967770000000"),
+                new OA\Property(property: "role", type: "string", enum: ["JobSeeker", "Employer"], example: "JobSeeker"),
+                new OA\Property(property: "gender", type: "string", enum: ["Male", "Female"], example: "Male"),
+                new OA\Property(property: "date_of_birth", type: "string", format: "date", example: "1990-01-01"),
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 201,
+        description: "User registered successfully",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string", example: "Registration successful"),
+                new OA\Property(property: "data", type: "object", properties: [
+                    new OA\Property(property: "user_id", type: "integer"),
+                    new OA\Property(property: "email", type: "string"),
+                    new OA\Property(property: "name", type: "string"),
+                    new OA\Property(property: "role", type: "string"),
+                    new OA\Property(property: "token", type: "string"),
+                ])
+            ]
+        )
+    )]
+    #[OA\Response(response: 422, description: "Validation error")]
     public function register(Request $request): JsonResponse
     {
         $request->validate([
@@ -127,6 +179,40 @@ class AuthController extends Controller
     /**
      * Login with email and password.
      */
+    #[OA\Post(
+        path: "/auth/login",
+        operationId: "login",
+        tags: ["Authentication"],
+        summary: "Login user",
+        description: "Authenticates a user and returns a token."
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["email", "password"],
+            properties: [
+                new OA\Property(property: "email", type: "string", format: "email", example: "user@example.com"),
+                new OA\Property(property: "password", type: "string", format: "password", example: "Password123"),
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Login successful",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string", example: "Login successful"),
+                new OA\Property(property: "data", type: "object", properties: [
+                    new OA\Property(property: "user_id", type: "integer"),
+                    new OA\Property(property: "email", type: "string"),
+                    new OA\Property(property: "name", type: "string"),
+                    new OA\Property(property: "role", type: "string"),
+                    new OA\Property(property: "token", type: "string"),
+                ])
+            ]
+        )
+    )]
+    #[OA\Response(response: 401, description: "Invalid credentials")]
     public function login(Request $request): JsonResponse
     {
         $request->validate([
@@ -173,6 +259,28 @@ class AuthController extends Controller
      * Redirect to social provider authentication page.
      * Note: For an API, this will return the redirect URL. Frontend should use it.
      */
+    #[OA\Get(
+        path: "/auth/login/{provider}",
+        operationId: "socialLoginRedirect",
+        tags: ["Authentication"],
+        summary: "Social Login Redirect",
+        description: "Returns the redirection URL for social login (Google/LinkedIn)."
+    )]
+    #[OA\Parameter(
+        name: "provider",
+        in: "path",
+        required: true,
+        schema: new OA\Schema(type: "string", enum: ["google", "linkedin"])
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Redirect URL generated",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "url", type: "string", example: "https://accounts.google.com/...")
+            ]
+        )
+    )]
     public function redirectToProvider($provider): JsonResponse
     {
         return response()->json([
@@ -183,6 +291,29 @@ class AuthController extends Controller
     /**
      * Handle callback from social provider.
      */
+    #[OA\Get(
+        path: "/auth/login/{provider}/callback",
+        operationId: "socialLoginCallback",
+        tags: ["Authentication"],
+        summary: "Social Login Callback",
+        description: "Handles the callback from social providers."
+    )]
+    #[OA\Parameter(
+        name: "provider",
+        in: "path",
+        required: true,
+        schema: new OA\Schema(type: "string", enum: ["google", "linkedin"])
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Login successful",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "message", type: "string", example: "Login successful"),
+                new OA\Property(property: "data", type: "object")
+            ]
+        )
+    )]
     public function handleProviderCallback(
         $provider,
         \App\Domain\Auth\Actions\SocialLoginAction $action
@@ -207,6 +338,14 @@ class AuthController extends Controller
     /**
      * Logout current user.
      */
+    #[OA\Post(
+        path: "/auth/logout",
+        operationId: "logout",
+        tags: ["Authentication"],
+        summary: "Logout user",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Response(response: 200, description: "Logged out successfully")]
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
@@ -219,6 +358,14 @@ class AuthController extends Controller
     /**
      * Get current authenticated user.
      */
+    #[OA\Get(
+        path: "/auth/me",
+        operationId: "me",
+        tags: ["Authentication"],
+        summary: "Get current user profile",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Response(response: 200, description: "User profile data")]
     public function me(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -245,6 +392,24 @@ class AuthController extends Controller
     /**
      * Change user password
      */
+    #[OA\Post(
+        path: "/auth/change-password",
+        operationId: "changePassword",
+        tags: ["Authentication"],
+        summary: "Change Password",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["current_password", "new_password"],
+            properties: [
+                new OA\Property(property: "current_password", type: "string", format: "password"),
+                new OA\Property(property: "new_password", type: "string", format: "password"),
+            ]
+        )
+    )]
+    #[OA\Response(response: 200, description: "Password changed")]
     public function changePassword(Request $request): JsonResponse
     {
         if (Hash::check($request->input('current_password'), $request->user()->PasswordHash)) {
@@ -262,9 +427,25 @@ class AuthController extends Controller
     }
 
     /**
-     * Set user role (for users who registered without a role).
-     * This is the second step in two-step registration.
+     * Set user role.
      */
+    #[OA\Post(
+        path: "/auth/set-role",
+        operationId: "setRole",
+        tags: ["Authentication"],
+        summary: "Set User Role",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["role"],
+            properties: [
+                new OA\Property(property: "role", type: "string", enum: ["JobSeeker", "Employer"]),
+            ]
+        )
+    )]
+    #[OA\Response(response: 200, description: "Role set successfully")]
     public function setRole(Request $request): JsonResponse
     {
         $request->validate([
@@ -322,8 +503,24 @@ class AuthController extends Controller
     }
 
     /**
-     * Send password reset code to email.
+     * Send password reset code.
      */
+    #[OA\Post(
+        path: "/auth/forgot-password",
+        operationId: "forgotPassword",
+        tags: ["Authentication"],
+        summary: "Request Password Reset Code"
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["email"],
+            properties: [
+                new OA\Property(property: "email", type: "string", format: "email"),
+            ]
+        )
+    )]
+    #[OA\Response(response: 200, description: "Code sent")]
     public function forgotPassword(Request $request): JsonResponse
     {
         $request->validate([
@@ -367,8 +564,93 @@ class AuthController extends Controller
     }
 
     /**
+     * Verify reset password code.
+     */
+    #[OA\Post(
+        path: "/auth/verify-reset-code",
+        operationId: "verifyResetCode",
+        tags: ["Authentication"],
+        summary: "Verify Reset Code",
+        description: "Verifies the password reset code before changing password."
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["email", "token"],
+            properties: [
+                new OA\Property(property: "email", type: "string", format: "email"),
+                new OA\Property(property: "token", type: "string", example: "123456"),
+            ]
+        )
+    )]
+    #[OA\Response(response: 200, description: "Code is valid")]
+    #[OA\Response(response: 422, description: "Code invalid or expired")]
+    public function verifyResetCode(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'token' => 'required|string|size:6',
+        ], [
+            'email.required' => 'البريد الإلكتروني مطلوب',
+            'email.email' => 'صيغة البريد الإلكتروني غير صحيحة',
+            'token.required' => 'رمز إعادة التعيين مطلوب',
+            'token.size' => 'رمز إعادة التعيين يجب أن يكون 6 أرقام',
+        ]);
+
+        $record = DB::table('password_reset_tokens')
+            ->where('email', $request->input('email'))
+            ->first();
+
+        if (!$record) {
+            return response()->json([
+                'message' => 'رمز إعادة التعيين غير صالح'
+            ], 422);
+        }
+
+        // Check expiry (60 minutes)
+        if (now()->diffInMinutes($record->created_at) > 60) {
+            DB::table('password_reset_tokens')->where('email', $request->input('email'))->delete();
+            return response()->json([
+                'message' => 'رمز إعادة التعيين منتهي الصلاحية'
+            ], 422);
+        }
+
+        // Verify token
+        if (!Hash::check($request->input('token'), $record->token)) {
+            return response()->json([
+                'message' => 'رمز إعادة التعيين غير صحيح'
+            ], 422);
+        }
+
+        return response()->json([
+            'message' => 'رمز إعادة التعيين صالح',
+            'valid' => true
+        ]);
+    }
+
+    /**
      * Reset password with token.
      */
+    #[OA\Post(
+        path: "/auth/reset-password",
+        operationId: "resetPassword",
+        tags: ["Authentication"],
+        summary: "Reset Password",
+        description: "Sets a new password using a valid reset token."
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["email", "token", "password", "password_confirmation"],
+            properties: [
+                new OA\Property(property: "email", type: "string", format: "email"),
+                new OA\Property(property: "token", type: "string", example: "123456"),
+                new OA\Property(property: "password", type: "string", format: "password"),
+                new OA\Property(property: "password_confirmation", type: "string", format: "password"),
+            ]
+        )
+    )]
+    #[OA\Response(response: 200, description: "Password reset successfully")]
     public function resetPassword(Request $request): JsonResponse
     {
         $request->validate([
@@ -432,6 +714,22 @@ class AuthController extends Controller
     /**
      * Send verification code to email.
      */
+    #[OA\Post(
+        path: "/auth/send-verification",
+        operationId: "sendVerification",
+        tags: ["Authentication"],
+        summary: "Send Email Verification Code"
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["email"],
+            properties: [
+                new OA\Property(property: "email", type: "string", format: "email"),
+            ]
+        )
+    )]
+    #[OA\Response(response: 200, description: "Verification code sent")]
     public function sendVerification(Request $request): JsonResponse
     {
         $request->validate([
@@ -482,6 +780,23 @@ class AuthController extends Controller
     /**
      * Verify account with token.
      */
+    #[OA\Post(
+        path: "/auth/verify-account",
+        operationId: "verifyAccount",
+        tags: ["Authentication"],
+        summary: "Verify Email Account"
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["email", "token"],
+            properties: [
+                new OA\Property(property: "email", type: "string", format: "email"),
+                new OA\Property(property: "token", type: "string", example: "123456"),
+            ]
+        )
+    )]
+    #[OA\Response(response: 200, description: "Account verified")]
     public function verifyAccount(Request $request): JsonResponse
     {
         $request->validate([

@@ -11,6 +11,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+use OpenApi\Attributes as OA;
+
 /**
  * Application Controller - Manages job applications.
  */
@@ -19,6 +21,15 @@ class ApplicationController extends Controller
     /**
      * Get current user's applications (for job seekers).
      */
+    #[OA\Get(
+        path: "/applications",
+        operationId: "getMyApplications",
+        tags: ["Applications"],
+        summary: "Get my applications",
+        description: "Returns a list of applications submitted by the current job seeker.",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Response(response: 200, description: "List of applications")]
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -39,6 +50,15 @@ class ApplicationController extends Controller
     /**
      * Get a specific application.
      */
+    #[OA\Get(
+        path: "/applications/{id}",
+        operationId: "getApplication",
+        tags: ["Applications"],
+        summary: "Get application details",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(response: 200, description: "Application details")]
     public function show(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
@@ -55,6 +75,25 @@ class ApplicationController extends Controller
     /**
      * Apply to a job.
      */
+    #[OA\Post(
+        path: "/applications",
+        operationId: "submitApplication",
+        tags: ["Applications"],
+        summary: "Submit a job application",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["job_id", "cv_id"],
+            properties: [
+                new OA\Property(property: "job_id", type: "integer"),
+                new OA\Property(property: "cv_id", type: "integer"),
+                new OA\Property(property: "notes", type: "string"),
+            ]
+        )
+    )]
+    #[OA\Response(response: 201, description: "Application submitted successfully")]
     public function store(Request $request): JsonResponse
     {
         $request->validate([
@@ -121,6 +160,15 @@ class ApplicationController extends Controller
     /**
      * Withdraw an application.
      */
+    #[OA\Post(
+        path: "/applications/{id}/withdraw",
+        operationId: "withdrawApplication",
+        tags: ["Applications"],
+        summary: "Withdraw an application",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(response: 200, description: "Application withdrawn")]
     public function withdraw(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
@@ -146,6 +194,15 @@ class ApplicationController extends Controller
     /**
      * Get applications for a job (for employers).
      */
+    #[OA\Get(
+        path: "/employer/jobs/{jobId}/applications",
+        operationId: "getJobApplications",
+        tags: ["Employer", "Applications"],
+        summary: "Get applications for a job",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "jobId", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(response: 200, description: "List of applications for the job")]
     public function jobApplications(Request $request, int $jobId): JsonResponse
     {
         $user = $request->user();
@@ -176,6 +233,25 @@ class ApplicationController extends Controller
     /**
      * Update application status (for employers).
      */
+    #[OA\Put(
+        path: "/employer/applications/{id}/status",
+        operationId: "updateApplicationStatus",
+        tags: ["Employer", "Applications"],
+        summary: "Update application status",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["status"],
+            properties: [
+                new OA\Property(property: "status", type: "string", enum: ["Pending", "Reviewed", "Shortlisted", "Interviewing", "Offered", "Hired", "Rejected"]),
+                new OA\Property(property: "notes", type: "string"),
+            ]
+        )
+    )]
+    #[OA\Response(response: 200, description: "Status updated")]
     public function updateStatus(Request $request, int $id): JsonResponse
     {
         $request->validate([

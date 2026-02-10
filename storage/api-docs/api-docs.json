@@ -1,0 +1,3050 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Job Search Platform API",
+        "description": "API Documentation for Job Search Platform Project",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000/api",
+            "description": "API Server"
+        }
+    ],
+    "paths": {
+        "/admin/users": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get all users",
+                "description": "Returns a paginated list of users with optional filtering.",
+                "operationId": "getUsers",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by name or email",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "role",
+                        "in": "query",
+                        "description": "Filter by role (JobSeeker, Employer, Admin)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter by status (active, blocked, unverified)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of users"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Create a new user",
+                "description": "Create a new user (by admin).",
+                "operationId": "createUser",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "full_name",
+                                    "email",
+                                    "password",
+                                    "role"
+                                ],
+                                "properties": {
+                                    "full_name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "JobSeeker",
+                                            "Employer",
+                                            "Admin"
+                                        ]
+                                    },
+                                    "phone": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User created successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/users/{id}": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get user details",
+                "description": "Get a specific user details.",
+                "operationId": "getUserDetails",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User details"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Update user details",
+                "description": "Update user information.",
+                "operationId": "updateUser",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "full_name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "phone": {
+                                        "type": "string"
+                                    },
+                                    "is_verified": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "User updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/users/{id}/block": {
+            "post": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Block a user",
+                "description": "Block a user.",
+                "operationId": "blockUser",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "reason"
+                                ],
+                                "properties": {
+                                    "reason": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "User blocked successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/users/{id}/unblock": {
+            "post": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Unblock a user",
+                "description": "Unblock a user.",
+                "operationId": "unblockUser",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User unblocked successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/statistics": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get system statistics",
+                "description": "Get user statistics.",
+                "operationId": "getStatistics",
+                "responses": {
+                    "200": {
+                        "description": "System statistics"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/applications": {
+            "get": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Get my applications",
+                "description": "Returns a list of applications submitted by the current job seeker.",
+                "operationId": "getMyApplications",
+                "responses": {
+                    "200": {
+                        "description": "List of applications"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Submit a job application",
+                "description": "Apply to a job.",
+                "operationId": "submitApplication",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "job_id",
+                                    "cv_id"
+                                ],
+                                "properties": {
+                                    "job_id": {
+                                        "type": "integer"
+                                    },
+                                    "cv_id": {
+                                        "type": "integer"
+                                    },
+                                    "notes": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Application submitted successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/applications/{id}": {
+            "get": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Get application details",
+                "description": "Get a specific application.",
+                "operationId": "getApplication",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Application details"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/applications/{id}/withdraw": {
+            "post": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Withdraw an application",
+                "description": "Withdraw an application.",
+                "operationId": "withdrawApplication",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Application withdrawn"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/employer/jobs/{jobId}/applications": {
+            "get": {
+                "tags": [
+                    "Employer",
+                    "Applications"
+                ],
+                "summary": "Get applications for a job",
+                "description": "Get applications for a job (for employers).",
+                "operationId": "getJobApplications",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of applications for the job"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/employer/applications/{id}/status": {
+            "put": {
+                "tags": [
+                    "Employer",
+                    "Applications"
+                ],
+                "summary": "Update application status",
+                "description": "Update application status (for employers).",
+                "operationId": "updateApplicationStatus",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "Pending",
+                                            "Reviewed",
+                                            "Shortlisted",
+                                            "Interviewing",
+                                            "Offered",
+                                            "Hired",
+                                            "Rejected"
+                                        ]
+                                    },
+                                    "notes": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Status updated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/health": {
+            "get": {
+                "tags": [
+                    "Public"
+                ],
+                "summary": "Check API health",
+                "description": "Returns the health status of the API",
+                "operationId": "healthCheck",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation"
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Register new user",
+                "description": "Creates a new user account with email and password.",
+                "operationId": "register",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "full_name",
+                                    "email",
+                                    "password",
+                                    "password_confirmation",
+                                    "phone"
+                                ],
+                                "properties": {
+                                    "full_name": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "user@example.com"
+                                    },
+                                    "password": {
+                                        "description": "Must contain letters and numbers, min 8 chars",
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "Password123"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "Password123"
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "example": "+967770000000"
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "JobSeeker",
+                                            "Employer"
+                                        ],
+                                        "example": "JobSeeker"
+                                    },
+                                    "gender": {
+                                        "type": "string",
+                                        "enum": [
+                                            "Male",
+                                            "Female"
+                                        ],
+                                        "example": "Male"
+                                    },
+                                    "date_of_birth": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "1990-01-01"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User registered successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Registration successful"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "user_id": {
+                                                    "type": "integer"
+                                                },
+                                                "email": {
+                                                    "type": "string"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "role": {
+                                                    "type": "string"
+                                                },
+                                                "token": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Login user",
+                "description": "Authenticates a user and returns a token.",
+                "operationId": "login",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "user@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "Password123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Login successful"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "user_id": {
+                                                    "type": "integer"
+                                                },
+                                                "email": {
+                                                    "type": "string"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "role": {
+                                                    "type": "string"
+                                                },
+                                                "token": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials"
+                    }
+                }
+            }
+        },
+        "/auth/login/{provider}": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Social Login Redirect",
+                "description": "Returns the redirection URL for social login (Google/LinkedIn).",
+                "operationId": "socialLoginRedirect",
+                "parameters": [
+                    {
+                        "name": "provider",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "google",
+                                "linkedin"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Redirect URL generated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "url": {
+                                            "type": "string",
+                                            "example": "https://accounts.google.com/..."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login/{provider}/callback": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Social Login Callback",
+                "description": "Handles the callback from social providers.",
+                "operationId": "socialLoginCallback",
+                "parameters": [
+                    {
+                        "name": "provider",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "google",
+                                "linkedin"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Login successful"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Logout user",
+                "description": "Logout current user.",
+                "operationId": "logout",
+                "responses": {
+                    "200": {
+                        "description": "Logged out successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/auth/me": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Get current user profile",
+                "description": "Get current authenticated user.",
+                "operationId": "me",
+                "responses": {
+                    "200": {
+                        "description": "User profile data"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/auth/change-password": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Change Password",
+                "description": "Change user password",
+                "operationId": "changePassword",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "current_password",
+                                    "new_password"
+                                ],
+                                "properties": {
+                                    "current_password": {
+                                        "type": "string",
+                                        "format": "password"
+                                    },
+                                    "new_password": {
+                                        "type": "string",
+                                        "format": "password"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password changed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/auth/set-role": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Set User Role",
+                "description": "Set user role.",
+                "operationId": "setRole",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "role"
+                                ],
+                                "properties": {
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "JobSeeker",
+                                            "Employer"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Role set successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/auth/forgot-password": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Request Password Reset Code",
+                "description": "Send password reset code.",
+                "operationId": "forgotPassword",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Code sent"
+                    }
+                }
+            }
+        },
+        "/auth/verify-reset-code": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Verify Reset Code",
+                "description": "Verifies the password reset code before changing password.",
+                "operationId": "verifyResetCode",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "token"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "token": {
+                                        "type": "string",
+                                        "example": "123456"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Code is valid"
+                    },
+                    "422": {
+                        "description": "Code invalid or expired"
+                    }
+                }
+            }
+        },
+        "/auth/reset-password": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Reset Password",
+                "description": "Sets a new password using a valid reset token.",
+                "operationId": "resetPassword",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "token",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "token": {
+                                        "type": "string",
+                                        "example": "123456"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password reset successfully"
+                    }
+                }
+            }
+        },
+        "/auth/send-verification": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Send Email Verification Code",
+                "description": "Send verification code to email.",
+                "operationId": "sendVerification",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Verification code sent"
+                    }
+                }
+            }
+        },
+        "/auth/verify-account": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Verify Email Account",
+                "description": "Verify account with token.",
+                "operationId": "verifyAccount",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "token"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "token": {
+                                        "type": "string",
+                                        "example": "123456"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Account verified"
+                    }
+                }
+            }
+        },
+        "/cvs": {
+            "get": {
+                "tags": [
+                    "CVs"
+                ],
+                "summary": "Get my CVs",
+                "description": "Returns a list of CVs created by the authenticated job seeker.",
+                "operationId": "getCVs",
+                "responses": {
+                    "200": {
+                        "description": "List of CVs"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "CVs"
+                ],
+                "summary": "Create a new CV",
+                "description": "Create a new CV.",
+                "operationId": "createCV",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "title"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "Full Stack Developer CV"
+                                    },
+                                    "personal_summary": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "CV created successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/cvs/{id}": {
+            "get": {
+                "tags": [
+                    "CVs"
+                ],
+                "summary": "Get CV details",
+                "description": "Returns full details of a specific CV, including skills, education, experience, etc.",
+                "operationId": "getCV",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CV details"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "CVs"
+                ],
+                "summary": "Update CV details",
+                "description": "Update a CV.",
+                "operationId": "updateCV",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "personal_summary": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "CV updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "CVs"
+                ],
+                "summary": "Delete a CV",
+                "description": "Delete a CV.",
+                "operationId": "deleteCV",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CV deleted successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/cvs/{cvId}/skills": {
+            "post": {
+                "tags": [
+                    "CVs",
+                    "Skills"
+                ],
+                "summary": "Add skill to CV",
+                "description": "Add a skill to CV.",
+                "operationId": "addCVSkill",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "skill_id"
+                                ],
+                                "properties": {
+                                    "skill_id": {
+                                        "type": "integer"
+                                    },
+                                    "skill_level": {
+                                        "type": "string",
+                                        "example": "Intermediate"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Skill added to CV"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/cvs/{cvId}/skills/{skillId}": {
+            "delete": {
+                "tags": [
+                    "CVs",
+                    "Skills"
+                ],
+                "summary": "Remove skill from CV",
+                "description": "Remove a skill from CV.",
+                "operationId": "removeCVSkill",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "skillId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Skill removed from CV"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/cvs/{cvId}/education": {
+            "post": {
+                "tags": [
+                    "CVs",
+                    "Education"
+                ],
+                "summary": "Add education to CV",
+                "description": "Add education to CV.",
+                "operationId": "addCVEducation",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "institution",
+                                    "degree_name"
+                                ],
+                                "properties": {
+                                    "institution": {
+                                        "type": "string"
+                                    },
+                                    "degree_name": {
+                                        "type": "string"
+                                    },
+                                    "major": {
+                                        "type": "string"
+                                    },
+                                    "graduation_year": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Education added to CV"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/cvs/{cvId}/education/{educationId}": {
+            "delete": {
+                "tags": [
+                    "CVs",
+                    "Education"
+                ],
+                "summary": "Remove education from CV",
+                "description": "Remove education from CV.",
+                "operationId": "removeCVEducation",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "educationId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Education removed from CV"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/cvs/{cvId}/experience": {
+            "post": {
+                "tags": [
+                    "CVs",
+                    "Experience"
+                ],
+                "summary": "Add experience to CV",
+                "description": "Add experience to CV.",
+                "operationId": "addCVExperience",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "job_title",
+                                    "company_name",
+                                    "start_date"
+                                ],
+                                "properties": {
+                                    "job_title": {
+                                        "type": "string"
+                                    },
+                                    "company_name": {
+                                        "type": "string"
+                                    },
+                                    "start_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "nullable": true
+                                    },
+                                    "responsibilities": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Experience added to CV"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/cvs/{cvId}/experience/{experienceId}": {
+            "delete": {
+                "tags": [
+                    "CVs",
+                    "Experience"
+                ],
+                "summary": "Remove experience from CV",
+                "description": "Remove experience from CV.",
+                "operationId": "removeCVExperience",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "experienceId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Experience removed from CV"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/cvs/{cvId}/languages": {
+            "post": {
+                "tags": [
+                    "CVs",
+                    "Languages"
+                ],
+                "summary": "Add language to CV",
+                "description": "Add language to CV.",
+                "operationId": "addCVLanguage",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "language_id"
+                                ],
+                                "properties": {
+                                    "language_id": {
+                                        "type": "integer"
+                                    },
+                                    "language_level": {
+                                        "type": "string",
+                                        "example": "Native"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Language added to CV"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/cvs/{cvId}/languages/{languageId}": {
+            "delete": {
+                "tags": [
+                    "CVs",
+                    "Languages"
+                ],
+                "summary": "Remove language from CV",
+                "description": "Remove language from CV.",
+                "operationId": "removeCVLanguage",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "languageId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Language removed from CV"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/courses": {
+            "get": {
+                "tags": [
+                    "Courses"
+                ],
+                "summary": "Get active courses",
+                "description": "Returns a list of all active courses available for enrollment.",
+                "operationId": "getCourses",
+                "responses": {
+                    "200": {
+                        "description": "List of courses"
+                    }
+                }
+            }
+        },
+        "/courses/{id}": {
+            "get": {
+                "tags": [
+                    "Courses"
+                ],
+                "summary": "Get course details",
+                "description": "Returns detailed information about a specific course.",
+                "operationId": "getCourseDetails",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Course details"
+                    }
+                }
+            }
+        },
+        "/courses/{id}/enroll": {
+            "post": {
+                "tags": [
+                    "Courses"
+                ],
+                "summary": "Enroll in a course",
+                "description": "Enroll in a course.",
+                "operationId": "enrollCourse",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Enrolled successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Courses"
+                ],
+                "summary": "Unenroll from a course",
+                "description": "Cancel enrollment (unenroll).",
+                "operationId": "unenrollCourse",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Unenrolled successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/courses/my-enrollments": {
+            "get": {
+                "tags": [
+                    "Courses"
+                ],
+                "summary": "Get my enrollments",
+                "description": "Get my enrollments.",
+                "operationId": "getMyEnrollments",
+                "responses": {
+                    "200": {
+                        "description": "List of enrollments"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/employer/courses": {
+            "get": {
+                "tags": [
+                    "Employer",
+                    "Courses"
+                ],
+                "summary": "Get employer's courses",
+                "description": "Get employer's courses.",
+                "operationId": "getEmployerCourses",
+                "responses": {
+                    "200": {
+                        "description": "List of employer's courses"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Employer",
+                    "Courses"
+                ],
+                "summary": "Create a new course",
+                "description": "Create a new course ad.",
+                "operationId": "createCourse",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "title"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "topics": {
+                                        "type": "string"
+                                    },
+                                    "duration": {
+                                        "type": "string"
+                                    },
+                                    "location": {
+                                        "type": "string"
+                                    },
+                                    "trainer": {
+                                        "type": "string"
+                                    },
+                                    "fees": {
+                                        "type": "number"
+                                    },
+                                    "start_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "Draft",
+                                            "Active"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Course created successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/employer/courses/{id}": {
+            "put": {
+                "tags": [
+                    "Employer",
+                    "Courses"
+                ],
+                "summary": "Update course details",
+                "description": "Update a course ad.",
+                "operationId": "updateCourse",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "topics": {
+                                        "type": "string"
+                                    },
+                                    "status": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Course updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Employer",
+                    "Courses"
+                ],
+                "summary": "Delete a course",
+                "description": "Delete a course ad.",
+                "operationId": "deleteCourse",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Course deleted"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/employer/courses/{id}/publish": {
+            "post": {
+                "tags": [
+                    "Employer",
+                    "Courses"
+                ],
+                "summary": "Publish a course",
+                "description": "Publish a course (change status to Active).",
+                "operationId": "publishCourse",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Course published"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/employer/courses/{id}/close": {
+            "post": {
+                "tags": [
+                    "Employer",
+                    "Courses"
+                ],
+                "summary": "Close a course",
+                "description": "Close a course.",
+                "operationId": "closeCourse",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Course closed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/employer/courses/{id}/enrollments": {
+            "get": {
+                "tags": [
+                    "Employer",
+                    "Courses"
+                ],
+                "summary": "Get enrollments for a course",
+                "description": "Get course enrollments (for employer).",
+                "operationId": "getCourseEnrollments",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of enrollments"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/employer/courses/{id}/notify": {
+            "post": {
+                "tags": [
+                    "Employer",
+                    "Courses"
+                ],
+                "summary": "Notify course participants",
+                "description": "Notify course participants.",
+                "operationId": "notifyCourseParticipants",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "title",
+                                    "message"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "message": {
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "reminder",
+                                            "update",
+                                            "cancellation",
+                                            "info"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Notification sent"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/jobs": {
+            "get": {
+                "tags": [
+                    "Jobs"
+                ],
+                "summary": "Search and filter jobs",
+                "description": "Public job search with filters for keywords, location, salary, etc.",
+                "operationId": "getJobs",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Search keyword for title or description",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "location",
+                        "in": "query",
+                        "description": "Filter by location",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "work_type",
+                        "in": "query",
+                        "description": "Filter by work type (Full-time, Part-time)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "workplace_type",
+                        "in": "query",
+                        "description": "Filter by workplace type (Remote, On-site, Hybrid)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "salary_min",
+                        "in": "query",
+                        "description": "Minimum salary",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "salary_max",
+                        "in": "query",
+                        "description": "Maximum salary",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "company_id",
+                        "in": "query",
+                        "description": "Filter by company ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "skill_ids",
+                        "in": "query",
+                        "description": "Comma-separated skill IDs",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page (default 15)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of jobs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/jobs/{id}": {
+            "get": {
+                "tags": [
+                    "Jobs"
+                ],
+                "summary": "Get job details",
+                "description": "Returns detailed information about a specific job.",
+                "operationId": "getJobDetails",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job details"
+                    },
+                    "404": {
+                        "description": "Job not found"
+                    }
+                }
+            }
+        },
+        "/favorites/{jobId}": {
+            "post": {
+                "tags": [
+                    "Jobs",
+                    "Favorites"
+                ],
+                "summary": "Add job to favorites",
+                "description": "Add job to favorites (for job seekers).",
+                "operationId": "addFavoriteJob",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job saved to favorites"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Jobs",
+                    "Favorites"
+                ],
+                "summary": "Remove job from favorites",
+                "description": "Remove job from favorites.",
+                "operationId": "removeFavoriteJob",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job removed from favorites"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/favorites": {
+            "get": {
+                "tags": [
+                    "Jobs",
+                    "Favorites"
+                ],
+                "summary": "Get favorite jobs",
+                "description": "Get user's favorite jobs.",
+                "operationId": "getFavoriteJobs",
+                "responses": {
+                    "200": {
+                        "description": "List of favorite jobs"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/employer/jobs": {
+            "get": {
+                "tags": [
+                    "Employer",
+                    "Jobs"
+                ],
+                "summary": "Get employer's jobs",
+                "description": "Get employer's job listings.",
+                "operationId": "getEmployerJobs",
+                "responses": {
+                    "200": {
+                        "description": "List of employer's jobs"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Employer",
+                    "Jobs"
+                ],
+                "summary": "Create a new job",
+                "description": "Create a new job listing.",
+                "operationId": "createJob",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "title",
+                                    "description"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "Software Engineer"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "responsibilities": {
+                                        "type": "string"
+                                    },
+                                    "requirements": {
+                                        "type": "string"
+                                    },
+                                    "location": {
+                                        "type": "string"
+                                    },
+                                    "work_type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "Full-time",
+                                            "Part-time",
+                                            "Contract"
+                                        ]
+                                    },
+                                    "workplace_type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "Remote",
+                                            "On-site",
+                                            "Hybrid"
+                                        ]
+                                    },
+                                    "salary_min": {
+                                        "type": "integer"
+                                    },
+                                    "salary_max": {
+                                        "type": "integer"
+                                    },
+                                    "skills": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "skill_id": {
+                                                    "type": "integer"
+                                                },
+                                                "required_level": {
+                                                    "type": "string"
+                                                },
+                                                "is_mandatory": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Job created successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/employer/jobs/{id}": {
+            "put": {
+                "tags": [
+                    "Employer",
+                    "Jobs"
+                ],
+                "summary": "Update job details",
+                "description": "Update a job listing.",
+                "operationId": "updateJob",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "Draft",
+                                            "Active",
+                                            "Closed"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Job updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Employer",
+                    "Jobs"
+                ],
+                "summary": "Delete a job",
+                "description": "Delete a job listing.",
+                "operationId": "deleteJob",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job deleted"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/employer/jobs/{id}/publish": {
+            "post": {
+                "tags": [
+                    "Employer",
+                    "Jobs"
+                ],
+                "summary": "Publish a job",
+                "description": "Publish a job (change status to Active).",
+                "operationId": "publishJob",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job published"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/employer/jobs/{id}/close": {
+            "post": {
+                "tags": [
+                    "Employer",
+                    "Jobs"
+                ],
+                "summary": "Close a job",
+                "description": "Close a job (change status to Closed).",
+                "operationId": "closeJob",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job closed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/notifications": {
+            "get": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Get notifications",
+                "description": "Get user notifications.",
+                "operationId": "getNotifications",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of notifications"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/notifications/{id}/read": {
+            "patch": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Mark notification as read",
+                "description": "Mark a notification as read.",
+                "operationId": "markNotificationRead",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Notification marked as read"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/notifications/read-all": {
+            "patch": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Mark all notifications as read",
+                "description": "Mark all notifications as read.",
+                "operationId": "markAllNotificationsRead",
+                "responses": {
+                    "200": {
+                        "description": "All notifications marked as read"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/profile": {
+            "get": {
+                "tags": [
+                    "Profile"
+                ],
+                "summary": "Get current user profile",
+                "description": "Returns the profile of the authenticated user (Job Seeker or Employer).",
+                "operationId": "getProfile",
+                "responses": {
+                    "200": {
+                        "description": "User profile",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "example": "job_seeker"
+                                                },
+                                                "data": {
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "example": "company"
+                                                },
+                                                "data": {
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Profile"
+                ],
+                "summary": "Update profile",
+                "description": "Alias for POST /profile",
+                "operationId": "updateProfile",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "description": "Job Seeker Profile",
+                                        "properties": {
+                                            "personal_photo": {
+                                                "type": "string"
+                                            },
+                                            "location": {
+                                                "type": "string"
+                                            },
+                                            "profile_summary": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    },
+                                    {
+                                        "description": "Company Profile",
+                                        "required": [
+                                            "company_name"
+                                        ],
+                                        "properties": {
+                                            "company_name": {
+                                                "type": "string"
+                                            },
+                                            "organization_name": {
+                                                "type": "string"
+                                            },
+                                            "address": {
+                                                "type": "string"
+                                            },
+                                            "description": {
+                                                "type": "string"
+                                            },
+                                            "logo_path": {
+                                                "type": "string"
+                                            },
+                                            "website_url": {
+                                                "type": "string"
+                                            },
+                                            "established_year": {
+                                                "type": "integer"
+                                            },
+                                            "employee_count": {
+                                                "type": "integer"
+                                            },
+                                            "field_of_work": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Profile updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Profile"
+                ],
+                "summary": "Create or update profile",
+                "description": "Creates or updates the profile for the authenticated user based on their role.",
+                "operationId": "createOrUpdateProfile",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "description": "Job Seeker Profile",
+                                        "properties": {
+                                            "personal_photo": {
+                                                "type": "string"
+                                            },
+                                            "location": {
+                                                "type": "string"
+                                            },
+                                            "profile_summary": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    },
+                                    {
+                                        "description": "Company Profile",
+                                        "required": [
+                                            "company_name"
+                                        ],
+                                        "properties": {
+                                            "company_name": {
+                                                "type": "string"
+                                            },
+                                            "organization_name": {
+                                                "type": "string"
+                                            },
+                                            "address": {
+                                                "type": "string"
+                                            },
+                                            "description": {
+                                                "type": "string"
+                                            },
+                                            "logo_path": {
+                                                "type": "string"
+                                            },
+                                            "website_url": {
+                                                "type": "string"
+                                            },
+                                            "established_year": {
+                                                "type": "integer"
+                                            },
+                                            "employee_count": {
+                                                "type": "integer"
+                                            },
+                                            "field_of_work": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Profile updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Profile"
+                ],
+                "summary": "Delete profile",
+                "description": "Delete current user's profile.\nUser Story: Create & Update & Delete Profile",
+                "operationId": "deleteProfile",
+                "responses": {
+                    "200": {
+                        "description": "Profile deleted successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/skills": {
+            "get": {
+                "tags": [
+                    "Skills"
+                ],
+                "summary": "Get list of skills",
+                "description": "Returns a list of skills, optionally filtered by category or search term.",
+                "operationId": "getSkills",
+                "parameters": [
+                    {
+                        "name": "category_id",
+                        "in": "query",
+                        "description": "Filter by category ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by skill name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of skills"
+                    }
+                }
+            }
+        },
+        "/skill-categories": {
+            "get": {
+                "tags": [
+                    "Skills"
+                ],
+                "summary": "Get skill categories",
+                "description": "Returns a list of skill categories.",
+                "operationId": "getSkillCategories",
+                "responses": {
+                    "200": {
+                        "description": "List of skill categories"
+                    }
+                }
+            }
+        },
+        "/languages": {
+            "get": {
+                "tags": [
+                    "Skills"
+                ],
+                "summary": "Get languages",
+                "description": "Returns a list of available languages.",
+                "operationId": "getLanguages",
+                "responses": {
+                    "200": {
+                        "description": "List of languages"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Admin",
+            "description": "Admin"
+        },
+        {
+            "name": "Applications",
+            "description": "Applications"
+        },
+        {
+            "name": "Employer",
+            "description": "Employer"
+        },
+        {
+            "name": "Public",
+            "description": "Public"
+        },
+        {
+            "name": "Authentication",
+            "description": "Authentication"
+        },
+        {
+            "name": "CVs",
+            "description": "CVs"
+        },
+        {
+            "name": "Skills",
+            "description": "Skills"
+        },
+        {
+            "name": "Education",
+            "description": "Education"
+        },
+        {
+            "name": "Experience",
+            "description": "Experience"
+        },
+        {
+            "name": "Languages",
+            "description": "Languages"
+        },
+        {
+            "name": "Courses",
+            "description": "Courses"
+        },
+        {
+            "name": "Jobs",
+            "description": "Jobs"
+        },
+        {
+            "name": "Favorites",
+            "description": "Favorites"
+        },
+        {
+            "name": "Notifications",
+            "description": "Notifications"
+        },
+        {
+            "name": "Profile",
+            "description": "Profile"
+        }
+    ]
+}

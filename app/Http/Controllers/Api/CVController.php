@@ -13,6 +13,8 @@ use App\Domain\CV\Models\Volunteering;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+use OpenApi\Attributes as OA;
+
 /**
  * CV Controller - Manages CV CRUD operations matching database structure.
  */
@@ -21,6 +23,15 @@ class CVController extends Controller
     /**
      * Get all CVs for current user.
      */
+    #[OA\Get(
+        path: "/cvs",
+        operationId: "getCVs",
+        tags: ["CVs"],
+        summary: "Get my CVs",
+        description: "Returns a list of CVs created by the authenticated job seeker.",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Response(response: 200, description: "List of CVs")]
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -41,6 +52,16 @@ class CVController extends Controller
     /**
      * Get a specific CV with all related data.
      */
+    #[OA\Get(
+        path: "/cvs/{id}",
+        operationId: "getCV",
+        tags: ["CVs"],
+        summary: "Get CV details",
+        description: "Returns full details of a specific CV, including skills, education, experience, etc.",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(response: 200, description: "CV details")]
     public function show(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
@@ -64,6 +85,24 @@ class CVController extends Controller
     /**
      * Create a new CV.
      */
+    #[OA\Post(
+        path: "/cvs",
+        operationId: "createCV",
+        tags: ["CVs"],
+        summary: "Create a new CV",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["title"],
+            properties: [
+                new OA\Property(property: "title", type: "string", example: "Full Stack Developer CV"),
+                new OA\Property(property: "personal_summary", type: "string"),
+            ]
+        )
+    )]
+    #[OA\Response(response: 201, description: "CV created successfully")]
     public function store(Request $request): JsonResponse
     {
         $request->validate([
@@ -95,6 +134,24 @@ class CVController extends Controller
     /**
      * Update a CV.
      */
+    #[OA\Put(
+        path: "/cvs/{id}",
+        operationId: "updateCV",
+        tags: ["CVs"],
+        summary: "Update CV details",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "title", type: "string"),
+                new OA\Property(property: "personal_summary", type: "string"),
+            ]
+        )
+    )]
+    #[OA\Response(response: 200, description: "CV updated successfully")]
     public function update(Request $request, int $id): JsonResponse
     {
         $request->validate([
@@ -122,6 +179,15 @@ class CVController extends Controller
     /**
      * Delete a CV.
      */
+    #[OA\Delete(
+        path: "/cvs/{id}",
+        operationId: "deleteCV",
+        tags: ["CVs"],
+        summary: "Delete a CV",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(response: 200, description: "CV deleted successfully")]
     public function destroy(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
@@ -141,6 +207,25 @@ class CVController extends Controller
     /**
      * Add a skill to CV.
      */
+    #[OA\Post(
+        path: "/cvs/{cvId}/skills",
+        operationId: "addCVSkill",
+        tags: ["CVs", "Skills"],
+        summary: "Add skill to CV",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "cvId", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["skill_id"],
+            properties: [
+                new OA\Property(property: "skill_id", type: "integer"),
+                new OA\Property(property: "skill_level", type: "string", example: "Intermediate"),
+            ]
+        )
+    )]
+    #[OA\Response(response: 201, description: "Skill added to CV")]
     public function addSkill(Request $request, int $cvId): JsonResponse
     {
         $request->validate([
@@ -168,6 +253,16 @@ class CVController extends Controller
     /**
      * Remove a skill from CV.
      */
+    #[OA\Delete(
+        path: "/cvs/{cvId}/skills/{skillId}",
+        operationId: "removeCVSkill",
+        tags: ["CVs", "Skills"],
+        summary: "Remove skill from CV",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "cvId", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Parameter(name: "skillId", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(response: 200, description: "Skill removed from CV")]
     public function removeSkill(Request $request, int $cvId, int $skillId): JsonResponse
     {
         $user = $request->user();
@@ -189,6 +284,27 @@ class CVController extends Controller
     /**
      * Add education to CV.
      */
+    #[OA\Post(
+        path: "/cvs/{cvId}/education",
+        operationId: "addCVEducation",
+        tags: ["CVs", "Education"],
+        summary: "Add education to CV",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "cvId", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["institution", "degree_name"],
+            properties: [
+                new OA\Property(property: "institution", type: "string"),
+                new OA\Property(property: "degree_name", type: "string"),
+                new OA\Property(property: "major", type: "string"),
+                new OA\Property(property: "graduation_year", type: "integer"),
+            ]
+        )
+    )]
+    #[OA\Response(response: 201, description: "Education added to CV")]
     public function addEducation(Request $request, int $cvId): JsonResponse
     {
         $request->validate([
@@ -220,6 +336,16 @@ class CVController extends Controller
     /**
      * Remove education from CV.
      */
+    #[OA\Delete(
+        path: "/cvs/{cvId}/education/{educationId}",
+        operationId: "removeCVEducation",
+        tags: ["CVs", "Education"],
+        summary: "Remove education from CV",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "cvId", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Parameter(name: "educationId", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(response: 200, description: "Education removed from CV")]
     public function removeEducation(Request $request, int $cvId, int $educationId): JsonResponse
     {
         $user = $request->user();
@@ -241,6 +367,28 @@ class CVController extends Controller
     /**
      * Add experience to CV.
      */
+    #[OA\Post(
+        path: "/cvs/{cvId}/experience",
+        operationId: "addCVExperience",
+        tags: ["CVs", "Experience"],
+        summary: "Add experience to CV",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "cvId", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["job_title", "company_name", "start_date"],
+            properties: [
+                new OA\Property(property: "job_title", type: "string"),
+                new OA\Property(property: "company_name", type: "string"),
+                new OA\Property(property: "start_date", type: "string", format: "date"),
+                new OA\Property(property: "end_date", type: "string", format: "date", nullable: true),
+                new OA\Property(property: "responsibilities", type: "string"),
+            ]
+        )
+    )]
+    #[OA\Response(response: 201, description: "Experience added to CV")]
     public function addExperience(Request $request, int $cvId): JsonResponse
     {
         $request->validate([
@@ -274,6 +422,16 @@ class CVController extends Controller
     /**
      * Remove experience from CV.
      */
+    #[OA\Delete(
+        path: "/cvs/{cvId}/experience/{experienceId}",
+        operationId: "removeCVExperience",
+        tags: ["CVs", "Experience"],
+        summary: "Remove experience from CV",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "cvId", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Parameter(name: "experienceId", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(response: 200, description: "Experience removed from CV")]
     public function removeExperience(Request $request, int $cvId, int $experienceId): JsonResponse
     {
         $user = $request->user();
@@ -295,6 +453,25 @@ class CVController extends Controller
     /**
      * Add language to CV.
      */
+    #[OA\Post(
+        path: "/cvs/{cvId}/languages",
+        operationId: "addCVLanguage",
+        tags: ["CVs", "Languages"],
+        summary: "Add language to CV",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "cvId", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["language_id"],
+            properties: [
+                new OA\Property(property: "language_id", type: "integer"),
+                new OA\Property(property: "language_level", type: "string", example: "Native"),
+            ]
+        )
+    )]
+    #[OA\Response(response: 201, description: "Language added to CV")]
     public function addLanguage(Request $request, int $cvId): JsonResponse
     {
         $request->validate([
@@ -322,6 +499,16 @@ class CVController extends Controller
     /**
      * Remove language from CV.
      */
+    #[OA\Delete(
+        path: "/cvs/{cvId}/languages/{languageId}",
+        operationId: "removeCVLanguage",
+        tags: ["CVs", "Languages"],
+        summary: "Remove language from CV",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "cvId", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Parameter(name: "languageId", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(response: 200, description: "Language removed from CV")]
     public function removeLanguage(Request $request, int $cvId, int $languageId): JsonResponse
     {
         $user = $request->user();

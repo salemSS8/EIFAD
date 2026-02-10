@@ -10,6 +10,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Builder;
 
+use OpenApi\Attributes as OA;
+
 /**
  * Job Controller - Manages job listings and employer job management.
  */
@@ -18,6 +20,31 @@ class JobController extends Controller
     /**
      * Search and filter jobs.
      */
+    #[OA\Get(
+        path: "/jobs",
+        operationId: "getJobs",
+        tags: ["Jobs"],
+        summary: "Search and filter jobs",
+        description: "Public job search with filters for keywords, location, salary, etc."
+    )]
+    #[OA\Parameter(name: "keyword", in: "query", description: "Search keyword for title or description", required: false, schema: new OA\Schema(type: "string"))]
+    #[OA\Parameter(name: "location", in: "query", description: "Filter by location", required: false, schema: new OA\Schema(type: "string"))]
+    #[OA\Parameter(name: "work_type", in: "query", description: "Filter by work type (Full-time, Part-time)", required: false, schema: new OA\Schema(type: "string"))]
+    #[OA\Parameter(name: "workplace_type", in: "query", description: "Filter by workplace type (Remote, On-site, Hybrid)", required: false, schema: new OA\Schema(type: "string"))]
+    #[OA\Parameter(name: "salary_min", in: "query", description: "Minimum salary", required: false, schema: new OA\Schema(type: "integer"))]
+    #[OA\Parameter(name: "salary_max", in: "query", description: "Maximum salary", required: false, schema: new OA\Schema(type: "integer"))]
+    #[OA\Parameter(name: "company_id", in: "query", description: "Filter by company ID", required: false, schema: new OA\Schema(type: "integer"))]
+    #[OA\Parameter(name: "skill_ids", in: "query", description: "Comma-separated skill IDs", required: false, schema: new OA\Schema(type: "string"))]
+    #[OA\Parameter(name: "per_page", in: "query", description: "Items per page (default 15)", required: false, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(
+        response: 200,
+        description: "List of jobs",
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "data", type: "array", items: new OA\Items(type: "object"))
+            ]
+        )
+    )]
     public function index(Request $request): JsonResponse
     {
         $query = JobAd::with(['company:CompanyID,CompanyName,LogoPath', 'skills.skill'])
@@ -86,6 +113,16 @@ class JobController extends Controller
     /**
      * Get a single job with details.
      */
+    #[OA\Get(
+        path: "/jobs/{id}",
+        operationId: "getJobDetails",
+        tags: ["Jobs"],
+        summary: "Get job details",
+        description: "Returns detailed information about a specific job."
+    )]
+    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(response: 200, description: "Job details")]
+    #[OA\Response(response: 404, description: "Job not found")]
     public function show(int $id): JsonResponse
     {
         $job = JobAd::with([
@@ -101,6 +138,15 @@ class JobController extends Controller
     /**
      * Add job to favorites (for job seekers).
      */
+    #[OA\Post(
+        path: "/favorites/{jobId}",
+        operationId: "addFavoriteJob",
+        tags: ["Jobs", "Favorites"],
+        summary: "Add job to favorites",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "jobId", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(response: 200, description: "Job saved to favorites")]
     public function addFavorite(Request $request, int $jobId): JsonResponse
     {
         $user = $request->user();
@@ -123,6 +169,15 @@ class JobController extends Controller
     /**
      * Remove job from favorites.
      */
+    #[OA\Delete(
+        path: "/favorites/{jobId}",
+        operationId: "removeFavoriteJob",
+        tags: ["Jobs", "Favorites"],
+        summary: "Remove job from favorites",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "jobId", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(response: 200, description: "Job removed from favorites")]
     public function removeFavorite(Request $request, int $jobId): JsonResponse
     {
         $user = $request->user();
@@ -138,6 +193,14 @@ class JobController extends Controller
     /**
      * Get user's favorite jobs.
      */
+    #[OA\Get(
+        path: "/favorites",
+        operationId: "getFavoriteJobs",
+        tags: ["Jobs", "Favorites"],
+        summary: "Get favorite jobs",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Response(response: 200, description: "List of favorite jobs")]
     public function favorites(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -162,6 +225,14 @@ class JobController extends Controller
     /**
      * Get employer's job listings.
      */
+    #[OA\Get(
+        path: "/employer/jobs",
+        operationId: "getEmployerJobs",
+        tags: ["Employer", "Jobs"],
+        summary: "Get employer's jobs",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Response(response: 200, description: "List of employer's jobs")]
     public function employerJobs(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -182,6 +253,38 @@ class JobController extends Controller
     /**
      * Create a new job listing.
      */
+    #[OA\Post(
+        path: "/employer/jobs",
+        operationId: "createJob",
+        tags: ["Employer", "Jobs"],
+        summary: "Create a new job",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["title", "description"],
+            properties: [
+                new OA\Property(property: "title", type: "string", example: "Software Engineer"),
+                new OA\Property(property: "description", type: "string"),
+                new OA\Property(property: "responsibilities", type: "string"),
+                new OA\Property(property: "requirements", type: "string"),
+                new OA\Property(property: "location", type: "string"),
+                new OA\Property(property: "work_type", type: "string", enum: ["Full-time", "Part-time", "Contract"]),
+                new OA\Property(property: "workplace_type", type: "string", enum: ["Remote", "On-site", "Hybrid"]),
+                new OA\Property(property: "salary_min", type: "integer"),
+                new OA\Property(property: "salary_max", type: "integer"),
+                new OA\Property(property: "skills", type: "array", items: new OA\Items(
+                    properties: [
+                        new OA\Property(property: "skill_id", type: "integer"),
+                        new OA\Property(property: "required_level", type: "string"),
+                        new OA\Property(property: "is_mandatory", type: "boolean"),
+                    ]
+                )),
+            ]
+        )
+    )]
+    #[OA\Response(response: 201, description: "Job created successfully")]
     public function store(Request $request): JsonResponse
     {
         $request->validate([
@@ -245,6 +348,25 @@ class JobController extends Controller
     /**
      * Update a job listing.
      */
+    #[OA\Put(
+        path: "/employer/jobs/{id}",
+        operationId: "updateJob",
+        tags: ["Employer", "Jobs"],
+        summary: "Update job details",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "title", type: "string"),
+                new OA\Property(property: "description", type: "string"),
+                new OA\Property(property: "status", type: "string", enum: ["Draft", "Active", "Closed"]),
+            ]
+        )
+    )]
+    #[OA\Response(response: 200, description: "Job updated successfully")]
     public function update(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
@@ -277,6 +399,15 @@ class JobController extends Controller
     /**
      * Publish a job (change status to Active).
      */
+    #[OA\Post(
+        path: "/employer/jobs/{id}/publish",
+        operationId: "publishJob",
+        tags: ["Employer", "Jobs"],
+        summary: "Publish a job",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(response: 200, description: "Job published")]
     public function publish(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
@@ -300,6 +431,15 @@ class JobController extends Controller
     /**
      * Close a job (change status to Closed).
      */
+    #[OA\Post(
+        path: "/employer/jobs/{id}/close",
+        operationId: "closeJob",
+        tags: ["Employer", "Jobs"],
+        summary: "Close a job",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(response: 200, description: "Job closed")]
     public function close(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
@@ -322,6 +462,15 @@ class JobController extends Controller
     /**
      * Delete a job listing.
      */
+    #[OA\Delete(
+        path: "/employer/jobs/{id}",
+        operationId: "deleteJob",
+        tags: ["Employer", "Jobs"],
+        summary: "Delete a job",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Response(response: 200, description: "Job deleted")]
     public function destroy(Request $request, int $id): JsonResponse
     {
         $user = $request->user();

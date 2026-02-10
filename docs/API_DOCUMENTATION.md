@@ -266,6 +266,44 @@ Authorization: Bearer {token}
 
 ---
 
+### Verify Reset Code
+
+#### `POST /api/auth/verify-reset-code`
+
+التحقق من صحة رمز إعادة تعيين كلمة المرور قبل تغييرها.
+
+**Request Body:**
+
+```json
+{
+    "email": "user@example.com", // required | email
+    "token": "123456" // required | 6 أرقام
+}
+```
+
+**Response (200):**
+
+```json
+{
+    "message": "رمز إعادة التعيين صالح",
+    "valid": true
+}
+```
+
+**Error Responses (422):**
+
+```json
+{
+    "message": "رمز إعادة التعيين غير صحيح"
+}
+// أو
+{
+    "message": "رمز إعادة التعيين منتهي الصلاحية"
+}
+```
+
+---
+
 ### Reset Password
 
 #### `POST /api/auth/reset-password`

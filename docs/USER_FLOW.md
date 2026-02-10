@@ -273,6 +273,9 @@ POST /api/auth/change-password
 POST /api/auth/forgot-password
 { email }
                 ↓
+POST /api/auth/verify-reset-code
+{ email, token }
+                ↓
 POST /api/auth/reset-password
 { email, token, password, password_confirmation }
 ```

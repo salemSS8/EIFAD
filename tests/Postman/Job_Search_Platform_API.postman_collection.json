@@ -287,6 +287,35 @@
                     }
                 },
                 {
+                    "name": "Verify Reset Code",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"user@example.com\",\n    \"token\": \"123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/verify-reset-code",
+                            "host": ["{{base_url}}"],
+                            "path": ["auth", "verify-reset-code"]
+                        },
+                        "description": "Verify reset code before resetting password."
+                    }
+                },
+                {
                     "name": "Reset Password",
                     "request": {
                         "auth": {

@@ -7,7 +7,7 @@
     },
     "servers": [
         {
-            "url": "https://eifad-production.up.railway.app/api",
+            "url": "/api",
             "description": "API Server"
         }
     ],

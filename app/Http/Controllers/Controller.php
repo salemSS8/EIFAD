@@ -10,7 +10,7 @@ use OpenApi\Attributes as OA;
     description: "API Documentation for Job Search Platform Project"
 )]
 #[OA\Server(
-    url: "http://localhost:8000/api",
+    url: "/api",
     description: "API Server"
 )]
 #[OA\SecurityScheme(

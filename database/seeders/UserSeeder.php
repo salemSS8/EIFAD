@@ -14,7 +14,7 @@ class UserSeeder extends Seeder
             // Admin
             [
                 'FullName' => 'مدير النظام',
-                'Email' => 'admin@jobplatform.com',
+                'Email' => 'admin@example.com',
                 'PasswordHash' => Hash::make('password123'),
                 'Phone' => '777000001',
                 'Gender' => 'Male',

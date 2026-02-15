@@ -16,7 +16,7 @@ class UserRoleSeeder extends Seeder
         $jobSeekerRole = Role::where('RoleName', 'JobSeeker')->first();
 
         // Assign Admin role to first user
-        $admin = User::where('Email', 'admin@jobplatform.com')->first();
+        $admin = User::where('Email', 'admin@example.com')->first();
         if ($admin && $adminRole) {
             UserRole::firstOrCreate(
                 ['UserID' => $admin->UserID, 'RoleID' => $adminRole->RoleID],

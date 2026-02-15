@@ -12,276 +12,608 @@ return new class extends Migration
     public function up(): void
     {
         // 1. User Table
-        Schema::create('user', function (Blueprint $table) {
-            $table->id('UserID');
-            $table->string('FullName');
-            $table->string('Email')->unique();
-            $table->string('PasswordHash')->nullable();
-            $table->string('Phone')->nullable();
-            $table->string('Gender')->nullable();
-            $table->date('DateOfBirth')->nullable();
-            $table->boolean('IsVerified')->default(false);
-            $table->dateTime('CreatedAt')->useCurrent();
-            $table->string('FirebaseUID')->nullable(); // Will be renamed to ProviderID
-            $table->string('AuthProvider')->default('email');
-            $table->string('Avatar')->nullable();
-            $table->boolean('IsBlocked')->default(false);
-            $table->dateTime('BlockedAt')->nullable();
-            $table->string('BlockReason')->nullable();
-        });
+        if (!Schema::hasTable('user')) {
+            Schema::create('user', function (Blueprint $table) {
+                $table->integer('UserID')->autoIncrement();
+                $table->string('FullName')->nullable();
+                $table->string('Email')->nullable()->unique();
+                $table->string('ProviderID')->nullable()->unique(); // Formerly FirebaseUID
+                $table->string('PasswordHash')->nullable();
+                $table->string('Phone')->nullable();
+                $table->string('Gender')->nullable();
+                $table->date('DateOfBirth')->nullable();
+                $table->boolean('IsVerified')->nullable(); // Schema says tinyint(1), nullable
+                $table->string('AuthProvider')->default('email');
+                $table->string('Avatar')->nullable();
+                $table->dateTime('CreatedAt')->nullable();
+                $table->boolean('IsBlocked')->default(false);
+                $table->dateTime('BlockedAt')->nullable();
+                $table->string('BlockReason', 500)->nullable();
+            });
+        }
 
         // 2. Role Table
-        Schema::create('role', function (Blueprint $table) {
-            $table->id('RoleID');
-            $table->string('RoleName')->unique();
-        });
+        if (!Schema::hasTable('role')) {
+            Schema::create('role', function (Blueprint $table) {
+                $table->integer('RoleID')->primary(); // Not auto-increment in dump? Schema says NO auto_increment on dump but PRI. Wait, dump says PRI but Extra is empty. Assuming manual.
+                $table->string('RoleName')->nullable();
+            });
+        }
 
         // 3. UserRole Table
-        Schema::create('userrole', function (Blueprint $table) {
-            $table->unsignedBigInteger('UserID');
-            $table->unsignedBigInteger('RoleID');
-            $table->dateTime('AssignedAt')->useCurrent();
+        if (!Schema::hasTable('userrole')) {
+            Schema::create('userrole', function (Blueprint $table) {
+                $table->integer('UserRoleID')->autoIncrement();
+                $table->integer('UserID')->nullable();
+                $table->integer('RoleID')->nullable();
+                $table->dateTime('AssignedAt')->nullable();
 
-            $table->foreign('UserID')->references('UserID')->on('user')->onDelete('cascade');
-            $table->foreign('RoleID')->references('RoleID')->on('role')->onDelete('cascade');
-            $table->primary(['UserID', 'RoleID']);
-        });
+                $table->foreign('UserID')->references('UserID')->on('user')->nullOnDelete();
+                $table->foreign('RoleID')->references('RoleID')->on('role')->nullOnDelete();
+            });
+        }
 
         // 4. JobSeekerProfile Table
-        Schema::create('jobseekerprofile', function (Blueprint $table) {
-            $table->unsignedBigInteger('JobSeekerID')->primary();
-            $table->string('PersonalPhoto')->nullable();
-            $table->string('Location')->nullable();
-            $table->text('ProfileSummary')->nullable();
+        if (!Schema::hasTable('jobseekerprofile')) {
+            Schema::create('jobseekerprofile', function (Blueprint $table) {
+                $table->integer('JobSeekerID')->primary();
+                $table->string('PersonalPhoto')->nullable();
+                $table->string('Location')->nullable();
+                $table->text('ProfileSummary')->nullable();
 
-            $table->foreign('JobSeekerID')->references('UserID')->on('user')->onDelete('cascade');
-        });
+                $table->foreign('JobSeekerID')->references('UserID')->on('user')->onDelete('cascade');
+            });
+        }
 
         // 5. CompanyProfile Table
-        Schema::create('companyprofile', function (Blueprint $table) {
-            $table->unsignedBigInteger('CompanyID')->primary();
-            $table->string('CompanyName')->nullable(); // Often same as User.FullName but can differ
-            $table->string('OrganizationName')->nullable();
-            $table->text('Address')->nullable();
-            $table->text('Description')->nullable();
-            $table->string('LogoPath')->nullable();
-            $table->string('WebsiteURL')->nullable();
-            $table->integer('EstablishedYear')->nullable();
-            $table->integer('EmployeeCount')->nullable();
-            $table->string('FieldOfWork')->nullable();
-            $table->boolean('IsCompanyVerified')->default(false);
+        if (!Schema::hasTable('companyprofile')) {
+            Schema::create('companyprofile', function (Blueprint $table) {
+                $table->integer('CompanyID')->primary();
+                $table->string('CompanyName')->nullable();
+                $table->string('OrganizationName')->nullable();
+                $table->string('Address')->nullable();
+                $table->text('Description')->nullable();
+                $table->string('LogoPath')->nullable();
+                $table->string('WebsiteURL')->nullable();
+                $table->integer('EstablishedYear')->nullable();
+                $table->integer('EmployeeCount')->nullable();
+                $table->string('FieldOfWork')->nullable();
+                $table->boolean('IsCompanyVerified')->nullable();
 
-            $table->foreign('CompanyID')->references('UserID')->on('user')->onDelete('cascade');
-        });
+                $table->foreign('CompanyID')->references('UserID')->on('user')->onDelete('cascade');
+            });
+        }
 
         // 6. CV Table
-        Schema::create('cv', function (Blueprint $table) {
-            $table->id('CVID');
-            $table->unsignedBigInteger('JobSeekerID');
-            $table->string('Title');
-            $table->text('PersonalSummary')->nullable();
-            $table->dateTime('CreatedAt')->useCurrent();
-            $table->dateTime('UpdatedAt')->useCurrent()->nullable();
+        if (!Schema::hasTable('cv')) {
+            Schema::create('cv', function (Blueprint $table) {
+                $table->integer('CVID')->primary(); // Dump says PRI, No auto_increment
+                $table->integer('JobSeekerID')->nullable();
+                $table->string('Title')->nullable();
+                $table->text('PersonalSummary')->nullable();
+                $table->dateTime('CreatedAt')->nullable();
+                $table->dateTime('UpdatedAt')->nullable();
 
-            $table->foreign('JobSeekerID')->references('JobSeekerID')->on('jobseekerprofile')->onDelete('cascade');
-        });
+                $table->foreign('JobSeekerID')->references('JobSeekerID')->on('jobseekerprofile');
+            });
+        }
 
         // 7. JobAd Table
-        Schema::create('jobad', function (Blueprint $table) {
-            $table->id('JobAdID');
-            $table->unsignedBigInteger('CompanyID');
-            $table->string('Title');
-            $table->text('Description')->nullable();
-            $table->string('Status')->default('Open'); // Active/Open/Closed
-            $table->dateTime('PostedAt')->useCurrent();
+        if (!Schema::hasTable('jobad')) {
+            Schema::create('jobad', function (Blueprint $table) {
+                $table->integer('JobAdID')->primary(); // Dump says PRI, No auto_increment
+                $table->integer('CompanyID')->nullable();
+                $table->string('Title')->nullable();
+                $table->text('Description')->nullable();
+                $table->text('Responsibilities')->nullable();
+                $table->text('Requirements')->nullable();
+                $table->string('Location')->nullable();
+                $table->string('WorkplaceType')->nullable();
+                $table->string('WorkType')->nullable();
+                $table->integer('SalaryMin')->nullable();
+                $table->integer('SalaryMax')->nullable();
+                $table->string('Currency')->nullable();
+                $table->dateTime('PostedAt')->nullable();
+                $table->string('Status')->nullable();
 
-            // Other fields to pass validation or logic
-            $table->text('Requirements')->nullable();
-            $table->text('Responsibilities')->nullable();
-            $table->integer('SalaryMin')->nullable();
-            $table->integer('SalaryMax')->nullable();
-            $table->string('Location')->nullable();
-            $table->string('WorkplaceType')->nullable(); // Remote, Onsite...
-            $table->string('WorkType')->nullable(); // Full-time...
-            $table->string('Currency')->default('USD');
-
-            $table->foreign('CompanyID')->references('CompanyID')->on('companyprofile')->onDelete('cascade');
-        });
+                $table->foreign('CompanyID')->references('CompanyID')->on('companyprofile');
+            });
+        }
 
         // 8. JobApplication Table
-        Schema::create('jobapplication', function (Blueprint $table) {
-            $table->id('ApplicationID');
-            $table->unsignedBigInteger('JobAdID');
-            $table->unsignedBigInteger('JobSeekerID');
-            $table->unsignedBigInteger('CVID');
-            $table->dateTime('AppliedAt')->useCurrent();
-            $table->string('Status')->default('Pending');
-            $table->string('Notes')->nullable();
-            $table->integer('MatchScore')->nullable();
+        if (!Schema::hasTable('jobapplication')) {
+            Schema::create('jobapplication', function (Blueprint $table) {
+                $table->integer('ApplicationID')->primary(); // Dump says PRI, No auto_increment
+                $table->integer('JobAdID')->nullable();
+                $table->integer('JobSeekerID')->nullable();
+                $table->integer('CVID')->nullable();
+                $table->dateTime('AppliedAt')->nullable();
+                $table->string('Status')->nullable();
+                $table->integer('MatchScore')->nullable();
+                $table->text('Notes')->nullable();
 
-            $table->foreign('JobAdID')->references('JobAdID')->on('jobad')->onDelete('cascade');
-            $table->foreign('JobSeekerID')->references('JobSeekerID')->on('jobseekerprofile')->onDelete('cascade');
-            $table->foreign('CVID')->references('CVID')->on('cv')->onDelete('cascade');
-        });
+                $table->foreign('JobAdID')->references('JobAdID')->on('jobad');
+                $table->foreign('JobSeekerID')->references('JobSeekerID')->on('jobseekerprofile');
+                $table->foreign('CVID')->references('CVID')->on('cv');
+            });
+        }
 
-        // 9. FollowCompany Table (needed for Follow Company logic)
-        Schema::create('followcompany', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('JobSeekerID');
-            $table->unsignedBigInteger('CompanyID');
-            $table->dateTime('FollowedAt')->useCurrent();
+        // 9. FollowCompany Table
+        if (!Schema::hasTable('followcompany')) {
+            Schema::create('followcompany', function (Blueprint $table) {
+                $table->integer('FollowID')->primary();
+                $table->integer('JobSeekerID')->nullable();
+                $table->integer('CompanyID')->nullable();
+                $table->dateTime('FollowedAt')->nullable();
 
-            $table->foreign('JobSeekerID')->references('JobSeekerID')->on('jobseekerprofile')->onDelete('cascade');
-            $table->foreign('CompanyID')->references('CompanyID')->on('companyprofile')->onDelete('cascade');
-        });
+                $table->foreign('JobSeekerID')->references('JobSeekerID')->on('jobseekerprofile');
+                $table->foreign('CompanyID')->references('CompanyID')->on('companyprofile');
+            });
+        }
 
-        // 16. Experience Table
-        Schema::create('experience', function (Blueprint $table) {
-            $table->id('ExperienceID');
-            $table->unsignedBigInteger('CVID');
-            $table->string('JobTitle')->nullable();
-            $table->string('CompanyName')->nullable();
-            $table->foreign('CVID')->references('CVID')->on('cv')->onDelete('cascade');
-        });
+        // 10. Language Table
+        if (!Schema::hasTable('language')) {
+            Schema::create('language', function (Blueprint $table) {
+                $table->integer('LanguageID')->primary();
+                $table->string('LanguageName')->nullable();
+            });
+        }
 
-        // 17. Favorite Job Table
-        Schema::create('favoritejob', function (Blueprint $table) {
-            $table->id('FavoriteID');
-            $table->unsignedBigInteger('JobSeekerID');
-            $table->unsignedBigInteger('JobAdID');
-            $table->dateTime('SavedAt')->useCurrent();
+        // 11. CV Language Table
+        if (!Schema::hasTable('cvlanguage')) {
+            Schema::create('cvlanguage', function (Blueprint $table) {
+                $table->integer('CVLanguageID')->primary();
+                $table->integer('CVID')->nullable();
+                $table->integer('LanguageID')->nullable();
+                $table->string('LanguageLevel')->nullable();
 
-            $table->foreign('JobSeekerID')->references('JobSeekerID')->on('jobseekerprofile')->onDelete('cascade');
-            $table->foreign('JobAdID')->references('JobAdID')->on('jobad')->onDelete('cascade');
-        });
+                $table->foreign('CVID')->references('CVID')->on('cv');
+                $table->foreign('LanguageID')->references('LanguageID')->on('language');
+            });
+        }
 
-        // 18. Company Specialization Table
-        Schema::create('companyspecialization', function (Blueprint $table) {
-            $table->id('SpecID');
-            $table->string('SpecName');
-        });
+        // 12. Experience Table
+        if (!Schema::hasTable('experience')) {
+            Schema::create('experience', function (Blueprint $table) {
+                $table->integer('ExperienceID')->primary();
+                $table->integer('CVID')->nullable();
+                $table->string('JobTitle')->nullable();
+                $table->string('CompanyName')->nullable();
+                $table->date('StartDate')->nullable();
+                $table->date('EndDate')->nullable();
+                $table->text('Responsibilities')->nullable();
 
-        // 19. Company Profile Specialization Pivot
-        Schema::create('companyprofilespecialization', function (Blueprint $table) {
-            $table->unsignedBigInteger('CompanyID');
-            $table->unsignedBigInteger('SpecID');
+                $table->foreign('CVID')->references('CVID')->on('cv');
+            });
+        }
 
-            $table->foreign('CompanyID')->references('CompanyID')->on('companyprofile')->onDelete('cascade');
-            $table->foreign('SpecID')->references('SpecID')->on('companyspecialization')->onDelete('cascade');
-            $table->primary(['CompanyID', 'SpecID']);
-        });
+        // 13. Education Table
+        if (!Schema::hasTable('education')) {
+            Schema::create('education', function (Blueprint $table) {
+                $table->integer('EducationID')->primary();
+                $table->integer('CVID')->nullable();
+                $table->string('Institution')->nullable();
+                $table->string('DegreeName')->nullable();
+                $table->string('Major')->nullable();
+                $table->integer('GraduationYear')->nullable();
 
-        // 20. Skill Table
-        Schema::create('skill', function (Blueprint $table) {
-            $table->id('SkillID');
-            $table->string('SkillName');
-            // CategoryID if needed
-        });
+                $table->foreign('CVID')->references('CVID')->on('cv');
+            });
+        }
 
-        // 21. Job Skill Pivot
-        Schema::create('jobskill', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('JobAdID');
-            $table->unsignedBigInteger('SkillID');
-            $table->string('RequiredLevel')->nullable();
-            $table->boolean('IsMandatory')->default(false);
+        // 14. SkillCategory Table
+        if (!Schema::hasTable('skillcategory')) {
+            Schema::create('skillcategory', function (Blueprint $table) {
+                $table->integer('CategoryID')->primary();
+                $table->string('CategoryName', 100)->nullable();
+            });
+        }
 
-            $table->foreign('JobAdID')->references('JobAdID')->on('jobad')->onDelete('cascade');
-            $table->foreign('SkillID')->references('SkillID')->on('skill')->onDelete('cascade');
-        });
+        // 15. Skill Table
+        if (!Schema::hasTable('skill')) {
+            Schema::create('skill', function (Blueprint $table) {
+                $table->integer('SkillID')->primary();
+                $table->string('SkillName')->nullable();
+                $table->integer('CategoryID')->nullable();
 
-        // 22. CV Skill Pivot
-        Schema::create('cvskill', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('CVID');
-            $table->unsignedBigInteger('SkillID');
-            $table->string('Level')->nullable();
+                $table->foreign('CategoryID')->references('CategoryID')->on('skillcategory');
+            });
+        }
 
-            $table->foreign('CVID')->references('CVID')->on('cv')->onDelete('cascade');
-            $table->foreign('SkillID')->references('SkillID')->on('skill')->onDelete('cascade');
-        });
+        // 16. JobSkill Table
+        if (!Schema::hasTable('jobskill')) {
+            Schema::create('jobskill', function (Blueprint $table) {
+                $table->integer('JobSkillID')->primary();
+                $table->integer('JobAdID');
+                $table->integer('SkillID');
+                $table->string('RequiredLevel', 50)->nullable();
+                $table->integer('ImportanceWeight')->nullable();
+                $table->boolean('IsMandatory')->nullable();
 
-        // 23. CV Job Match Table
-        Schema::create('cvjobmatch', function (Blueprint $table) {
-            $table->id('MatchID');
-            $table->unsignedBigInteger('CVID');
-            $table->unsignedBigInteger('JobAdID');
-            $table->integer('MatchScore')->nullable();
-            $table->dateTime('MatchDate')->useCurrent();
+                $table->foreign('JobAdID')->references('JobAdID')->on('jobad');
+                $table->foreign('SkillID')->references('SkillID')->on('skill');
+            });
+        }
 
-            // AI Fields (nullable)
-            $table->string('CompatibilityLevel')->nullable();
-            $table->text('Explanation')->nullable();
+        // 17. CVSkill Table
+        if (!Schema::hasTable('cvskill')) {
+            Schema::create('cvskill', function (Blueprint $table) {
+                $table->integer('CVSkillID')->primary();
+                $table->integer('CVID')->nullable();
+                $table->integer('SkillID')->nullable();
+                $table->string('SkillLevel')->nullable();
 
-            $table->foreign('CVID')->references('CVID')->on('cv')->onDelete('cascade');
-            $table->foreign('JobAdID')->references('JobAdID')->on('jobad')->onDelete('cascade');
-        });
+                $table->foreign('CVID')->references('CVID')->on('cv');
+                $table->foreign('SkillID')->references('SkillID')->on('skill');
+            });
+        }
 
-        // 15. Tokens Table (for verification/reset)
-        Schema::create('email_verification_tokens', function (Blueprint $table) {
-            $table->string('email')->index();
-            $table->string('token');
-            $table->timestamp('created_at')->nullable();
-        });
+        // 18. FavoriteJob Table
+        if (!Schema::hasTable('favoritejob')) {
+            Schema::create('favoritejob', function (Blueprint $table) {
+                $table->integer('FavoriteID')->primary();
+                $table->integer('JobSeekerID')->nullable();
+                $table->integer('JobAdID')->nullable();
+                $table->dateTime('SavedAt')->nullable();
 
-        Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->string('email')->primary();
-            $table->string('token');
-            $table->timestamp('created_at')->nullable();
-        });
+                $table->foreign('JobSeekerID')->references('JobSeekerID')->on('jobseekerprofile');
+                $table->foreign('JobAdID')->references('JobAdID')->on('jobad');
+            });
+        }
 
-        // 7. Personal Access Tokens (Sanctum)
-        Schema::create('personal_access_tokens', function (Blueprint $table) {
-            $table->id();
-            $table->morphs('tokenable');
-            $table->string('name');
-            $table->string('token', 64)->unique();
-            $table->text('abilities')->nullable();
-            $table->timestamp('last_used_at')->nullable();
-            $table->timestamp('expires_at')->nullable();
-            $table->timestamps();
-        });
-        // 24. Conversation Table
-        Schema::create('conversation', function (Blueprint $table) {
-            $table->id('ConversationID');
-            $table->dateTime('LatestMessageAt')->nullable();
-        });
+        // 19. CompanySpecialization Table
+        if (!Schema::hasTable('companyspecialization')) {
+            Schema::create('companyspecialization', function (Blueprint $table) {
+                $table->integer('SpecID')->primary();
+                $table->string('SpecName')->nullable();
+            });
+        }
 
-        // 25. Conversation Participant Table
-        Schema::create('conversationparticipant', function (Blueprint $table) {
-            $table->id('ParticipantID');
-            $table->unsignedBigInteger('ConversationID');
-            $table->unsignedBigInteger('UserID');
-            $table->dateTime('JoinedAt')->useCurrent();
+        // 20. CompanyProfileSpecialization Table
+        if (!Schema::hasTable('companyprofilespecialization')) {
+            Schema::create('companyprofilespecialization', function (Blueprint $table) {
+                $table->integer('CompanySpecID')->primary();
+                $table->integer('CompanyID')->nullable();
+                $table->integer('SpecID')->nullable();
 
-            $table->foreign('ConversationID')->references('ConversationID')->on('conversation')->onDelete('cascade');
-            $table->foreign('UserID')->references('UserID')->on('user')->onDelete('cascade');
-        });
+                $table->foreign('CompanyID')->references('CompanyID')->on('companyprofile');
+                $table->foreign('SpecID')->references('SpecID')->on('companyspecialization');
+            });
+        }
 
-        // 26. Message Table
-        Schema::create('message', function (Blueprint $table) {
-            $table->id('MessageID');
-            $table->unsignedBigInteger('ConversationID');
-            $table->unsignedBigInteger('SenderID');
-            $table->text('Content');
-            $table->dateTime('SentAt')->useCurrent();
-            $table->boolean('IsDeleted')->default(false);
+        // 21. Content Table (Articles/Posts)
+        if (!Schema::hasTable('content')) {
+            Schema::create('content', function (Blueprint $table) {
+                $table->integer('ContentID')->primary();
+                $table->integer('AuthorUserID')->nullable();
+                $table->string('Title')->nullable();
+                $table->text('BodyText')->nullable();
+                $table->string('ImagePath')->nullable();
+                $table->string('VideoPath')->nullable();
+                $table->dateTime('CreatedAt')->nullable();
+                $table->string('Status')->nullable();
 
-            $table->foreign('ConversationID')->references('ConversationID')->on('conversation')->onDelete('cascade');
-            $table->foreign('SenderID')->references('UserID')->on('user')->onDelete('cascade');
-        });
+                $table->foreign('AuthorUserID')->references('UserID')->on('user');
+            });
+        }
 
-        // 27. Notification Table
-        Schema::create('notification', function (Blueprint $table) {
-            $table->id('NotificationID');
-            $table->unsignedBigInteger('UserID');
-            $table->string('Type');
-            $table->text('Data');
-            $table->dateTime('ReadAt')->nullable();
-            $table->dateTime('CreatedAt')->useCurrent();
+        // 22. Conversation Table
+        if (!Schema::hasTable('conversation')) {
+            Schema::create('conversation', function (Blueprint $table) {
+                $table->integer('ConversationID')->primary();
+                $table->string('Type')->nullable();
+                $table->dateTime('CreatedAt')->nullable();
+            });
+        }
 
-            $table->foreign('UserID')->references('UserID')->on('user')->onDelete('cascade');
-        });
+        // 23. ConversationParticipant Table
+        if (!Schema::hasTable('conversationparticipant')) {
+            Schema::create('conversationparticipant', function (Blueprint $table) {
+                $table->integer('ParticipantID')->primary();
+                $table->integer('ConversationID')->nullable();
+                $table->integer('UserID')->nullable();
+                $table->dateTime('JoinedAt')->nullable();
+                $table->boolean('IsMuted')->nullable();
+                $table->boolean('IsBlocked')->nullable();
+
+                $table->foreign('ConversationID')->references('ConversationID')->on('conversation');
+                $table->foreign('UserID')->references('UserID')->on('user');
+            });
+        }
+
+        // 24. Message Table
+        if (!Schema::hasTable('message')) {
+            Schema::create('message', function (Blueprint $table) {
+                $table->integer('MessageID')->primary();
+                $table->integer('ConversationID')->nullable();
+                $table->integer('SenderID')->nullable();
+                $table->text('Content')->nullable();
+                $table->dateTime('SentAt')->nullable();
+                $table->boolean('IsDeleted')->nullable();
+
+                $table->foreign('ConversationID')->references('ConversationID')->on('conversation');
+                $table->foreign('SenderID')->references('UserID')->on('user');
+            });
+        }
+
+        // 25. MessageRead Table
+        if (!Schema::hasTable('messageread')) {
+            Schema::create('messageread', function (Blueprint $table) {
+                $table->integer('ReadID')->primary();
+                $table->integer('MessageID')->nullable();
+                $table->integer('UserID')->nullable();
+                $table->dateTime('ReadAt')->nullable();
+
+                $table->foreign('MessageID')->references('MessageID')->on('message');
+                $table->foreign('UserID')->references('UserID')->on('user');
+            });
+        }
+
+        // 26. Notification Table
+        if (!Schema::hasTable('notification')) {
+            Schema::create('notification', function (Blueprint $table) {
+                $table->integer('NotificationID')->primary();
+                $table->integer('UserID')->nullable();
+                $table->string('Type')->nullable();
+                $table->text('Content')->nullable();
+                $table->boolean('IsRead')->nullable();
+                $table->dateTime('CreatedAt')->nullable();
+
+                $table->foreign('UserID')->references('UserID')->on('user');
+            });
+        }
+
+        // 27. Course Table (Lookup?)
+        if (!Schema::hasTable('course')) {
+            Schema::create('course', function (Blueprint $table) {
+                $table->integer('CourseID')->primary();
+                $table->string('CourseName')->nullable();
+            });
+        }
+
+        // 28. CourseAd Table
+        if (!Schema::hasTable('coursead')) {
+            Schema::create('coursead', function (Blueprint $table) {
+                $table->integer('CourseAdID')->primary();
+                $table->integer('CompanyID')->nullable();
+                $table->string('CourseTitle')->nullable();
+                $table->text('Topics')->nullable();
+                $table->string('Duration')->nullable();
+                $table->string('Location')->nullable();
+                $table->string('Trainer')->nullable();
+                $table->integer('Fees')->nullable();
+                $table->date('StartDate')->nullable();
+                $table->dateTime('CreatedAt')->nullable();
+                $table->string('Status')->nullable();
+
+                $table->foreign('CompanyID')->references('CompanyID')->on('companyprofile');
+            });
+        }
+
+        // 29. CourseEnrollment Table
+        if (!Schema::hasTable('courseenrollment')) {
+            Schema::create('courseenrollment', function (Blueprint $table) {
+                $table->integer('EnrollmentID')->primary();
+                $table->integer('CourseAdID')->nullable();
+                $table->integer('JobSeekerID')->nullable();
+                $table->dateTime('EnrolledAt')->nullable();
+                $table->string('Status')->nullable();
+
+                $table->foreign('CourseAdID')->references('CourseAdID')->on('coursead');
+                $table->foreign('JobSeekerID')->references('JobSeekerID')->on('jobseekerprofile');
+            });
+        }
+
+        // 30. CVCourse Table
+        if (!Schema::hasTable('cvcourse')) {
+            Schema::create('cvcourse', function (Blueprint $table) {
+                $table->integer('CVCourseID')->primary();
+                $table->integer('CVID')->nullable();
+                $table->integer('CourseID')->nullable();
+                $table->string('PlaceTaken')->nullable();
+                $table->date('DateTaken')->nullable();
+
+                $table->foreign('CVID')->references('CVID')->on('cv');
+                $table->foreign('CourseID')->references('CourseID')->on('course');
+            });
+        }
+
+        // 31. Volunteering Table
+        if (!Schema::hasTable('volunteering')) {
+            Schema::create('volunteering', function (Blueprint $table) {
+                $table->integer('VolunteeringID')->primary();
+                $table->integer('CVID')->nullable();
+                $table->string('Title')->nullable();
+                $table->text('Description')->nullable();
+
+                $table->foreign('CVID')->references('CVID')->on('cv');
+            });
+        }
+
+        // 32. Verification & Reset Tables
+        if (!Schema::hasTable('password_reset_tokens')) {
+            Schema::create('password_reset_tokens', function (Blueprint $table) {
+                $table->string('email')->primary();
+                $table->string('token');
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+
+        if (!Schema::hasTable('email_verification_tokens')) {
+            Schema::create('email_verification_tokens', function (Blueprint $table) {
+                $table->string('email')->primary();
+                $table->string('token');
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+
+        if (!Schema::hasTable('personal_access_tokens')) {
+            Schema::create('personal_access_tokens', function (Blueprint $table) {
+                $table->id();
+                $table->morphs('tokenable');
+                $table->text('name');
+                $table->string('token', 64)->unique();
+                $table->text('abilities')->nullable();
+                $table->timestamp('last_used_at')->nullable();
+                $table->timestamp('expires_at')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        // 33. AI Tables
+        if (!Schema::hasTable('cvjobmatch')) {
+            Schema::create('cvjobmatch', function (Blueprint $table) {
+                $table->integer('MatchID')->primary();
+                $table->integer('CVID');
+                $table->integer('JobAdID');
+                $table->integer('MatchScore')->nullable();
+                $table->timestamp('MatchDate')->nullable();
+                $table->string('CompatibilityLevel')->nullable();
+                $table->integer('SkillMatchScore')->nullable();
+                $table->integer('ExperienceMatchScore')->nullable();
+                $table->dateTime('CalculatedAt')->nullable();
+                $table->integer('SkillsScore')->nullable();
+                $table->integer('ExperienceScore')->nullable();
+                $table->integer('EducationScore')->nullable();
+                $table->json('ScoreBreakdown')->nullable();
+                $table->string('ScoringMethod')->nullable();
+                $table->text('Explanation')->nullable();
+                $table->json('Strengths')->nullable();
+                $table->json('Gaps')->nullable();
+                $table->string('AIModel')->nullable();
+                $table->timestamp('ExplainedAt')->nullable();
+
+                $table->foreign('CVID')->references('CVID')->on('cv');
+                $table->foreign('JobAdID')->references('JobAdID')->on('jobad');
+            });
+        }
+
+        if (!Schema::hasTable('matchdetail')) {
+            Schema::create('matchdetail', function (Blueprint $table) {
+                $table->integer('MatchDetailID')->primary();
+                $table->integer('MatchID');
+                $table->integer('SkillID');
+                $table->string('CVLevel', 50)->nullable();
+                $table->string('RequiredLevel', 50)->nullable();
+                $table->boolean('IsMatched')->nullable();
+
+                $table->foreign('MatchID')->references('MatchID')->on('cvjobmatch');
+                $table->foreign('SkillID')->references('SkillID')->on('skill');
+            });
+        }
+
+        if (!Schema::hasTable('skillgapanalysis')) {
+            Schema::create('skillgapanalysis', function (Blueprint $table) {
+                $table->integer('GapID')->primary();
+                $table->integer('CVID');
+                $table->integer('JobAdID');
+                $table->integer('SkillID');
+                $table->string('CVLevel', 50)->nullable();
+                $table->string('RequiredLevel', 50)->nullable();
+                $table->string('GapType', 50)->nullable();
+
+                $table->foreign('CVID')->references('CVID')->on('cv');
+                $table->foreign('JobAdID')->references('JobAdID')->on('jobad');
+                $table->foreign('SkillID')->references('SkillID')->on('skill');
+            });
+        }
+
+        if (!Schema::hasTable('skilldemandsnapshot')) {
+            Schema::create('skilldemandsnapshot', function (Blueprint $table) {
+                $table->integer('SnapshotID')->primary();
+                $table->integer('SkillID');
+                $table->integer('DemandCount')->nullable();
+                $table->date('SnapshotDate')->nullable();
+
+                $table->foreign('SkillID')->references('SkillID')->on('skill');
+            });
+        }
+
+        if (!Schema::hasTable('analysisresult')) {
+            Schema::create('analysisresult', function (Blueprint $table) {
+                $table->integer('AnalysisID')->primary();
+                $table->string('TargetType')->nullable();
+                $table->integer('TargetID')->nullable();
+                $table->integer('UserID')->nullable();
+                $table->text('ResultText')->nullable();
+                $table->integer('Score')->nullable();
+                $table->string('ModelVersion')->nullable();
+                $table->dateTime('CreatedAt')->nullable();
+
+                $table->foreign('UserID')->references('UserID')->on('user');
+            });
+        }
+
+        if (!Schema::hasTable('cv_analyses')) {
+            Schema::create('cv_analyses', function (Blueprint $table) {
+                $table->id();
+                $table->bigInteger('CVID')->nullable(); // Legacy
+                $table->bigInteger('cv_id')->unique();
+                $table->json('personal_info')->nullable();
+                $table->text('summary')->nullable();
+                $table->json('skills')->nullable();
+                $table->json('experience')->nullable();
+                $table->json('education')->nullable();
+                $table->json('certifications')->nullable();
+                $table->json('languages')->nullable();
+                $table->integer('overall_score')->nullable();
+                $table->json('strengths')->nullable();
+                $table->json('areas_for_improvement')->nullable();
+                $table->longText('raw_response')->nullable();
+                $table->timestamp('analyzed_at')->nullable();
+                $table->string('analysis_version')->default('1.0');
+                $table->timestamps();
+
+                // Extra fields from dump (Laravel convention mixed with project convention)
+                $table->integer('OverallScore')->nullable();
+                $table->integer('SkillsScore')->nullable();
+                $table->integer('ExperienceScore')->nullable();
+                $table->integer('EducationScore')->nullable();
+                $table->integer('CompletenessScore')->nullable();
+                $table->integer('ConsistencyScore')->nullable();
+                $table->json('ScoreBreakdown')->nullable();
+                $table->string('ScoringMethod')->nullable();
+                $table->timestamp('ScoredAt')->nullable();
+                $table->json('PotentialGaps')->nullable();
+                $table->json('ImprovementRecommendations')->nullable();
+                $table->text('AIExplanation')->nullable();
+                $table->string('AIModel')->nullable();
+                $table->timestamp('ExplainedAt')->nullable();
+
+                // fk
+                // $table->foreign('cv_id')->references('id')->on('cvs'); // cvs table?
+            });
+        }
+
+        // 34. Other Tables present in dump
+        if (!Schema::hasTable('companies')) {
+            Schema::create('companies', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('user_id')->unique();
+                $table->string('name');
+                $table->string('slug')->unique();
+                $table->text('description')->nullable();
+                $table->string('logo')->nullable();
+                $table->string('cover_image')->nullable();
+                $table->string('website')->nullable();
+                $table->string('email')->nullable();
+                $table->string('phone')->nullable();
+                $table->text('address')->nullable();
+                $table->string('city')->nullable();
+                $table->string('country')->nullable();
+                $table->string('industry')->nullable();
+                $table->enum('company_size', ['1-10', '11-50', '51-200', '201-500', '501-1000', '1001-5000', '5001+'])->nullable();
+                $table->year('founded_year')->nullable();
+                $table->string('linkedin_url')->nullable();
+                $table->string('twitter_url')->nullable();
+                $table->boolean('is_verified')->default(false);
+                $table->timestamp('verified_at')->nullable();
+                $table->json('verification_documents')->nullable();
+                $table->timestamps();
+
+                $table->foreign('user_id')->references('id')->on('users'); // users table?
+            });
+        }
     }
 
     /**
@@ -289,21 +621,37 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Drop in reverse order of dependency
+        Schema::dropIfExists('analysisresult');
+        Schema::dropIfExists('skilldemandsnapshot');
+        Schema::dropIfExists('skillgapanalysis');
+        Schema::dropIfExists('matchdetail');
+        Schema::dropIfExists('cvjobmatch');
+        Schema::dropIfExists('personal_access_tokens');
+        Schema::dropIfExists('email_verification_tokens');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('volunteering');
+        Schema::dropIfExists('cvcourse');
+        Schema::dropIfExists('courseenrollment');
+        Schema::dropIfExists('coursead');
+        Schema::dropIfExists('course');
         Schema::dropIfExists('notification');
+        Schema::dropIfExists('messageread');
         Schema::dropIfExists('message');
         Schema::dropIfExists('conversationparticipant');
         Schema::dropIfExists('conversation');
-        Schema::dropIfExists('personal_access_tokens');
-        Schema::dropIfExists('password_reset_tokens');
-        Schema::dropIfExists('email_verification_tokens');
-        Schema::dropIfExists('cvjobmatch');
-        Schema::dropIfExists('cvskill');
-        Schema::dropIfExists('jobskill');
-        Schema::dropIfExists('skill');
+        Schema::dropIfExists('content');
         Schema::dropIfExists('companyprofilespecialization');
         Schema::dropIfExists('companyspecialization');
         Schema::dropIfExists('favoritejob');
+        Schema::dropIfExists('cvskill');
+        Schema::dropIfExists('jobskill');
+        Schema::dropIfExists('skill');
+        Schema::dropIfExists('skillcategory');
+        Schema::dropIfExists('education');
         Schema::dropIfExists('experience');
+        Schema::dropIfExists('cvlanguage');
+        Schema::dropIfExists('language');
         Schema::dropIfExists('followcompany');
         Schema::dropIfExists('jobapplication');
         Schema::dropIfExists('jobad');
@@ -313,5 +661,9 @@ return new class extends Migration
         Schema::dropIfExists('userrole');
         Schema::dropIfExists('role');
         Schema::dropIfExists('user');
+
+        // Extra drops from sync
+        Schema::dropIfExists('cv_analyses');
+        Schema::dropIfExists('companies');
     }
 };

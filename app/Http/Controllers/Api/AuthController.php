@@ -222,9 +222,15 @@ class AuthController extends Controller
 
         $user = User::where('Email', $request->input('email'))->first();
 
-        if (!$user || !Hash::check($request->input('password'), $user->PasswordHash)) {
+        if (!$user) {
             return response()->json([
-                'message' => 'بيانات الدخول غير صحيحة',
+                'message' => 'البريد الإلكتروني غير مسجل في النظام',
+            ], 404);
+        }
+
+        if (!Hash::check($request->input('password'), $user->PasswordHash)) {
+            return response()->json([
+                'message' => 'كلمة المرور غير صحيحة',
             ], 401);
         }
 

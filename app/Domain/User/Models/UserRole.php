@@ -11,8 +11,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class UserRole extends Model
 {
     protected $table = 'userrole';
+    protected $primaryKey = 'UserRoleID';
     public $timestamps = false;
-    public $incrementing = false;
+    public $incrementing = true;
 
     protected $fillable = [
         'UserID',

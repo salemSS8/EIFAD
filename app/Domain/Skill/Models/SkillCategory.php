@@ -13,8 +13,10 @@ class SkillCategory extends Model
     protected $table = 'skillcategory';
     protected $primaryKey = 'CategoryID';
     public $timestamps = false;
+    public $incrementing = false;
 
     protected $fillable = [
+        'CategoryID',
         'CategoryName',
     ];
 

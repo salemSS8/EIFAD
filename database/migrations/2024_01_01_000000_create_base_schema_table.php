@@ -611,7 +611,7 @@ return new class extends Migration
                 $table->json('verification_documents')->nullable();
                 $table->timestamps();
 
-                $table->foreign('user_id')->references('id')->on('users'); // users table?
+                $table->foreign('user_id')->references('id')->on('user'); // users table?
             });
         }
     }

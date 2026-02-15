@@ -589,7 +589,7 @@ return new class extends Migration
         if (!Schema::hasTable('companies')) {
             Schema::create('companies', function (Blueprint $table) {
                 $table->id();
-                $table->unsignedBigInteger('user_id')->unique();
+                $table->integer('user_id')->unique();
                 $table->string('name');
                 $table->string('slug')->unique();
                 $table->text('description')->nullable();

@@ -85,6 +85,9 @@ class SkillSeeder extends Seeder
             ],
         ];
 
+        Skill::unguard();
+        $skillId = 1;
+
         foreach ($skillsByCategory as $categoryName => $skills) {
             $category = SkillCategory::where('CategoryName', $categoryName)->first();
 
@@ -92,10 +95,15 @@ class SkillSeeder extends Seeder
                 foreach ($skills as $skillName) {
                     Skill::firstOrCreate(
                         ['SkillName' => $skillName],
-                        ['SkillName' => $skillName, 'CategoryID' => $category->CategoryID]
+                        [
+                            'SkillID' => $skillId++,
+                            'SkillName' => $skillName,
+                            'CategoryID' => $category->CategoryID
+                        ]
                     );
                 }
             }
         }
+        Skill::reguard();
     }
 }

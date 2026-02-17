@@ -35,7 +35,7 @@ return new class extends Migration
         // 2. Role Table
         if (!Schema::hasTable('role')) {
             Schema::create('role', function (Blueprint $table) {
-                $table->integer('RoleID')->primary(); // Not auto-increment in dump? Schema says NO auto_increment on dump but PRI. Wait, dump says PRI but Extra is empty. Assuming manual.
+                $table->integer('RoleID')->autoIncrement();
                 $table->string('RoleName')->nullable();
             });
         }
@@ -87,7 +87,7 @@ return new class extends Migration
         // 6. CV Table
         if (!Schema::hasTable('cv')) {
             Schema::create('cv', function (Blueprint $table) {
-                $table->integer('CVID')->primary(); // Dump says PRI, No auto_increment
+                $table->integer('CVID')->autoIncrement();
                 $table->integer('JobSeekerID')->nullable();
                 $table->string('Title')->nullable();
                 $table->text('PersonalSummary')->nullable();
@@ -101,7 +101,7 @@ return new class extends Migration
         // 7. JobAd Table
         if (!Schema::hasTable('jobad')) {
             Schema::create('jobad', function (Blueprint $table) {
-                $table->integer('JobAdID')->primary(); // Dump says PRI, No auto_increment
+                $table->integer('JobAdID')->autoIncrement();
                 $table->integer('CompanyID')->nullable();
                 $table->string('Title')->nullable();
                 $table->text('Description')->nullable();
@@ -123,7 +123,7 @@ return new class extends Migration
         // 8. JobApplication Table
         if (!Schema::hasTable('jobapplication')) {
             Schema::create('jobapplication', function (Blueprint $table) {
-                $table->integer('ApplicationID')->primary(); // Dump says PRI, No auto_increment
+                $table->integer('ApplicationID')->autoIncrement();
                 $table->integer('JobAdID')->nullable();
                 $table->integer('JobSeekerID')->nullable();
                 $table->integer('CVID')->nullable();
@@ -141,7 +141,7 @@ return new class extends Migration
         // 9. FollowCompany Table
         if (!Schema::hasTable('followcompany')) {
             Schema::create('followcompany', function (Blueprint $table) {
-                $table->integer('FollowID')->primary();
+                $table->integer('FollowID')->autoIncrement();
                 $table->integer('JobSeekerID')->nullable();
                 $table->integer('CompanyID')->nullable();
                 $table->dateTime('FollowedAt')->nullable();
@@ -154,7 +154,7 @@ return new class extends Migration
         // 10. Language Table
         if (!Schema::hasTable('language')) {
             Schema::create('language', function (Blueprint $table) {
-                $table->integer('LanguageID')->primary();
+                $table->integer('LanguageID')->autoIncrement();
                 $table->string('LanguageName')->nullable();
             });
         }
@@ -162,7 +162,7 @@ return new class extends Migration
         // 11. CV Language Table
         if (!Schema::hasTable('cvlanguage')) {
             Schema::create('cvlanguage', function (Blueprint $table) {
-                $table->integer('CVLanguageID')->primary();
+                $table->integer('CVLanguageID')->autoIncrement();
                 $table->integer('CVID')->nullable();
                 $table->integer('LanguageID')->nullable();
                 $table->string('LanguageLevel')->nullable();
@@ -175,7 +175,7 @@ return new class extends Migration
         // 12. Experience Table
         if (!Schema::hasTable('experience')) {
             Schema::create('experience', function (Blueprint $table) {
-                $table->integer('ExperienceID')->primary();
+                $table->integer('ExperienceID')->autoIncrement();
                 $table->integer('CVID')->nullable();
                 $table->string('JobTitle')->nullable();
                 $table->string('CompanyName')->nullable();
@@ -190,7 +190,7 @@ return new class extends Migration
         // 13. Education Table
         if (!Schema::hasTable('education')) {
             Schema::create('education', function (Blueprint $table) {
-                $table->integer('EducationID')->primary();
+                $table->integer('EducationID')->autoIncrement();
                 $table->integer('CVID')->nullable();
                 $table->string('Institution')->nullable();
                 $table->string('DegreeName')->nullable();
@@ -204,7 +204,7 @@ return new class extends Migration
         // 14. SkillCategory Table
         if (!Schema::hasTable('skillcategory')) {
             Schema::create('skillcategory', function (Blueprint $table) {
-                $table->integer('CategoryID')->primary();
+                $table->integer('CategoryID')->autoIncrement();
                 $table->string('CategoryName', 100)->nullable();
             });
         }
@@ -212,7 +212,7 @@ return new class extends Migration
         // 15. Skill Table
         if (!Schema::hasTable('skill')) {
             Schema::create('skill', function (Blueprint $table) {
-                $table->integer('SkillID')->primary();
+                $table->integer('SkillID')->autoIncrement();
                 $table->string('SkillName')->nullable();
                 $table->integer('CategoryID')->nullable();
 
@@ -223,7 +223,7 @@ return new class extends Migration
         // 16. JobSkill Table
         if (!Schema::hasTable('jobskill')) {
             Schema::create('jobskill', function (Blueprint $table) {
-                $table->integer('JobSkillID')->primary();
+                $table->integer('JobSkillID')->autoIncrement();
                 $table->integer('JobAdID');
                 $table->integer('SkillID');
                 $table->string('RequiredLevel', 50)->nullable();
@@ -238,7 +238,7 @@ return new class extends Migration
         // 17. CVSkill Table
         if (!Schema::hasTable('cvskill')) {
             Schema::create('cvskill', function (Blueprint $table) {
-                $table->integer('CVSkillID')->primary();
+                $table->integer('CVSkillID')->autoIncrement();
                 $table->integer('CVID')->nullable();
                 $table->integer('SkillID')->nullable();
                 $table->string('SkillLevel')->nullable();
@@ -251,7 +251,7 @@ return new class extends Migration
         // 18. FavoriteJob Table
         if (!Schema::hasTable('favoritejob')) {
             Schema::create('favoritejob', function (Blueprint $table) {
-                $table->integer('FavoriteID')->primary();
+                $table->integer('FavoriteID')->autoIncrement();
                 $table->integer('JobSeekerID')->nullable();
                 $table->integer('JobAdID')->nullable();
                 $table->dateTime('SavedAt')->nullable();
@@ -264,7 +264,7 @@ return new class extends Migration
         // 19. CompanySpecialization Table
         if (!Schema::hasTable('companyspecialization')) {
             Schema::create('companyspecialization', function (Blueprint $table) {
-                $table->integer('SpecID')->primary();
+                $table->integer('SpecID')->autoIncrement();
                 $table->string('SpecName')->nullable();
             });
         }
@@ -272,7 +272,7 @@ return new class extends Migration
         // 20. CompanyProfileSpecialization Table
         if (!Schema::hasTable('companyprofilespecialization')) {
             Schema::create('companyprofilespecialization', function (Blueprint $table) {
-                $table->integer('CompanySpecID')->primary();
+                $table->integer('CompanySpecID')->autoIncrement();
                 $table->integer('CompanyID')->nullable();
                 $table->integer('SpecID')->nullable();
 
@@ -284,7 +284,7 @@ return new class extends Migration
         // 21. Content Table (Articles/Posts)
         if (!Schema::hasTable('content')) {
             Schema::create('content', function (Blueprint $table) {
-                $table->integer('ContentID')->primary();
+                $table->integer('ContentID')->autoIncrement();
                 $table->integer('AuthorUserID')->nullable();
                 $table->string('Title')->nullable();
                 $table->text('BodyText')->nullable();
@@ -300,7 +300,7 @@ return new class extends Migration
         // 22. Conversation Table
         if (!Schema::hasTable('conversation')) {
             Schema::create('conversation', function (Blueprint $table) {
-                $table->integer('ConversationID')->primary();
+                $table->integer('ConversationID')->autoIncrement();
                 $table->string('Type')->nullable();
                 $table->dateTime('CreatedAt')->nullable();
             });
@@ -309,7 +309,7 @@ return new class extends Migration
         // 23. ConversationParticipant Table
         if (!Schema::hasTable('conversationparticipant')) {
             Schema::create('conversationparticipant', function (Blueprint $table) {
-                $table->integer('ParticipantID')->primary();
+                $table->integer('ParticipantID')->autoIncrement();
                 $table->integer('ConversationID')->nullable();
                 $table->integer('UserID')->nullable();
                 $table->dateTime('JoinedAt')->nullable();
@@ -324,7 +324,7 @@ return new class extends Migration
         // 24. Message Table
         if (!Schema::hasTable('message')) {
             Schema::create('message', function (Blueprint $table) {
-                $table->integer('MessageID')->primary();
+                $table->integer('MessageID')->autoIncrement();
                 $table->integer('ConversationID')->nullable();
                 $table->integer('SenderID')->nullable();
                 $table->text('Content')->nullable();
@@ -339,7 +339,7 @@ return new class extends Migration
         // 25. MessageRead Table
         if (!Schema::hasTable('messageread')) {
             Schema::create('messageread', function (Blueprint $table) {
-                $table->integer('ReadID')->primary();
+                $table->integer('ReadID')->autoIncrement();
                 $table->integer('MessageID')->nullable();
                 $table->integer('UserID')->nullable();
                 $table->dateTime('ReadAt')->nullable();
@@ -352,7 +352,7 @@ return new class extends Migration
         // 26. Notification Table
         if (!Schema::hasTable('notification')) {
             Schema::create('notification', function (Blueprint $table) {
-                $table->integer('NotificationID')->primary();
+                $table->integer('NotificationID')->autoIncrement();
                 $table->integer('UserID')->nullable();
                 $table->string('Type')->nullable();
                 $table->text('Content')->nullable();
@@ -366,7 +366,7 @@ return new class extends Migration
         // 27. Course Table (Lookup?)
         if (!Schema::hasTable('course')) {
             Schema::create('course', function (Blueprint $table) {
-                $table->integer('CourseID')->primary();
+                $table->integer('CourseID')->autoIncrement();
                 $table->string('CourseName')->nullable();
             });
         }
@@ -374,7 +374,7 @@ return new class extends Migration
         // 28. CourseAd Table
         if (!Schema::hasTable('coursead')) {
             Schema::create('coursead', function (Blueprint $table) {
-                $table->integer('CourseAdID')->primary();
+                $table->integer('CourseAdID')->autoIncrement();
                 $table->integer('CompanyID')->nullable();
                 $table->string('CourseTitle')->nullable();
                 $table->text('Topics')->nullable();
@@ -393,7 +393,7 @@ return new class extends Migration
         // 29. CourseEnrollment Table
         if (!Schema::hasTable('courseenrollment')) {
             Schema::create('courseenrollment', function (Blueprint $table) {
-                $table->integer('EnrollmentID')->primary();
+                $table->integer('EnrollmentID')->autoIncrement();
                 $table->integer('CourseAdID')->nullable();
                 $table->integer('JobSeekerID')->nullable();
                 $table->dateTime('EnrolledAt')->nullable();
@@ -407,7 +407,7 @@ return new class extends Migration
         // 30. CVCourse Table
         if (!Schema::hasTable('cvcourse')) {
             Schema::create('cvcourse', function (Blueprint $table) {
-                $table->integer('CVCourseID')->primary();
+                $table->integer('CVCourseID')->autoIncrement();
                 $table->integer('CVID')->nullable();
                 $table->integer('CourseID')->nullable();
                 $table->string('PlaceTaken')->nullable();
@@ -421,7 +421,7 @@ return new class extends Migration
         // 31. Volunteering Table
         if (!Schema::hasTable('volunteering')) {
             Schema::create('volunteering', function (Blueprint $table) {
-                $table->integer('VolunteeringID')->primary();
+                $table->integer('VolunteeringID')->autoIncrement();
                 $table->integer('CVID')->nullable();
                 $table->string('Title')->nullable();
                 $table->text('Description')->nullable();
@@ -463,7 +463,7 @@ return new class extends Migration
         // 33. AI Tables
         if (!Schema::hasTable('cvjobmatch')) {
             Schema::create('cvjobmatch', function (Blueprint $table) {
-                $table->integer('MatchID')->primary();
+                $table->integer('MatchID')->autoIncrement();
                 $table->integer('CVID');
                 $table->integer('JobAdID');
                 $table->integer('MatchScore')->nullable();
@@ -490,7 +490,7 @@ return new class extends Migration
 
         if (!Schema::hasTable('matchdetail')) {
             Schema::create('matchdetail', function (Blueprint $table) {
-                $table->integer('MatchDetailID')->primary();
+                $table->integer('MatchDetailID')->autoIncrement();
                 $table->integer('MatchID');
                 $table->integer('SkillID');
                 $table->string('CVLevel', 50)->nullable();
@@ -504,7 +504,7 @@ return new class extends Migration
 
         if (!Schema::hasTable('skillgapanalysis')) {
             Schema::create('skillgapanalysis', function (Blueprint $table) {
-                $table->integer('GapID')->primary();
+                $table->integer('GapID')->autoIncrement();
                 $table->integer('CVID');
                 $table->integer('JobAdID');
                 $table->integer('SkillID');
@@ -520,7 +520,7 @@ return new class extends Migration
 
         if (!Schema::hasTable('skilldemandsnapshot')) {
             Schema::create('skilldemandsnapshot', function (Blueprint $table) {
-                $table->integer('SnapshotID')->primary();
+                $table->integer('SnapshotID')->autoIncrement();
                 $table->integer('SkillID');
                 $table->integer('DemandCount')->nullable();
                 $table->date('SnapshotDate')->nullable();
@@ -531,7 +531,7 @@ return new class extends Migration
 
         if (!Schema::hasTable('analysisresult')) {
             Schema::create('analysisresult', function (Blueprint $table) {
-                $table->integer('AnalysisID')->primary();
+                $table->integer('AnalysisID')->autoIncrement();
                 $table->string('TargetType')->nullable();
                 $table->integer('TargetID')->nullable();
                 $table->integer('UserID')->nullable();

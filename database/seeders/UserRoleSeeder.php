@@ -15,12 +15,15 @@ class UserRoleSeeder extends Seeder
         $employerRole = Role::where('RoleName', 'Employer')->first();
         $jobSeekerRole = Role::where('RoleName', 'JobSeeker')->first();
 
+        UserRole::unguard();
+        $userRoleId = 1;
+
         // Assign Admin role to first user
         $admin = User::where('Email', 'admin@example.com')->first();
         if ($admin && $adminRole) {
             UserRole::firstOrCreate(
                 ['UserID' => $admin->UserID, 'RoleID' => $adminRole->RoleID],
-                ['AssignedAt' => now()]
+                ['UserRoleID' => $userRoleId++, 'AssignedAt' => now()]
             );
         }
 
@@ -31,7 +34,7 @@ class UserRoleSeeder extends Seeder
             if ($user && $employerRole) {
                 UserRole::firstOrCreate(
                     ['UserID' => $user->UserID, 'RoleID' => $employerRole->RoleID],
-                    ['AssignedAt' => now()]
+                    ['UserRoleID' => $userRoleId++, 'AssignedAt' => now()]
                 );
             }
         }
@@ -50,9 +53,10 @@ class UserRoleSeeder extends Seeder
             if ($user && $jobSeekerRole) {
                 UserRole::firstOrCreate(
                     ['UserID' => $user->UserID, 'RoleID' => $jobSeekerRole->RoleID],
-                    ['AssignedAt' => now()]
+                    ['UserRoleID' => $userRoleId++, 'AssignedAt' => now()]
                 );
             }
         }
+        UserRole::reguard();
     }
 }

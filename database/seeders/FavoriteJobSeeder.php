@@ -14,6 +14,9 @@ class FavoriteJobSeeder extends Seeder
         $jobSeekers = JobSeekerProfile::all();
         $jobs = JobAd::all();
 
+        FavoriteJob::unguard();
+        $favId = 1;
+
         foreach ($jobSeekers as $seeker) {
             // Each job seeker favorites 2-5 random jobs
             $randomJobs = $jobs->random(min(rand(2, 5), $jobs->count()));
@@ -22,6 +25,7 @@ class FavoriteJobSeeder extends Seeder
                 FavoriteJob::firstOrCreate(
                     ['JobSeekerID' => $seeker->JobSeekerID, 'JobAdID' => $job->JobAdID],
                     [
+                        'FavoriteID' => $favId++,
                         'JobSeekerID' => $seeker->JobSeekerID,
                         'JobAdID' => $job->JobAdID,
                         'SavedAt' => now()->subDays(rand(1, 30)),
@@ -29,5 +33,6 @@ class FavoriteJobSeeder extends Seeder
                 );
             }
         }
+        FavoriteJob::reguard();
     }
 }

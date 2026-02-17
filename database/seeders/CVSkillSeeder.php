@@ -28,6 +28,9 @@ class CVSkillSeeder extends Seeder
 
         $cvs = CV::all();
 
+        CVSkill::unguard();
+        $cvSkillId = 1;
+
         foreach ($cvs as $cv) {
             if (isset($cvSkillMappings[$cv->CVID])) {
                 foreach ($cvSkillMappings[$cv->CVID] as $index => $skillName) {
@@ -36,6 +39,7 @@ class CVSkillSeeder extends Seeder
                         CVSkill::firstOrCreate(
                             ['CVID' => $cv->CVID, 'SkillID' => $skill->SkillID],
                             [
+                                'CVSkillID' => $cvSkillId++,
                                 'CVID' => $cv->CVID,
                                 'SkillID' => $skill->SkillID,
                                 'SkillLevel' => $levels[min($index, 3)],
@@ -45,5 +49,6 @@ class CVSkillSeeder extends Seeder
                 }
             }
         }
+        CVSkill::reguard();
     }
 }

@@ -39,6 +39,9 @@ class CVSeeder extends Seeder
             ],
         ];
 
+        CV::unguard();
+        $cvId = 1;
+
         foreach ($cvs as $cv) {
             $user = User::where('Email', $cv['email'])->first();
             if ($user) {
@@ -47,6 +50,7 @@ class CVSeeder extends Seeder
                     CV::firstOrCreate(
                         ['JobSeekerID' => $profile->JobSeekerID, 'Title' => $cv['Title']],
                         [
+                            'CVID' => $cvId++,
                             'JobSeekerID' => $profile->JobSeekerID,
                             'Title' => $cv['Title'],
                             'PersonalSummary' => $cv['PersonalSummary'],
@@ -57,5 +61,6 @@ class CVSeeder extends Seeder
                 }
             }
         }
+        CV::reguard();
     }
 }

@@ -18,6 +18,9 @@ class JobApplicationSeeder extends Seeder
 
         $statuses = ['Pending', 'Reviewed', 'Interview', 'Accepted', 'Rejected'];
 
+        JobApplication::unguard();
+        $appId = 1;
+
         foreach ($jobSeekers as $seeker) {
             $cv = CV::where('JobSeekerID', $seeker->JobSeekerID)->first();
             if (!$cv) continue;
@@ -29,6 +32,7 @@ class JobApplicationSeeder extends Seeder
                 JobApplication::firstOrCreate(
                     ['JobAdID' => $job->JobAdID, 'JobSeekerID' => $seeker->JobSeekerID],
                     [
+                        'ApplicationID' => $appId++,
                         'JobAdID' => $job->JobAdID,
                         'JobSeekerID' => $seeker->JobSeekerID,
                         'CVID' => $cv->CVID,
@@ -40,5 +44,6 @@ class JobApplicationSeeder extends Seeder
                 );
             }
         }
+        JobApplication::reguard();
     }
 }

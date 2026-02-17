@@ -68,11 +68,15 @@ class CourseAdSeeder extends Seeder
             ],
         ];
 
+        CourseAd::unguard();
+        $courseAdId = 1;
+
         foreach ($courses as $course) {
             CourseAd::firstOrCreate(
                 ['CompanyID' => $eduCompany->CompanyID, 'CourseTitle' => $course['CourseTitle']],
-                array_merge(['CompanyID' => $eduCompany->CompanyID, 'CreatedAt' => now()], $course)
+                array_merge(['CourseAdID' => $courseAdId++, 'CompanyID' => $eduCompany->CompanyID, 'CreatedAt' => now()], $course)
             );
         }
+        CourseAd::reguard();
     }
 }

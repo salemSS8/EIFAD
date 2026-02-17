@@ -34,19 +34,24 @@ class JobAdSeeder extends Seeder
             ],
         ];
 
+        JobAd::unguard();
+        $jobId = 1;
+
         foreach ($companies as $index => $company) {
             if (isset($jobsByCompany[$index])) {
-                foreach ($jobsByCompany[$index] as $job) {
+                foreach ($jobsByCompany[$index] as $jobData) {
                     JobAd::firstOrCreate(
-                        ['CompanyID' => $company->CompanyID, 'Title' => $job['Title']],
+                        ['CompanyID' => $company->CompanyID, 'Title' => $jobData['Title']],
                         array_merge([
+                            'JobAdID' => $jobId++,
                             'CompanyID' => $company->CompanyID,
                             'PostedAt' => now()->subDays(rand(1, 30)),
                             'Status' => 'Active',
-                        ], $job)
+                        ], $jobData)
                     );
                 }
             }
         }
+        JobAd::reguard();
     }
 }

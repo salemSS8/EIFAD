@@ -15,12 +15,15 @@ class CVLanguageSeeder extends Seeder
         $arabic = Language::where('LanguageName', 'العربية')->first();
         $english = Language::where('LanguageName', 'الإنجليزية')->first();
 
+        CVLanguage::unguard();
+        $cvLangId = 1;
+
         foreach ($cvs as $cv) {
             // All have Arabic as native
             if ($arabic) {
                 CVLanguage::firstOrCreate(
                     ['CVID' => $cv->CVID, 'LanguageID' => $arabic->LanguageID],
-                    ['CVID' => $cv->CVID, 'LanguageID' => $arabic->LanguageID, 'LanguageLevel' => 'اللغة الأم']
+                    ['CVLanguageID' => $cvLangId++, 'CVID' => $cv->CVID, 'LanguageID' => $arabic->LanguageID, 'LanguageLevel' => 'اللغة الأم']
                 );
             }
 
@@ -29,9 +32,10 @@ class CVLanguageSeeder extends Seeder
                 $levels = ['متوسط', 'متقدم', 'متوسط', 'متقدم', 'متقدم'];
                 CVLanguage::firstOrCreate(
                     ['CVID' => $cv->CVID, 'LanguageID' => $english->LanguageID],
-                    ['CVID' => $cv->CVID, 'LanguageID' => $english->LanguageID, 'LanguageLevel' => $levels[min($cv->CVID - 1, 4)]]
+                    ['CVLanguageID' => $cvLangId++, 'CVID' => $cv->CVID, 'LanguageID' => $english->LanguageID, 'LanguageLevel' => $levels[min($cv->CVID - 1, 4)]]
                 );
             }
         }
+        CVLanguage::reguard();
     }
 }

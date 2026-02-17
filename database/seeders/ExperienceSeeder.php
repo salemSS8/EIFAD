@@ -39,15 +39,19 @@ class ExperienceSeeder extends Seeder
             ],
         ];
 
+        Experience::unguard();
+        $expId = 1;
+
         foreach ($cvs as $index => $cv) {
             if (isset($allExperiences[$index])) {
                 foreach ($allExperiences[$index] as $exp) {
                     Experience::firstOrCreate(
                         ['CVID' => $cv->CVID, 'JobTitle' => $exp['JobTitle'], 'CompanyName' => $exp['CompanyName']],
-                        array_merge(['CVID' => $cv->CVID], $exp)
+                        array_merge(['ExperienceID' => $expId++, 'CVID' => $cv->CVID], $exp)
                     );
                 }
             }
         }
+        Experience::reguard();
     }
 }

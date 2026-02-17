@@ -15,7 +15,7 @@ class UserSeeder extends Seeder
             [
                 'FullName' => 'مدير النظام',
                 'Email' => 'admin@example.com',
-                'PasswordHash' => Hash::make('password123'),
+                'PasswordHash' => Hash::make('admin123'),
                 'Phone' => '777000001',
                 'Gender' => 'Male',
                 'DateOfBirth' => '1985-01-15',

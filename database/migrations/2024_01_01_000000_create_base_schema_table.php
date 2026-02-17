@@ -614,6 +614,23 @@ return new class extends Migration
                 $table->foreign('user_id')->references('UserID')->on('user'); // users table?
             });
         }
+
+        // 35. Cache Tables
+        if (!Schema::hasTable('cache')) {
+            // إضافة جدول الكاش (Cache Table)
+            Schema::create('cache', function (Blueprint $table) {
+                $table->string('key')->primary();
+                $table->mediumText('value');
+                $table->integer('expiration');
+            });
+
+            // إضافة جدول أقفال الكاش (Cache Locks Table) - مهم لمنع تضارب العمليات
+            Schema::create('cache_locks', function (Blueprint $table) {
+                $table->string('key')->primary();
+                $table->string('owner');
+                $table->integer('expiration');
+            });
+        }
     }
 
     /**
@@ -665,5 +682,9 @@ return new class extends Migration
         // Extra drops from sync
         Schema::dropIfExists('cv_analyses');
         Schema::dropIfExists('companies');
+
+        // Extra drops from sync
+        Schema::dropIfExists('cache');
+        Schema::dropIfExists('cache_locks');
     }
 };

@@ -78,7 +78,7 @@ class SocialLoginAction implements ActionInterface
             name: $user->FullName,
             role: $roleName,
             sanctumToken: $token,
-            firebaseUid: $user->ProviderID, // Reuse DTO field or ignore
+            providerId: $user->ProviderID,
         );
     }
 }

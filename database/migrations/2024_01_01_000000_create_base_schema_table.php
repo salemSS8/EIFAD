@@ -17,7 +17,7 @@ return new class extends Migration
                 $table->integer('UserID')->autoIncrement();
                 $table->string('FullName')->nullable();
                 $table->string('Email')->nullable()->unique();
-                $table->string('ProviderID')->nullable()->unique(); // Formerly FirebaseUID
+                $table->string('ProviderID')->nullable()->unique();
                 $table->string('PasswordHash')->nullable();
                 $table->string('Phone')->nullable();
                 $table->string('Gender')->nullable();

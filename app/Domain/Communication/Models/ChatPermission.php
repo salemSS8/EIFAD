@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * ChatPermission Model - Tracks who can chat with whom.
- * Firebase Realtime Database rules are derived from this.
+ * Chat permissions logic.
  */
 class ChatPermission extends Model
 {
@@ -50,6 +50,6 @@ class ChatPermission extends Model
      */
     public function job(): BelongsTo
     {
-        return $this->belongsTo(\App\Domain\Job\Models\Job::class);
+        return $this->belongsTo(\App\Domain\Job\Models\JobAd::class, 'job_id', 'JobAdID');
     }
 }

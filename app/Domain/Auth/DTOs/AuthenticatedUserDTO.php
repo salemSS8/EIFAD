@@ -13,7 +13,7 @@ readonly class AuthenticatedUserDTO
         public ?string $name,
         public ?string $role,
         public string $sanctumToken,
-        public ?string $firebaseUid = null,
+        public ?string $providerId = null,
     ) {}
 
     public function toArray(): array
@@ -24,7 +24,7 @@ readonly class AuthenticatedUserDTO
             'name' => $this->name,
             'role' => $this->role,
             'token' => $this->sanctumToken,
-            'firebase_uid' => $this->firebaseUid,
+            'provider_id' => $this->providerId,
         ];
     }
 }

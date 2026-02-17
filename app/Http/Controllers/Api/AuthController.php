@@ -18,7 +18,8 @@ use OpenApi\Attributes as OA;
 
 /**
  * Authentication Controller - Thin controller for auth endpoints.
- * Supports both Firebase auth and traditional email/password.
+ * Authentication Controller - Thin controller for auth endpoints.
+ * Supports social login and traditional email/password.
  */
 class AuthController extends Controller
 {

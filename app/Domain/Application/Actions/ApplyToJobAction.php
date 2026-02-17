@@ -2,9 +2,9 @@
 
 namespace App\Domain\Application\Actions;
 
-use App\Domain\Application\Models\Application;
+use App\Domain\Application\Models\JobApplication;
 use App\Domain\Application\Jobs\EvaluateCandidateJob;
-use App\Domain\Job\Models\Job;
+use App\Domain\Job\Models\JobAd;
 use App\Domain\User\Models\User;
 use App\Domain\Shared\Contracts\ActionInterface;
 use App\Domain\Shared\Exceptions\BusinessRuleException;
@@ -18,7 +18,7 @@ class ApplyToJobAction implements ActionInterface
     /**
      * Execute the apply to job use case.
      */
-    public function execute(User $user, Job $job, ?int $cvId = null, ?string $coverLetter = null): Application
+    public function execute(User $user, JobAd $job, ?int $cvId = null, ?string $coverLetter = null): JobApplication
     {
         // Validate eligibility
         $this->validateEligibility($user, $job);
@@ -26,22 +26,24 @@ class ApplyToJobAction implements ActionInterface
         return DB::transaction(function () use ($user, $job, $cvId, $coverLetter) {
             // Use active CV if none specified
             if (!$cvId) {
-                $activeCV = $user->activeCV;
-                $cvId = $activeCV?->id;
+                // Get latest CV from JobSeekerProfile
+                $jobSeeker = $user->jobSeekerProfile;
+                $activeCV = $jobSeeker?->cvs()->latest('UpdatedAt')->first();
+                $cvId = $activeCV?->CVID;
             }
 
             // Create application
-            $application = Application::create([
-                'user_id' => $user->id,
-                'job_id' => $job->id,
-                'cv_id' => $cvId,
-                'cover_letter' => $coverLetter,
-                'status' => 'pending',
-                'applied_at' => now(),
+            $application = JobApplication::create([
+                'JobSeekerID' => $user->UserID ?? $user->id, // Map UserID
+                'JobAdID' => $job->JobAdID,
+                'CVID' => $cvId,
+                'Notes' => $coverLetter, // Map cover_letter to Notes as it's the only text field available
+                'Status' => 'pending',
+                'AppliedAt' => now(),
             ]);
 
             // Update job application count
-            $job->increment('applications_count');
+            // $job->increment('applications_count'); // Column applications_count MISSING in JobAd schema. Ignored.
 
             // Dispatch async evaluation job
             if ($cvId) {
@@ -55,7 +57,7 @@ class ApplyToJobAction implements ActionInterface
     /**
      * Validate if user is eligible to apply.
      */
-    private function validateEligibility(User $user, Job $job): void
+    private function validateEligibility(User $user, JobAd $job): void
     {
         // Must be a job seeker
         if (!$user->isJobSeeker()) {
@@ -63,18 +65,19 @@ class ApplyToJobAction implements ActionInterface
         }
 
         // Job must be published
-        if ($job->status !== 'published') {
+        if ($job->Status !== 'published') {
             throw BusinessRuleException::because('This job is not accepting applications');
         }
 
         // Check deadline
-        if ($job->application_deadline && $job->application_deadline->isPast()) {
-            throw BusinessRuleException::because('Application deadline has passed');
-        }
+        // JobAd does not have application_deadline column. Ignoring check.
+        // if ($job->application_deadline && $job->application_deadline->isPast()) {
+        //    throw BusinessRuleException::because('Application deadline has passed');
+        // }
 
         // Check if already applied
-        $existingApplication = Application::where('user_id', $user->id)
-            ->where('job_id', $job->id)
+        $existingApplication = JobApplication::where('JobSeekerID', $user->UserID ?? $user->id)
+            ->where('JobAdID', $job->JobAdID)
             ->exists();
 
         if ($existingApplication) {

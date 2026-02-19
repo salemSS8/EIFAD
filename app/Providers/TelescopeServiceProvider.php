@@ -31,7 +31,8 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
                 $entry->isScheduledTask() ||
                 $entry->hasMonitoredTag() ||
                 $entry->type === EntryType::MAIL ||
-                $entry->type === EntryType::NOTIFICATION;
+                $entry->type === EntryType::NOTIFICATION ||
+                $entry->type === EntryType::REQUEST;
         });
     }
 

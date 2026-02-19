@@ -85,4 +85,50 @@ class RegistrationTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['password']);
     }
+
+    public function test_registration_fails_for_active_duplicate_email()
+    {
+        // specific Create active user
+        User::factory()->create([
+            'Email' => 'active@example.com',
+            'IsVerified' => true,
+        ]);
+
+        $response = $this->postJson('/api/auth/register', [
+            'full_name' => 'Active User',
+            'email' => 'active@example.com',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'phone' => '123456789',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['email']);
+    }
+
+    public function test_lazy_pruning_of_unverified_users()
+    {
+        // Create old unverified user (11 mins ago)
+        $oldUser = User::factory()->create([
+            'Email' => 'old@example.com',
+            'IsVerified' => false,
+            'CreatedAt' => now()->subMinutes(11),
+        ]);
+
+        // Try to register with same email
+        $response = $this->postJson('/api/auth/register', [
+            'full_name' => 'New User',
+            'email' => 'old@example.com',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'phone' => '123456789',
+        ]);
+
+        // Should succeed (201) because old user was pruned
+        $response->assertStatus(201);
+
+        // Verify old user ID is gone and new one exists
+        $this->assertDatabaseMissing('user', ['UserID' => $oldUser->UserID]);
+        $this->assertDatabaseHas('user', ['Email' => 'old@example.com', 'FullName' => 'New User']);
+    }
 }

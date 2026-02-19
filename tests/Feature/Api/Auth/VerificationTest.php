@@ -85,6 +85,27 @@ class VerificationTest extends TestCase
         $response->assertStatus(422);
 
         $user->refresh();
+        $user->refresh();
         $this->assertFalse($user->IsVerified);
+    }
+
+    public function test_verify_account_fails_with_expired_token()
+    {
+        $user = User::factory()->create(['Email' => 'expired@example.com', 'IsVerified' => false]);
+
+        // Create token 5 minutes ago
+        DB::table('email_verification_tokens')->insert([
+            'email' => 'expired@example.com',
+            'token' => Hash::make('123456'),
+            'created_at' => now()->subMinutes(5),
+        ]);
+
+        $response = $this->postJson('/api/auth/verify-account', [
+            'email' => 'expired@example.com',
+            'token' => '123456',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonFragment(['message' => 'رمز التحقق منتهي الصلاحية']);
     }
 }

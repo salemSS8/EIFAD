@@ -89,7 +89,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'full_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:user,Email',
+            'email' => 'required|email',
             'password' => [
                 'required',
                 'string',
@@ -111,7 +111,7 @@ class AuthController extends Controller
             'full_name.max' => 'الاسم الكامل يجب ألا يتجاوز 255 حرفاً',
             'email.required' => 'البريد الإلكتروني مطلوب',
             'email.email' => 'صيغة البريد الإلكتروني غير صحيحة',
-            'email.unique' => 'البريد الإلكتروني مستخدم مسبقاً',
+            // 'email.unique' => 'البريد الإلكتروني مستخدم مسبقاً',
             'password.required' => 'كلمة المرور مطلوبة',
             'password.min' => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل',
             'password.regex' => 'كلمة المرور يجب أن تحتوي على حروف وأرقام',
@@ -123,6 +123,34 @@ class AuthController extends Controller
             'gender.in' => 'الجنس يجب أن يكون ذكر أو أنثى',
             'date_of_birth.before' => 'تاريخ الميلاد يجب أن يكون قبل اليوم',
         ]);
+
+
+
+        // Custom validation for unique email with lazy pruning
+        $existingUser = User::where('Email', $request->input('email'))->first();
+        if ($existingUser) {
+            if ($existingUser->IsVerified) {
+                return response()->json([
+                    'message' => 'البريد الإلكتروني مستخدم مسبقاً',
+                    'errors' => ['email' => ['البريد الإلكتروني مستخدم مسبقاً']],
+                ], 422);
+            } else {
+                // Check if user is older than 10 minutes
+                if ($existingUser->CreatedAt && $existingUser->CreatedAt->diffInMinutes(now()) > 10) {
+                    // Prune old unverified user
+                    // Delete related tokens first
+                    DB::table('email_verification_tokens')->where('email', $existingUser->Email)->delete();
+                    DB::table('password_reset_tokens')->where('email', $existingUser->Email)->delete();
+                    // Delete user (cascades to profiles)
+                    $existingUser->delete();
+                } else {
+                    return response()->json([
+                        'message' => 'البريد الإلكتروني مسجل مسبقاً ولكنه غير مفعل. يرجى تفعيل الحساب.',
+                        'errors' => ['email' => ['البريد الإلكتروني مسجل مسبقاً ولكنه غير مفعل']],
+                    ], 422);
+                }
+            }
+        }
 
         return DB::transaction(function () use ($request) {
             // Create user
@@ -238,7 +266,7 @@ class AuthController extends Controller
         // Check if account is verified (User Story: Login - معيار القبول #2)
         if (!$user->IsVerified) {
             return response()->json([
-                'message' => 'الحساب غير مفعّل، يرجى التحقق من بريدك الإلكتروني لتفعيل الحساب',
+                // 'message' => 'الحساب غير مفعّل، يرجى التحقق من بريدك الإلكتروني لتفعيل الحساب',
                 'requires_verification' => true,
                 'email' => $user->Email,
             ], 403);
@@ -840,8 +868,8 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Check expiry (60 minutes)
-        if (now()->diffInMinutes($record->created_at) > 60) {
+        // Check expiry (3 minutes)
+        if (\Illuminate\Support\Carbon::parse($record->created_at)->diffInMinutes(now()) > 3) {
             DB::table('email_verification_tokens')->where('email', $request->input('email'))->delete();
             return response()->json([
                 'message' => 'رمز التحقق منتهي الصلاحية'

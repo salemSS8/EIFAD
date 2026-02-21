@@ -350,23 +350,34 @@ class AuthController extends Controller
         )
     )]
     public function handleProviderCallback(
+        \Illuminate\Http\Request $request,
         $provider,
         \App\Domain\Auth\Actions\SocialLoginAction $action
-    ): JsonResponse {
+    ): \Illuminate\Http\RedirectResponse {
+        $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173/dashboard');
+
+        // Check if provider returned an error (e.g. user denied passing code)
+        if ($request->has('error')) {
+            $errorMessage = $request->input('error_description', $request->input('error'));
+            return redirect()->away($frontendUrl . '?error=' . urlencode('Social login failed: ' . $errorMessage));
+        }
+
         try {
             $socialUser = \Laravel\Socialite\Facades\Socialite::driver($provider)->stateless()->user();
 
             $result = $action->execute($socialUser, $provider);
 
-            return response()->json([
-                'message' => 'Login successful',
-                'data' => $result->toArray(),
+            $queryParams = http_build_query([
+                'token' => $result->sanctumToken,
+                'user_id' => $result->userId,
+                'name' => $result->name,
+                'email' => $result->email,
+                'role' => $result->role,
             ]);
+
+            return redirect()->away($frontendUrl . '?' . $queryParams);
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Authentication failed',
-                'error' => $e->getMessage(),
-            ], 401);
+            return redirect()->away($frontendUrl . '?error=' . urlencode('Authentication failed: ' . $e->getMessage()));
         }
     }
 

@@ -41,9 +41,11 @@ class SocialLoginTest extends TestCase
 
         Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
 
-        $response = $this->getJson('/api/auth/login/google/callback');
+        $response = $this->get('/api/auth/login/google/callback');
 
-        $response->assertStatus(200);
+        $response->assertStatus(302);
+        $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173/dashboard');
+        $this->assertStringContainsString($frontendUrl, $response->headers->get('Location'));
         $this->assertDatabaseHas('user', [
             'Email' => 'social@example.com',
             'ProviderID' => '123456',

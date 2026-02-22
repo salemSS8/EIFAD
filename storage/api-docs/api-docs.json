@@ -277,7 +277,7 @@
                 ]
             }
         },
-        "/admin/statistics": {
+        "/admin/users/statistics": {
             "get": {
                 "tags": [
                     "Admin"

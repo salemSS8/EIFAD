@@ -344,7 +344,7 @@ class AdminController extends Controller
      * Get user statistics.
      */
     #[OA\Get(
-        path: "/admin/statistics",
+        path: "/admin/users/statistics",
         operationId: "getStatistics",
         tags: ["Admin"],
         summary: "Get system statistics",

@@ -25,6 +25,8 @@ class JobAdTest extends TestCase
         $user->roles()->attach(Role::where('RoleName', 'Employer')->first());
         DB::table('companyprofile')->insert(['CompanyID' => $user->UserID]);
 
+        $expiryDate = now()->addDays(7)->format('Y-m-d H:i:s');
+
         $response = $this->actingAs($user)->postJson('/api/employer/jobs', [
             'title' => 'Backend Developer',
             'description' => 'PHP Laravel',
@@ -32,6 +34,7 @@ class JobAdTest extends TestCase
             'work_type' => 'Full-time',
             'salary_min' => 1000,
             'salary_max' => 2000,
+            'expiry_date' => $expiryDate,
         ]);
 
         if ($response->status() !== 201) {
@@ -44,6 +47,7 @@ class JobAdTest extends TestCase
         $this->assertDatabaseHas('jobad', [
             'CompanyID' => $user->UserID,
             'Title' => 'Backend Developer',
+            'ExpiryDate' => $expiryDate,
         ]);
     }
 

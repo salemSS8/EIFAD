@@ -47,7 +47,7 @@ class JobController extends Controller
     )]
     public function index(Request $request): JsonResponse
     {
-        $query = JobAd::with(['company:CompanyID,CompanyName,LogoPath', 'skills.skill'])
+        $query = JobAd::with(['company', 'skills.skill'])
             ->where('Status', 'Active');
 
         // Keyword search
@@ -267,13 +267,15 @@ class JobController extends Controller
             properties: [
                 new OA\Property(property: "title", type: "string", example: "Software Engineer"),
                 new OA\Property(property: "description", type: "string"),
-                new OA\Property(property: "responsibilities", type: "string"),
-                new OA\Property(property: "requirements", type: "string"),
+                new OA\Property(property: "responsibilities", type: "array", items: new OA\Items(type: "string")),
+                new OA\Property(property: "requirements", type: "array", items: new OA\Items(type: "string")),
+                new OA\Property(property: "benefits", type: "array", items: new OA\Items(type: "string")),
                 new OA\Property(property: "location", type: "string"),
                 new OA\Property(property: "work_type", type: "string", enum: ["Full-time", "Part-time", "Contract"]),
                 new OA\Property(property: "workplace_type", type: "string", enum: ["Remote", "On-site", "Hybrid"]),
                 new OA\Property(property: "salary_min", type: "integer"),
                 new OA\Property(property: "salary_max", type: "integer"),
+                new OA\Property(property: "expiry_date", type: "string", format: "date-time", example: "2024-12-31 23:59:59"),
                 new OA\Property(property: "skills", type: "array", items: new OA\Items(
                     properties: [
                         new OA\Property(property: "skill_id", type: "integer"),
@@ -290,14 +292,19 @@ class JobController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'responsibilities' => 'nullable|string',
-            'requirements' => 'nullable|string',
+            'responsibilities' => 'nullable|array',
+            'responsibilities.*' => 'string',
+            'requirements' => 'nullable|array',
+            'requirements.*' => 'string',
+            'benefits' => 'nullable|array',
+            'benefits.*' => 'string',
             'location' => 'nullable|string|max:255',
             'workplace_type' => 'nullable|string|max:50',
             'work_type' => 'nullable|string|max:50',
             'salary_min' => 'nullable|integer|min:0',
             'salary_max' => 'nullable|integer|min:0',
             'currency' => 'nullable|string|max:10',
+            'expiry_date' => 'nullable|date',
             'skills' => 'nullable|array',
             'skills.*.skill_id' => 'required|exists:skill,SkillID',
             'skills.*.required_level' => 'nullable|string',
@@ -317,6 +324,7 @@ class JobController extends Controller
             'Description' => $request->input('description'),
             'Responsibilities' => $request->input('responsibilities'),
             'Requirements' => $request->input('requirements'),
+            'Benefits' => $request->input('benefits'),
             'Location' => $request->input('location'),
             'WorkplaceType' => $request->input('workplace_type'),
             'WorkType' => $request->input('work_type'),
@@ -324,6 +332,7 @@ class JobController extends Controller
             'SalaryMax' => $request->input('salary_max'),
             'Currency' => $request->input('currency', 'USD'),
             'PostedAt' => now(),
+            'ExpiryDate' => $request->input('expiry_date'),
             'Status' => 'Draft',
         ]);
 
@@ -362,6 +371,16 @@ class JobController extends Controller
             properties: [
                 new OA\Property(property: "title", type: "string"),
                 new OA\Property(property: "description", type: "string"),
+                new OA\Property(property: "responsibilities", type: "array", items: new OA\Items(type: "string")),
+                new OA\Property(property: "requirements", type: "array", items: new OA\Items(type: "string")),
+                new OA\Property(property: "benefits", type: "array", items: new OA\Items(type: "string")),
+                new OA\Property(property: "location", type: "string"),
+                new OA\Property(property: "workplace_type", type: "string", enum: ["Remote", "On-site", "Hybrid"]),
+                new OA\Property(property: "work_type", type: "string", enum: ["Full-time", "Part-time", "Contract"]),
+                new OA\Property(property: "salary_min", type: "integer"),
+                new OA\Property(property: "salary_max", type: "integer"),
+                new OA\Property(property: "currency", type: "string"),
+                new OA\Property(property: "expiry_date", type: "string", format: "date-time", example: "2024-12-31 23:59:59"),
                 new OA\Property(property: "status", type: "string", enum: ["Draft", "Active", "Closed"]),
             ]
         )
@@ -376,19 +395,40 @@ class JobController extends Controller
             ->where('CompanyID', $company->CompanyID)
             ->firstOrFail();
 
-        $job->update($request->only([
-            'Title',
-            'Description',
-            'Responsibilities',
-            'Requirements',
-            'Location',
-            'WorkplaceType',
-            'WorkType',
-            'SalaryMin',
-            'SalaryMax',
-            'Currency',
-            'Status',
-        ]));
+        $request->validate([
+            'title' => 'sometimes|string|max:255',
+            'description' => 'sometimes|string',
+            'responsibilities' => 'nullable|array',
+            'responsibilities.*' => 'string',
+            'requirements' => 'nullable|array',
+            'requirements.*' => 'string',
+            'benefits' => 'nullable|array',
+            'benefits.*' => 'string',
+            'location' => 'nullable|string|max:255',
+            'workplace_type' => 'nullable|string|max:50',
+            'work_type' => 'nullable|string|max:50',
+            'salary_min' => 'nullable|integer|min:0',
+            'salary_max' => 'nullable|integer|min:0',
+            'currency' => 'nullable|string|max:10',
+            'expiry_date' => 'nullable|date',
+            'status' => 'sometimes|string|in:Draft,Active,Closed',
+        ]);
+
+        $job->update([
+            'Title' => $request->input('title', $job->Title),
+            'Description' => $request->input('description', $job->Description),
+            'Responsibilities' => $request->has('responsibilities') ? $request->input('responsibilities') : $job->Responsibilities,
+            'Requirements' => $request->has('requirements') ? $request->input('requirements') : $job->Requirements,
+            'Benefits' => $request->has('benefits') ? $request->input('benefits') : $job->Benefits,
+            'Location' => $request->input('location', $job->Location),
+            'WorkplaceType' => $request->input('workplace_type', $job->WorkplaceType),
+            'WorkType' => $request->input('work_type', $job->WorkType),
+            'SalaryMin' => $request->input('salary_min', $job->SalaryMin),
+            'SalaryMax' => $request->input('salary_max', $job->SalaryMax),
+            'Currency' => $request->input('currency', $job->Currency),
+            'ExpiryDate' => $request->input('expiry_date', $job->ExpiryDate),
+            'Status' => $request->input('status', $job->Status),
+        ]);
 
         return response()->json([
             'message' => 'Job updated successfully',

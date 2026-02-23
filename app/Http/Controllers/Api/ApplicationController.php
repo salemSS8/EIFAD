@@ -127,6 +127,11 @@ class ApplicationController extends Controller
             return response()->json(['message' => 'This job is not accepting applications'], 422);
         }
 
+        // Check if job is expired
+        if ($job->ExpiryDate && $job->ExpiryDate->isPast()) {
+            return response()->json(['message' => 'The application deadline for this job has passed'], 422);
+        }
+
         // Check for duplicate application
         $existingApplication = JobApplication::where('JobSeekerID', $profile->JobSeekerID)
             ->where('JobAdID', $request->input('job_id'))

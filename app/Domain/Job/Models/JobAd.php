@@ -21,6 +21,7 @@ class JobAd extends Model
         'Description',
         'Responsibilities',
         'Requirements',
+        'Benefits',
         'Location',
         'WorkplaceType',
         'WorkType',
@@ -28,6 +29,7 @@ class JobAd extends Model
         'SalaryMax',
         'Currency',
         'PostedAt',
+        'ExpiryDate',
         'Status',
     ];
 
@@ -35,8 +37,12 @@ class JobAd extends Model
     {
         return [
             'PostedAt' => 'datetime',
+            'ExpiryDate' => 'datetime',
             'SalaryMin' => 'integer',
             'SalaryMax' => 'integer',
+            'Responsibilities' => 'array',
+            'Requirements' => 'array',
+            'Benefits' => 'array',
         ];
     }
 

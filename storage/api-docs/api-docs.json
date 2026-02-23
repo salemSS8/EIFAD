@@ -2387,10 +2387,22 @@
                                         "type": "string"
                                     },
                                     "responsibilities": {
-                                        "type": "string"
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
                                     },
                                     "requirements": {
-                                        "type": "string"
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "benefits": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
                                     },
                                     "location": {
                                         "type": "string"
@@ -2416,6 +2428,11 @@
                                     },
                                     "salary_max": {
                                         "type": "integer"
+                                    },
+                                    "expiry_date": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2024-12-31 23:59:59"
                                     },
                                     "skills": {
                                         "type": "array",
@@ -2482,6 +2499,57 @@
                                     },
                                     "description": {
                                         "type": "string"
+                                    },
+                                    "responsibilities": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "requirements": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "benefits": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "location": {
+                                        "type": "string"
+                                    },
+                                    "workplace_type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "Remote",
+                                            "On-site",
+                                            "Hybrid"
+                                        ]
+                                    },
+                                    "work_type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "Full-time",
+                                            "Part-time",
+                                            "Contract"
+                                        ]
+                                    },
+                                    "salary_min": {
+                                        "type": "integer"
+                                    },
+                                    "salary_max": {
+                                        "type": "integer"
+                                    },
+                                    "currency": {
+                                        "type": "string"
+                                    },
+                                    "expiry_date": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2024-12-31 23:59:59"
                                     },
                                     "status": {
                                         "type": "string",

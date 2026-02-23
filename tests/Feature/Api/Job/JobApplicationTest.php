@@ -99,6 +99,34 @@ class JobApplicationTest extends TestCase
             ->assertJson(['message' => 'You have already applied to this job']);
     }
 
+    public function test_cannot_apply_to_expired_job()
+    {
+        // Employer and expired Job
+        $employer = User::factory()->create();
+        DB::table('companyprofile')->insert(['CompanyID' => $employer->UserID]);
+        $jobId = DB::table('jobad')->insertGetId([
+            'CompanyID' => $employer->UserID,
+            'Title' => 'Expired Job',
+            'Status' => 'Active',
+            'ExpiryDate' => now()->subDays(1),
+        ]);
+
+        // Seeker
+        $seeker = User::factory()->create();
+        $seeker->roles()->attach(Role::where('RoleName', 'JobSeeker')->first());
+        DB::table('jobseekerprofile')->insert(['JobSeekerID' => $seeker->UserID]);
+        $cvId = DB::table('cv')->insertGetId(['JobSeekerID' => $seeker->UserID, 'Title' => 'CV']);
+
+        // Attempt Apply
+        $response = $this->actingAs($seeker)->postJson('/api/applications', [
+            'job_id' => $jobId,
+            'cv_id' => $cvId,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson(['message' => 'The application deadline for this job has passed']);
+    }
+
     public function test_employer_can_view_job_applications()
     {
         // Employer and Job

@@ -318,8 +318,10 @@ class AuthController extends Controller
     )]
     public function redirectToProvider($provider): JsonResponse
     {
+        $driver = $provider === 'linkedin' ? 'linkedin-openid' : $provider;
+
         return response()->json([
-            'url' => \Laravel\Socialite\Facades\Socialite::driver($provider)->stateless()->redirect()->getTargetUrl(),
+            'url' => \Laravel\Socialite\Facades\Socialite::driver($driver)->stateless()->redirect()->getTargetUrl(),
         ]);
     }
 
@@ -363,7 +365,8 @@ class AuthController extends Controller
         }
 
         try {
-            $socialUser = \Laravel\Socialite\Facades\Socialite::driver($provider)->stateless()->user();
+            $driver = $provider === 'linkedin' ? 'linkedin-openid' : $provider;
+            $socialUser = \Laravel\Socialite\Facades\Socialite::driver($driver)->stateless()->user();
 
             $result = $action->execute($socialUser, $provider);
 

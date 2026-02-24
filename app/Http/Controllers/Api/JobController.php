@@ -76,10 +76,10 @@ class JobController extends Controller
 
         // Salary range
         if ($request->filled('salary_min')) {
-            $query->where('SalaryMax', '>=', $request->input('salary_min'));
+            $query->where('SalaryMin', '>=', $request->input('salary_min'));
         }
         if ($request->filled('salary_max')) {
-            $query->where('SalaryMin', '<=', $request->input('salary_max'));
+            $query->where('SalaryMax', '<=', $request->input('salary_max'));
         }
 
         // Company filter

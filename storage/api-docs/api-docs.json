@@ -739,6 +739,19 @@
                                 "linkedin"
                             ]
                         }
+                    },
+                    {
+                        "name": "role",
+                        "in": "query",
+                        "description": "Optional role to assign if a new account is created (JobSeeker, Employer).",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "JobSeeker",
+                                "Employer"
+                            ]
+                        }
                     }
                 ],
                 "responses": {

@@ -307,6 +307,13 @@ class AuthController extends Controller
         required: true,
         schema: new OA\Schema(type: "string", enum: ["google", "linkedin"])
     )]
+    #[OA\Parameter(
+        name: "role",
+        in: "query",
+        description: "Optional role to assign if a new account is created (JobSeeker, Employer).",
+        required: false,
+        schema: new OA\Schema(type: "string", enum: ["JobSeeker", "Employer"])
+    )]
     #[OA\Response(
         response: 200,
         description: "Redirect URL generated",
@@ -316,12 +323,19 @@ class AuthController extends Controller
             ]
         )
     )]
-    public function redirectToProvider($provider): JsonResponse
+    public function redirectToProvider(Request $request, $provider): JsonResponse
     {
         $driver = $provider === 'linkedin' ? 'linkedin-openid' : $provider;
+        $socialiteDriver = \Laravel\Socialite\Facades\Socialite::driver($driver)->stateless();
+
+        if ($request->has('role') && in_array($request->query('role'), ['JobSeeker', 'Employer'])) {
+            $socialiteDriver->with([
+                'state' => base64_encode(json_encode(['role' => $request->query('role')]))
+            ]);
+        }
 
         return response()->json([
-            'url' => \Laravel\Socialite\Facades\Socialite::driver($driver)->stateless()->redirect()->getTargetUrl(),
+            'url' => $socialiteDriver->redirect()->getTargetUrl(),
         ]);
     }
 
@@ -366,9 +380,19 @@ class AuthController extends Controller
 
         try {
             $driver = $provider === 'linkedin' ? 'linkedin-openid' : $provider;
+
+            // Extract requested role from state if available
+            $requestedRole = null;
+            if ($request->has('state')) {
+                $decodedState = json_decode(base64_decode($request->query('state')), true);
+                if (is_array($decodedState) && isset($decodedState['role'])) {
+                    $requestedRole = $decodedState['role'];
+                }
+            }
+
             $socialUser = \Laravel\Socialite\Facades\Socialite::driver($driver)->stateless()->user();
 
-            $result = $action->execute($socialUser, $provider);
+            $result = $action->execute($socialUser, $provider, $requestedRole);
 
             $queryParams = http_build_query([
                 'token' => $result->sanctumToken,

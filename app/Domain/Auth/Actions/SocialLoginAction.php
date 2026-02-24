@@ -4,6 +4,9 @@ namespace App\Domain\Auth\Actions;
 
 use App\Domain\Auth\DTOs\AuthenticatedUserDTO;
 use App\Domain\User\Models\User;
+use App\Domain\User\Models\Role;
+use App\Domain\User\Models\JobSeekerProfile;
+use App\Domain\Company\Models\CompanyProfile;
 use App\Domain\Shared\Contracts\ActionInterface;
 use Illuminate\Support\Facades\DB;
 use Laravel\Socialite\Contracts\User as SocialUser;
@@ -18,9 +21,10 @@ class SocialLoginAction implements ActionInterface
      *
      * @param SocialUser $socialUser
      * @param string $provider (google, linkedin)
+     * @param string|null $requestedRole Optional role to assign (JobSeeker, Employer)
      * @return AuthenticatedUserDTO
      */
-    public function execute(SocialUser $socialUser, string $provider): AuthenticatedUserDTO
+    public function execute(SocialUser $socialUser, string $provider, ?string $requestedRole = null): AuthenticatedUserDTO
     {
         // 1. Try to find user by ProviderID
         $user = User::where('ProviderID', $socialUser->getId())->first();
@@ -42,7 +46,7 @@ class SocialLoginAction implements ActionInterface
 
         // 3. If still not found, Create New User
         if (!$user) {
-            $user = DB::transaction(function () use ($socialUser, $provider) {
+            $user = DB::transaction(function () use ($socialUser, $provider, $requestedRole) {
                 $newUser = User::create([
                     'FullName' => $socialUser->getName(),
                     'Email' => $socialUser->getEmail(),
@@ -54,11 +58,23 @@ class SocialLoginAction implements ActionInterface
                     // PasswordHash remains null
                 ]);
 
-                // We don't assign a role yet. User must call /auth/set-role endpoint?
-                // Or we can default to JobSeeker? 
-                // Plan says: "Assign role (if provided)" but Socialite callback doesn't have role.
-                // Best practice: Create user without role, then redirect to a "Select Role" page on frontend.
-                // For this API: User is created. If they try to access protected routes, they might need a role.
+                // Assign role if requested, default to JobSeeker if null or invalid
+                $roleName = in_array($requestedRole, ['JobSeeker', 'Employer']) ? $requestedRole : 'JobSeeker';
+                $role = Role::where('RoleName', $roleName)->first();
+
+                if ($role) {
+                    $newUser->roles()->attach($role->RoleID);
+
+                    // Create appropriate profile
+                    if ($roleName === 'JobSeeker') {
+                        JobSeekerProfile::create(['JobSeekerID' => $newUser->UserID]);
+                    } elseif ($roleName === 'Employer') {
+                        CompanyProfile::create([
+                            'CompanyID' => $newUser->UserID,
+                            'CompanyName' => $newUser->FullName,
+                        ]);
+                    }
+                }
 
                 return $newUser;
             });

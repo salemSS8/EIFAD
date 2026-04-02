@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Domain\User\Models\JobSeekerProfile;
 use App\Domain\Company\Models\CompanyProfile;
+use App\Domain\User\Models\JobSeekerProfile;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-
 use OpenApi\Attributes as OA;
 
 /**
@@ -19,30 +18,30 @@ class ProfileController extends Controller
      * Get current user's profile.
      */
     #[OA\Get(
-        path: "/profile",
-        operationId: "getProfile",
-        tags: ["Profile"],
-        summary: "Get current user profile",
-        description: "Returns the profile of the authenticated user (Job Seeker or Employer).",
-        security: [["bearerAuth" => []]]
+        path: '/profile',
+        operationId: 'getProfile',
+        tags: ['Profile'],
+        summary: 'Get current user profile',
+        description: 'Returns the profile of the authenticated user (Job Seeker or Employer).',
+        security: [['bearerAuth' => []]]
     )]
     #[OA\Response(
         response: 200,
-        description: "User profile",
+        description: 'User profile',
         content: new OA\JsonContent(
             oneOf: [
                 new OA\Schema(
                     properties: [
-                        new OA\Property(property: "type", type: "string", example: "job_seeker"),
-                        new OA\Property(property: "data", type: "object")
+                        new OA\Property(property: 'type', type: 'string', example: 'job_seeker'),
+                        new OA\Property(property: 'data', type: 'object'),
                     ]
                 ),
                 new OA\Schema(
                     properties: [
-                        new OA\Property(property: "type", type: "string", example: "company"),
-                        new OA\Property(property: "data", type: "object")
+                        new OA\Property(property: 'type', type: 'string', example: 'company'),
+                        new OA\Property(property: 'data', type: 'object'),
                     ]
-                )
+                ),
             ]
         )
     )]
@@ -53,6 +52,7 @@ class ProfileController extends Controller
 
         if ($role?->RoleName === 'JobSeeker') {
             $profile = $user->jobSeekerProfile;
+
             return response()->json([
                 'type' => 'job_seeker',
                 'data' => $profile,
@@ -61,6 +61,7 @@ class ProfileController extends Controller
 
         if ($role?->RoleName === 'Employer') {
             $profile = $user->companyProfile;
+
             return response()->json([
                 'type' => 'company',
                 'data' => $profile?->load('specializations'),
@@ -71,51 +72,118 @@ class ProfileController extends Controller
     }
 
     /**
+     * Get user statistics.
+     */
+    #[OA\Get(
+        path: '/profile/statistics',
+        operationId: 'getProfileStatistics',
+        tags: ['Profile'],
+        summary: 'Get profile statistics',
+        description: 'Returns statistics for the current user.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Response(response: 200, description: 'Profile statistics')]
+    public function statistics(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $role = $user->roles->first();
+
+        if ($role?->RoleName === 'JobSeeker') {
+            $applicationsCount = \App\Domain\Application\Models\JobApplication::where('JobSeekerID', $user->UserID)->count();
+            $acceptedCount = \App\Domain\Application\Models\JobApplication::where('JobSeekerID', $user->UserID)
+                ->whereIn('Status', ['Hired', 'Offered'])->count();
+            $rejectedCount = \App\Domain\Application\Models\JobApplication::where('JobSeekerID', $user->UserID)
+                ->where('Status', 'Rejected')->count();
+            // Profile views can be mocked for now or queried if a table exists.
+
+            return response()->json([
+                'type' => 'job_seeker',
+                'data' => [
+                    'total_applications' => $applicationsCount,
+                    'accepted_applications' => $acceptedCount,
+                    'rejected_applications' => $rejectedCount,
+                    'profile_views' => rand(10, 500), // Dummy data for views since we lack a visits table
+                ],
+            ]);
+        }
+
+        if ($role?->RoleName === 'Employer') {
+            $jobsCount = \App\Domain\Job\Models\JobAd::where('CompanyID', $user->UserID)->count();
+            $applicationsReceived = \App\Domain\Application\Models\JobApplication::whereHas('jobAd', function ($q) use ($user) {
+                $q->where('CompanyID', $user->UserID);
+            })->count();
+
+            return response()->json([
+                'type' => 'company',
+                'data' => [
+                    'total_jobs_posted' => $jobsCount,
+                    'total_applications_received' => $applicationsReceived,
+                    'profile_views' => rand(50, 1000),
+                ],
+            ]);
+        }
+
+        return response()->json(['message' => 'Profile not found'], 404);
+    }
+
+    /**
      * Create or update profile.
      */
     #[OA\Post(
-        path: "/profile",
-        operationId: "createOrUpdateProfile",
-        tags: ["Profile"],
-        summary: "Create or update profile",
-        description: "Creates or updates the profile for the authenticated user based on their role.",
-        security: [["bearerAuth" => []]]
+        path: '/profile',
+        operationId: 'createOrUpdateProfile',
+        tags: ['Profile'],
+        summary: 'Create or update profile',
+        description: 'Creates or updates the profile for the authenticated user based on their role.',
+        security: [['bearerAuth' => []]]
     )]
     #[OA\RequestBody(
         required: true,
         content: new OA\JsonContent(
             oneOf: [
                 new OA\Schema(
-                    description: "Job Seeker Profile",
+                    description: 'Job Seeker Profile',
                     properties: [
-                        new OA\Property(property: "personal_photo", type: "string"),
-                        new OA\Property(property: "location", type: "string"),
-                        new OA\Property(property: "profile_summary", type: "string"),
+                        new OA\Property(property: 'full_name', type: 'string'),
+                        new OA\Property(property: 'phone', type: 'string'),
+                        new OA\Property(property: 'personal_photo', type: 'string'),
+                        new OA\Property(property: 'location', type: 'string'),
+                        new OA\Property(property: 'profile_summary', type: 'string'),
                     ]
                 ),
                 new OA\Schema(
-                    description: "Company Profile",
-                    required: ["company_name"],
+                    description: 'Company Profile',
+                    required: ['company_name'],
                     properties: [
-                        new OA\Property(property: "company_name", type: "string"),
-                        new OA\Property(property: "organization_name", type: "string"),
-                        new OA\Property(property: "address", type: "string"),
-                        new OA\Property(property: "description", type: "string"),
-                        new OA\Property(property: "logo_path", type: "string"),
-                        new OA\Property(property: "website_url", type: "string"),
-                        new OA\Property(property: "established_year", type: "integer"),
-                        new OA\Property(property: "employee_count", type: "integer"),
-                        new OA\Property(property: "field_of_work", type: "string"),
+                        new OA\Property(property: 'full_name', type: 'string'),
+                        new OA\Property(property: 'phone', type: 'string'),
+                        new OA\Property(property: 'company_name', type: 'string'),
+                        new OA\Property(property: 'organization_name', type: 'string'),
+                        new OA\Property(property: 'address', type: 'string'),
+                        new OA\Property(property: 'description', type: 'string'),
+                        new OA\Property(property: 'logo_path', type: 'string'),
+                        new OA\Property(property: 'website_url', type: 'string'),
+                        new OA\Property(property: 'established_year', type: 'integer'),
+                        new OA\Property(property: 'employee_count', type: 'integer'),
+                        new OA\Property(property: 'field_of_work', type: 'string'),
                     ]
-                )
+                ),
             ]
         )
     )]
-    #[OA\Response(response: 200, description: "Profile updated successfully")]
+    #[OA\Response(response: 200, description: 'Profile updated successfully')]
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
         $role = $user->roles->first();
+
+        // Update User info if present
+        if ($request->has('full_name') || $request->has('phone')) {
+            $user->update([
+                'FullName' => $request->input('full_name', $user->FullName),
+                'Phone' => $request->input('phone', $user->Phone),
+            ]);
+        }
 
         if ($role?->RoleName === 'JobSeeker') {
             return $this->updateJobSeekerProfile($request, $user);
@@ -132,44 +200,48 @@ class ProfileController extends Controller
      * Alias for store (both create and update use same logic).
      */
     #[OA\Put(
-        path: "/profile",
-        operationId: "updateProfile",
-        tags: ["Profile"],
-        summary: "Update profile",
-        description: "Alias for POST /profile",
-        security: [["bearerAuth" => []]]
+        path: '/profile',
+        operationId: 'updateProfile',
+        tags: ['Profile'],
+        summary: 'Update profile',
+        description: 'Alias for POST /profile',
+        security: [['bearerAuth' => []]]
     )]
     #[OA\RequestBody(
         required: true,
         content: new OA\JsonContent(
             oneOf: [
                 new OA\Schema(
-                    description: "Job Seeker Profile",
+                    description: 'Job Seeker Profile',
                     properties: [
-                        new OA\Property(property: "personal_photo", type: "string"),
-                        new OA\Property(property: "location", type: "string"),
-                        new OA\Property(property: "profile_summary", type: "string"),
+                        new OA\Property(property: 'full_name', type: 'string'),
+                        new OA\Property(property: 'phone', type: 'string'),
+                        new OA\Property(property: 'personal_photo', type: 'string'),
+                        new OA\Property(property: 'location', type: 'string'),
+                        new OA\Property(property: 'profile_summary', type: 'string'),
                     ]
                 ),
                 new OA\Schema(
-                    description: "Company Profile",
-                    required: ["company_name"],
+                    description: 'Company Profile',
+                    required: ['company_name'],
                     properties: [
-                        new OA\Property(property: "company_name", type: "string"),
-                        new OA\Property(property: "organization_name", type: "string"),
-                        new OA\Property(property: "address", type: "string"),
-                        new OA\Property(property: "description", type: "string"),
-                        new OA\Property(property: "logo_path", type: "string"),
-                        new OA\Property(property: "website_url", type: "string"),
-                        new OA\Property(property: "established_year", type: "integer"),
-                        new OA\Property(property: "employee_count", type: "integer"),
-                        new OA\Property(property: "field_of_work", type: "string"),
+                        new OA\Property(property: 'full_name', type: 'string'),
+                        new OA\Property(property: 'phone', type: 'string'),
+                        new OA\Property(property: 'company_name', type: 'string'),
+                        new OA\Property(property: 'organization_name', type: 'string'),
+                        new OA\Property(property: 'address', type: 'string'),
+                        new OA\Property(property: 'description', type: 'string'),
+                        new OA\Property(property: 'logo_path', type: 'string'),
+                        new OA\Property(property: 'website_url', type: 'string'),
+                        new OA\Property(property: 'established_year', type: 'integer'),
+                        new OA\Property(property: 'employee_count', type: 'integer'),
+                        new OA\Property(property: 'field_of_work', type: 'string'),
                     ]
-                )
+                ),
             ]
         )
     )]
-    #[OA\Response(response: 200, description: "Profile updated successfully")]
+    #[OA\Response(response: 200, description: 'Profile updated successfully')]
     public function update(Request $request): JsonResponse
     {
         return $this->store($request);
@@ -244,13 +316,13 @@ class ProfileController extends Controller
      * User Story: Create & Update & Delete Profile
      */
     #[OA\Delete(
-        path: "/profile",
-        operationId: "deleteProfile",
-        tags: ["Profile"],
-        summary: "Delete profile",
-        security: [["bearerAuth" => []]]
+        path: '/profile',
+        operationId: 'deleteProfile',
+        tags: ['Profile'],
+        summary: 'Delete profile',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Response(response: 200, description: "Profile deleted successfully")]
+    #[OA\Response(response: 200, description: 'Profile deleted successfully')]
     public function destroy(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -258,7 +330,7 @@ class ProfileController extends Controller
 
         if ($role?->RoleName === 'JobSeeker') {
             $profile = $user->jobSeekerProfile;
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json([
                     'message' => 'الملف الشخصي غير موجود',
                 ], 404);
@@ -273,7 +345,7 @@ class ProfileController extends Controller
 
         if ($role?->RoleName === 'Employer') {
             $profile = $user->companyProfile;
-            if (!$profile) {
+            if (! $profile) {
                 return response()->json([
                     'message' => 'ملف الشركة غير موجود',
                 ], 404);

@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Api\Communication;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Domain\User\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\TestCase;
 
 class ChatTest extends TestCase
 {
@@ -71,6 +71,7 @@ class ChatTest extends TestCase
             'SenderID' => $user2->UserID,
             'Content' => 'Hi there',
             'SentAt' => now(),
+            'IsDeleted' => false,
         ]);
 
         $response = $this->actingAs($user1)->getJson("/api/conversations/{$convId}/messages");

@@ -297,6 +297,169 @@
                 ]
             }
         },
+        "/applications/{application}/ai-match": {
+            "get": {
+                "tags": [
+                    "AI Analytics"
+                ],
+                "summary": "Get AI match analysis for an application",
+                "description": "Returns the AI screening match score, notes, and detailed CV-Job compatibility breakdown.",
+                "operationId": "getAiMatch",
+                "parameters": [
+                    {
+                        "name": "application",
+                        "in": "path",
+                        "description": "Application ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "AI match details"
+                    },
+                    "403": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Application not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/cvs/{cv}/analysis": {
+            "get": {
+                "tags": [
+                    "AI Analytics"
+                ],
+                "summary": "Get AI analysis of a CV",
+                "description": "Returns scores, strengths, gaps, and improvement recommendations for a CV.",
+                "operationId": "getCvAnalysis",
+                "parameters": [
+                    {
+                        "name": "cv",
+                        "in": "path",
+                        "description": "CV ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CV analysis results"
+                    },
+                    "403": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "No analysis found for this CV"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/cvs/{cv}/skill-gaps": {
+            "get": {
+                "tags": [
+                    "AI Analytics"
+                ],
+                "summary": "Get skill gap analysis for a CV",
+                "description": "Returns a list of skills the job seeker is missing compared to market demands.",
+                "operationId": "getCvSkillGaps",
+                "parameters": [
+                    {
+                        "name": "cv",
+                        "in": "path",
+                        "description": "CV ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "job_ad_id",
+                        "in": "query",
+                        "description": "Filter by specific job ad",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Skill gap analysis results"
+                    },
+                    "403": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/jobs/{jobId}/match-score": {
+            "get": {
+                "tags": [
+                    "AI Analytics"
+                ],
+                "summary": "Get match score before applying",
+                "description": "Returns the CV match score for a specific job without actually applying.",
+                "operationId": "getPreApplyMatchScore",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "description": "Job Ad ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cv_id",
+                        "in": "query",
+                        "description": "CV ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Match score details"
+                    },
+                    "403": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Job or CV not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/applications": {
             "get": {
                 "tags": [
@@ -381,6 +544,44 @@
                 "responses": {
                     "200": {
                         "description": "Application details"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/applications/auto-apply": {
+            "post": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Auto apply to a matching job",
+                "description": "Finds the best matching active job for the provided CV and applies automatically.",
+                "operationId": "autoApply",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "cv_id"
+                                ],
+                                "properties": {
+                                    "cv_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Auto application result"
                     }
                 },
                 "security": [
@@ -1694,6 +1895,231 @@
                 ]
             }
         },
+        "/cvs/{cvId}/custom-sections": {
+            "post": {
+                "tags": [
+                    "CVs"
+                ],
+                "summary": "Add custom section to CV",
+                "description": "Add generic custom section to CV (e.g., Volunteering, Awards, Projects, Certifications)",
+                "operationId": "addCustomSection",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "SectionType",
+                                    "Title"
+                                ],
+                                "properties": {
+                                    "SectionType": {
+                                        "type": "string",
+                                        "example": "Volunteering"
+                                    },
+                                    "Title": {
+                                        "type": "string",
+                                        "example": "Red Cross Volunteer"
+                                    },
+                                    "Description": {
+                                        "type": "string",
+                                        "example": "Assisted in..."
+                                    },
+                                    "StartDate": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2022-01-01"
+                                    },
+                                    "EndDate": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2022-12-31"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Custom section added successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/cvs/{cvId}/custom-sections/{sectionId}": {
+            "delete": {
+                "tags": [
+                    "CVs"
+                ],
+                "summary": "Remove custom section from CV",
+                "description": "Remove custom section from CV",
+                "operationId": "removeCustomSection",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "sectionId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Custom section removed successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/companies": {
+            "get": {
+                "tags": [
+                    "Companies"
+                ],
+                "summary": "Get all verified companies",
+                "description": "Returns a paginated list of all verified companies.",
+                "operationId": "getCompanies",
+                "responses": {
+                    "200": {
+                        "description": "List of verified companies"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/companies/{id}": {
+            "get": {
+                "tags": [
+                    "Companies"
+                ],
+                "summary": "Get company details",
+                "description": "Returns details of a specific company along with its active job ads.",
+                "operationId": "getCompanyDetails",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Company ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Company details"
+                    },
+                    "404": {
+                        "description": "Company not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/companies/{id}/follow": {
+            "post": {
+                "tags": [
+                    "Companies",
+                    "Follow"
+                ],
+                "summary": "Follow a company",
+                "description": "Allows a job seeker to follow a specific company.",
+                "operationId": "followCompany",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Company ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Company followed successfully"
+                    },
+                    "403": {
+                        "description": "Only job seekers can follow companies"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Companies",
+                    "Follow"
+                ],
+                "summary": "Unfollow a company",
+                "description": "Allows a job seeker to unfollow a company.",
+                "operationId": "unfollowCompany",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Company ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Unfollowed company successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/courses": {
             "get": {
                 "tags": [
@@ -2142,9 +2568,9 @@
                 "operationId": "getJobs",
                 "parameters": [
                     {
-                        "name": "keyword",
+                        "name": "search",
                         "in": "query",
-                        "description": "Search keyword for title or description",
+                        "description": "Search keyword in title, description, and requirements",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -2162,7 +2588,7 @@
                     {
                         "name": "work_type",
                         "in": "query",
-                        "description": "Filter by work type (Full-time, Part-time)",
+                        "description": "Filter by work type (Full-time, Part-time, Contract, Internship)",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -2214,9 +2640,32 @@
                         }
                     },
                     {
+                        "name": "industry",
+                        "in": "query",
+                        "description": "Filter by industry (company field of work)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Sort order: latest (default), salary_desc, salary_asc",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "latest",
+                                "salary_desc",
+                                "salary_asc"
+                            ]
+                        }
+                    },
+                    {
                         "name": "per_page",
                         "in": "query",
-                        "description": "Items per page (default 15)",
+                        "description": "Items per page (default 15, max 50)",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2345,6 +2794,46 @@
                 "responses": {
                     "200": {
                         "description": "List of favorite jobs"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/jobs/matching": {
+            "get": {
+                "tags": [
+                    "Jobs"
+                ],
+                "summary": "Get matching jobs",
+                "description": "Returns jobs that match the active or specified CV of the job seeker.",
+                "operationId": "getMatchingJobs",
+                "parameters": [
+                    {
+                        "name": "cv_id",
+                        "in": "query",
+                        "description": "CV ID for matching. If missing, uses the latest CV.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "min_score",
+                        "in": "query",
+                        "description": "Minimum match score (default 50)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of matching jobs"
                     }
                 },
                 "security": [
@@ -2687,7 +3176,7 @@
                     "Notifications"
                 ],
                 "summary": "Get notifications",
-                "description": "Get user notifications.",
+                "description": "Get notifications. Note: New notifications are also broadcasted via Laravel Reverb websockets on the channel `private-App.Models.User.{id}`.",
                 "operationId": "getNotifications",
                 "parameters": [
                     {
@@ -2829,6 +3318,12 @@
                                     {
                                         "description": "Job Seeker Profile",
                                         "properties": {
+                                            "full_name": {
+                                                "type": "string"
+                                            },
+                                            "phone": {
+                                                "type": "string"
+                                            },
                                             "personal_photo": {
                                                 "type": "string"
                                             },
@@ -2847,6 +3342,12 @@
                                             "company_name"
                                         ],
                                         "properties": {
+                                            "full_name": {
+                                                "type": "string"
+                                            },
+                                            "phone": {
+                                                "type": "string"
+                                            },
                                             "company_name": {
                                                 "type": "string"
                                             },
@@ -2909,6 +3410,12 @@
                                     {
                                         "description": "Job Seeker Profile",
                                         "properties": {
+                                            "full_name": {
+                                                "type": "string"
+                                            },
+                                            "phone": {
+                                                "type": "string"
+                                            },
                                             "personal_photo": {
                                                 "type": "string"
                                             },
@@ -2927,6 +3434,12 @@
                                             "company_name"
                                         ],
                                         "properties": {
+                                            "full_name": {
+                                                "type": "string"
+                                            },
+                                            "phone": {
+                                                "type": "string"
+                                            },
                                             "company_name": {
                                                 "type": "string"
                                             },
@@ -2983,6 +3496,26 @@
                 "responses": {
                     "200": {
                         "description": "Profile deleted successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/profile/statistics": {
+            "get": {
+                "tags": [
+                    "Profile"
+                ],
+                "summary": "Get profile statistics",
+                "description": "Returns statistics for the current user.",
+                "operationId": "getProfileStatistics",
+                "responses": {
+                    "200": {
+                        "description": "Profile statistics"
                     }
                 },
                 "security": [
@@ -3072,6 +3605,10 @@
             "description": "Admin"
         },
         {
+            "name": "AI Analytics",
+            "description": "AI Analytics"
+        },
+        {
             "name": "Applications",
             "description": "Applications"
         },
@@ -3106,6 +3643,14 @@
         {
             "name": "Languages",
             "description": "Languages"
+        },
+        {
+            "name": "Companies",
+            "description": "Companies"
+        },
+        {
+            "name": "Follow",
+            "description": "Follow"
         },
         {
             "name": "Courses",

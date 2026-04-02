@@ -2,15 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Domain\Application\Models\JobApplication;
-use App\Domain\Job\Models\JobAd;
-use App\Domain\CV\Models\CV;
 use App\Domain\AI\Models\CVJobMatch;
+use App\Domain\Application\Models\JobApplication;
+use App\Domain\CV\Models\CV;
+use App\Domain\Job\Models\JobAd;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-
 use OpenApi\Attributes as OA;
 
 /**
@@ -22,20 +20,20 @@ class ApplicationController extends Controller
      * Get current user's applications (for job seekers).
      */
     #[OA\Get(
-        path: "/applications",
-        operationId: "getMyApplications",
-        tags: ["Applications"],
-        summary: "Get my applications",
-        description: "Returns a list of applications submitted by the current job seeker.",
-        security: [["bearerAuth" => []]]
+        path: '/applications',
+        operationId: 'getMyApplications',
+        tags: ['Applications'],
+        summary: 'Get my applications',
+        description: 'Returns a list of applications submitted by the current job seeker.',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Response(response: 200, description: "List of applications")]
+    #[OA\Response(response: 200, description: 'List of applications')]
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
         $profile = $user->jobSeekerProfile;
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['message' => 'Only job seekers can view applications'], 403);
         }
 
@@ -51,14 +49,14 @@ class ApplicationController extends Controller
      * Get a specific application.
      */
     #[OA\Get(
-        path: "/applications/{id}",
-        operationId: "getApplication",
-        tags: ["Applications"],
-        summary: "Get application details",
-        security: [["bearerAuth" => []]]
+        path: '/applications/{id}',
+        operationId: 'getApplication',
+        tags: ['Applications'],
+        summary: 'Get application details',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
-    #[OA\Response(response: 200, description: "Application details")]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Application details')]
     public function show(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
@@ -76,24 +74,24 @@ class ApplicationController extends Controller
      * Apply to a job.
      */
     #[OA\Post(
-        path: "/applications",
-        operationId: "submitApplication",
-        tags: ["Applications"],
-        summary: "Submit a job application",
-        security: [["bearerAuth" => []]]
+        path: '/applications',
+        operationId: 'submitApplication',
+        tags: ['Applications'],
+        summary: 'Submit a job application',
+        security: [['bearerAuth' => []]]
     )]
     #[OA\RequestBody(
         required: true,
         content: new OA\JsonContent(
-            required: ["job_id", "cv_id"],
+            required: ['job_id', 'cv_id'],
             properties: [
-                new OA\Property(property: "job_id", type: "integer"),
-                new OA\Property(property: "cv_id", type: "integer"),
-                new OA\Property(property: "notes", type: "string"),
+                new OA\Property(property: 'job_id', type: 'integer'),
+                new OA\Property(property: 'cv_id', type: 'integer'),
+                new OA\Property(property: 'notes', type: 'string'),
             ]
         )
     )]
-    #[OA\Response(response: 201, description: "Application submitted successfully")]
+    #[OA\Response(response: 201, description: 'Application submitted successfully')]
     public function store(Request $request): JsonResponse
     {
         $request->validate([
@@ -105,7 +103,7 @@ class ApplicationController extends Controller
         $user = $request->user();
         $profile = $user->jobSeekerProfile;
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['message' => 'Only job seekers can apply to jobs'], 403);
         }
 
@@ -114,7 +112,7 @@ class ApplicationController extends Controller
             ->where('JobSeekerID', $profile->JobSeekerID)
             ->first();
 
-        if (!$cv) {
+        if (! $cv) {
             return response()->json(['message' => 'Invalid CV specified'], 422);
         }
 
@@ -123,7 +121,7 @@ class ApplicationController extends Controller
             ->where('Status', 'Active')
             ->first();
 
-        if (!$job) {
+        if (! $job) {
             return response()->json(['message' => 'This job is not accepting applications'], 422);
         }
 
@@ -156,8 +154,118 @@ class ApplicationController extends Controller
             'Notes' => $request->input('notes'),
         ]);
 
+        // Create Notification for the Employer
+        $notification = \App\Domain\Communication\Models\Notification::create([
+            'UserID' => $job->CompanyID, // CompanyID acts as UserID for employer
+            'Type' => 'New Application',
+            'Content' => "A new candidate applied for your job: {$job->Title}",
+            'IsRead' => false,
+            'CreatedAt' => now(),
+        ]);
+
+        broadcast(new \App\Events\NotificationReceived($notification))->toOthers();
+
+        // Dispatch AI Applicant Screener
+        \App\Jobs\ProcessApplicationScreener::dispatch($application);
+
         return response()->json([
             'message' => 'Application submitted successfully',
+            'data' => $application->load(['jobAd', 'cv']),
+        ], 201);
+    }
+
+    /**
+     * Auto apply to best matching job.
+     */
+    #[OA\Post(
+        path: '/applications/auto-apply',
+        operationId: 'autoApply',
+        tags: ['Applications'],
+        summary: 'Auto apply to a matching job',
+        description: 'Finds the best matching active job for the provided CV and applies automatically.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['cv_id'],
+            properties: [
+                new OA\Property(property: 'cv_id', type: 'integer'),
+            ]
+        )
+    )]
+    #[OA\Response(response: 201, description: 'Auto application result')]
+    public function autoApply(Request $request): JsonResponse
+    {
+        $request->validate([
+            'cv_id' => 'required|exists:cv,CVID',
+        ]);
+
+        $user = $request->user();
+        $profile = $user->jobSeekerProfile;
+
+        if (! $profile) {
+            return response()->json(['message' => 'Only job seekers can use auto apply'], 403);
+        }
+
+        // Verify CV belongs to user
+        $cv = CV::where('CVID', $request->input('cv_id'))
+            ->where('JobSeekerID', $profile->JobSeekerID)
+            ->first();
+
+        if (! $cv) {
+            return response()->json(['message' => 'Invalid CV specified'], 422);
+        }
+
+        // Get already applied jobs
+        $appliedJobIds = JobApplication::where('JobSeekerID', $profile->JobSeekerID)
+            ->pluck('JobAdID')
+            ->toArray();
+
+        // Find the highest match score job which is still active and not applied to
+        $bestMatch = CVJobMatch::where('CVID', $cv->CVID)
+            ->whereNotIn('JobAdID', $appliedJobIds)
+            ->whereHas('jobAd', function ($q) {
+                $q->where('Status', 'Active')
+                    ->where(function ($q2) {
+                        $q2->whereNull('ExpiryDate')->orWhere('ExpiryDate', '>', now());
+                    });
+            })
+            ->orderByDesc('MatchScore')
+            ->first();
+
+        if (! $bestMatch || $bestMatch->MatchScore < 70) {
+            return response()->json(['message' => 'No highly matching jobs found at this time. (Match score must be at least 70%)'], 404);
+        }
+
+        $job = $bestMatch->jobAd;
+
+        $application = JobApplication::create([
+            'JobAdID' => $job->JobAdID,
+            'JobSeekerID' => $profile->JobSeekerID,
+            'CVID' => $cv->CVID,
+            'AppliedAt' => now(),
+            'Status' => 'Pending',
+            'MatchScore' => $bestMatch->MatchScore,
+            'Notes' => 'Auto-applied via AI Match System',
+        ]);
+
+        // Create Notification for the Employer
+        $notification = \App\Domain\Communication\Models\Notification::create([
+            'UserID' => $job->CompanyID,
+            'Type' => 'New Application',
+            'Content' => "A new candidate auto-applied for your job: {$job->Title}",
+            'IsRead' => false,
+            'CreatedAt' => now(),
+        ]);
+
+        broadcast(new \App\Events\NotificationReceived($notification))->toOthers();
+
+        // Dispatch AI Applicant Screener
+        \App\Jobs\ProcessApplicationScreener::dispatch($application);
+
+        return response()->json([
+            'message' => 'Successfully auto-applied to a highly matching job',
             'data' => $application->load(['jobAd', 'cv']),
         ], 201);
     }
@@ -166,14 +274,14 @@ class ApplicationController extends Controller
      * Withdraw an application.
      */
     #[OA\Post(
-        path: "/applications/{id}/withdraw",
-        operationId: "withdrawApplication",
-        tags: ["Applications"],
-        summary: "Withdraw an application",
-        security: [["bearerAuth" => []]]
+        path: '/applications/{id}/withdraw',
+        operationId: 'withdrawApplication',
+        tags: ['Applications'],
+        summary: 'Withdraw an application',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
-    #[OA\Response(response: 200, description: "Application withdrawn")]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Application withdrawn')]
     public function withdraw(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
@@ -200,20 +308,20 @@ class ApplicationController extends Controller
      * Get applications for a job (for employers).
      */
     #[OA\Get(
-        path: "/employer/jobs/{jobId}/applications",
-        operationId: "getJobApplications",
-        tags: ["Employer", "Applications"],
-        summary: "Get applications for a job",
-        security: [["bearerAuth" => []]]
+        path: '/employer/jobs/{jobId}/applications',
+        operationId: 'getJobApplications',
+        tags: ['Employer', 'Applications'],
+        summary: 'Get applications for a job',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "jobId", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
-    #[OA\Response(response: 200, description: "List of applications for the job")]
+    #[OA\Parameter(name: 'jobId', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'List of applications for the job')]
     public function jobApplications(Request $request, int $jobId): JsonResponse
     {
         $user = $request->user();
         $company = $user->companyProfile;
 
-        if (!$company) {
+        if (! $company) {
             return response()->json(['message' => 'Company profile not found'], 404);
         }
 
@@ -239,24 +347,24 @@ class ApplicationController extends Controller
      * Update application status (for employers).
      */
     #[OA\Put(
-        path: "/employer/applications/{id}/status",
-        operationId: "updateApplicationStatus",
-        tags: ["Employer", "Applications"],
-        summary: "Update application status",
-        security: [["bearerAuth" => []]]
+        path: '/employer/applications/{id}/status',
+        operationId: 'updateApplicationStatus',
+        tags: ['Employer', 'Applications'],
+        summary: 'Update application status',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
     #[OA\RequestBody(
         required: true,
         content: new OA\JsonContent(
-            required: ["status"],
+            required: ['status'],
             properties: [
-                new OA\Property(property: "status", type: "string", enum: ["Pending", "Reviewed", "Shortlisted", "Interviewing", "Offered", "Hired", "Rejected"]),
-                new OA\Property(property: "notes", type: "string"),
+                new OA\Property(property: 'status', type: 'string', enum: ['Pending', 'Reviewed', 'Shortlisted', 'Interviewing', 'Offered', 'Hired', 'Rejected']),
+                new OA\Property(property: 'notes', type: 'string'),
             ]
         )
     )]
-    #[OA\Response(response: 200, description: "Status updated")]
+    #[OA\Response(response: 200, description: 'Status updated')]
     public function updateStatus(Request $request, int $id): JsonResponse
     {
         $request->validate([
@@ -267,7 +375,7 @@ class ApplicationController extends Controller
         $user = $request->user();
         $company = $user->companyProfile;
 
-        if (!$company) {
+        if (! $company) {
             return response()->json(['message' => 'Company profile not found'], 404);
         }
 
@@ -280,6 +388,19 @@ class ApplicationController extends Controller
             'Status' => $request->input('status'),
             'Notes' => $request->input('notes', $application->Notes),
         ]);
+
+        $application->load('jobAd:JobAdID,Title');
+
+        // Notify the Job Seeker about the status change
+        $notification = \App\Domain\Communication\Models\Notification::create([
+            'UserID' => $application->JobSeekerID, // JobSeekerID acts as UserID
+            'Type' => 'Application Update',
+            'Content' => "The status of your application for '{$application->jobAd->Title}' has been updated to {$application->Status}.",
+            'IsRead' => false,
+            'CreatedAt' => now(),
+        ]);
+
+        broadcast(new \App\Events\NotificationReceived($notification))->toOthers();
 
         return response()->json([
             'message' => 'Application status updated',

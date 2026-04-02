@@ -11,7 +11,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class JobApplication extends Model
 {
     protected $table = 'jobapplication';
+
     protected $primaryKey = 'ApplicationID';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -54,5 +56,13 @@ class JobApplication extends Model
     public function cv(): BelongsTo
     {
         return $this->belongsTo(\App\Domain\CV\Models\CV::class, 'CVID', 'CVID');
+    }
+
+    /**
+     * Get all AI match analyses for this application's CV.
+     */
+    public function cvJobMatches(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Domain\AI\Models\CVJobMatch::class, 'CVID', 'CVID');
     }
 }

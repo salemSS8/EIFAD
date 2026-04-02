@@ -1,15 +1,16 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\AiAnalyticsController;
+use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\CVController;
 use App\Http\Controllers\Api\JobController;
-use App\Http\Controllers\Api\ApplicationController;
-use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SkillController;
-use App\Http\Controllers\Api\AdminController;
-use App\Http\Controllers\Api\CourseController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,10 +26,10 @@ use App\Http\Controllers\Api\CourseController;
 // =========================================
 
 // Health Check
-Route::get('/health', fn() => response()->json([
+Route::get('/health', fn () => response()->json([
     'status' => 'ok',
     'timestamp' => now(),
-    'database' => DB::connection()->getDatabaseName(),
+    'database' => \Illuminate\Support\Facades\DB::connection()->getDatabaseName(),
 ]));
 
 // Authentication
@@ -77,6 +78,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ------- Profile -------
     Route::prefix('profile')->group(function () {
+        Route::get('/statistics', [ProfileController::class, 'statistics']);
         Route::get('/', [ProfileController::class, 'show']);
         Route::post('/', [ProfileController::class, 'store']);
         Route::put('/', [ProfileController::class, 'update']);
@@ -114,6 +116,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{cvId}/experience', [CVController::class, 'addExperience']);
         Route::delete('/{cvId}/experience/{experienceId}', [CVController::class, 'removeExperience']);
 
+        // CV Custom Sections (For generic additions like Volunteering, Awards, Projects, etc)
+        Route::post('/{cvId}/custom-sections', [CVController::class, 'addCustomSection']);
+        Route::delete('/{cvId}/custom-sections/{sectionId}', [CVController::class, 'removeCustomSection']);
+
         // CV Languages
         Route::post('/{cvId}/languages', [CVController::class, 'addLanguage']);
         Route::delete('/{cvId}/languages/{languageId}', [CVController::class, 'removeLanguage']);
@@ -129,10 +135,28 @@ Route::middleware('auth:sanctum')->group(function () {
     // Applications (Job Seeker)
     Route::prefix('applications')->group(function () {
         Route::get('/', [ApplicationController::class, 'index']);
+        Route::post('/auto-apply', [ApplicationController::class, 'autoApply']);
         Route::post('/', [ApplicationController::class, 'store']);
         Route::get('/{id}', [ApplicationController::class, 'show']);
         Route::post('/{id}/withdraw', [ApplicationController::class, 'withdraw']);
     });
+
+    // =========================================
+    // AI Analytics & Matching
+    // =========================================
+
+    // Job Matching
+    Route::prefix('jobs')->group(function () {
+        Route::get('/matching', [JobController::class, 'matching']);
+        Route::get('/{jobId}/match-score', [AiAnalyticsController::class, 'preApplyMatchScore']);
+    });
+
+    // AI Match (Employer views applicant analysis)
+    Route::get('/applications/{application}/ai-match', [AiAnalyticsController::class, 'aiMatch']);
+
+    // CV Analysis & Skill Gaps (Job Seeker views own analysis)
+    Route::get('/cvs/{cv}/analysis', [AiAnalyticsController::class, 'cvAnalysis']);
+    Route::get('/cvs/{cv}/skill-gaps', [AiAnalyticsController::class, 'skillGaps']);
 
     // =========================================
     // Employer Routes
@@ -162,44 +186,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // =========================================
 
     Route::prefix('companies')->group(function () {
-        Route::get('/', function () {
-            return response()->json(
-                \App\Domain\Company\Models\CompanyProfile::where('IsCompanyVerified', true)
-                    ->paginate(15)
-            );
-        });
-
-        Route::get('/{id}', function (int $id) {
-            return response()->json([
-                'data' => \App\Domain\Company\Models\CompanyProfile::with('jobAds')
-                    ->where('CompanyID', $id)
-                    ->firstOrFail()
-            ]);
-        });
-
-        Route::post('/{id}/follow', function (\Illuminate\Http\Request $request, int $id) {
-            $profile = $request->user()->jobSeekerProfile;
-            if (!$profile) {
-                return response()->json(['message' => 'Only job seekers can follow companies'], 403);
-            }
-
-            \App\Domain\Company\Models\FollowCompany::firstOrCreate([
-                'JobSeekerID' => $profile->JobSeekerID,
-                'CompanyID' => $id,
-            ], ['FollowedAt' => now()]);
-
-            return response()->json(['message' => 'Company followed']);
-        });
-
-        Route::delete('/{id}/follow', function (\Illuminate\Http\Request $request, int $id) {
-            $profile = $request->user()->jobSeekerProfile;
-
-            \App\Domain\Company\Models\FollowCompany::where('JobSeekerID', $profile->JobSeekerID)
-                ->where('CompanyID', $id)
-                ->delete();
-
-            return response()->json(['message' => 'Unfollowed company']);
-        });
+        Route::get('/', [\App\Http\Controllers\Api\CompanyController::class, 'index']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\CompanyController::class, 'show']);
+        Route::post('/{id}/follow', [\App\Http\Controllers\Api\CompanyController::class, 'follow']);
+        Route::delete('/{id}/follow', [\App\Http\Controllers\Api\CompanyController::class, 'unfollow']);
     });
 
     // =========================================
@@ -273,7 +263,7 @@ Route::middleware('auth:sanctum')->group(function () {
                 ->where('UserID', $userId)
                 ->exists();
 
-            if (!$isParticipant) {
+            if (! $isParticipant) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
@@ -296,7 +286,7 @@ Route::middleware('auth:sanctum')->group(function () {
                 ->where('UserID', $userId)
                 ->exists();
 
-            if (!$isParticipant) {
+            if (! $isParticipant) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
@@ -308,13 +298,17 @@ Route::middleware('auth:sanctum')->group(function () {
                 'IsDeleted' => false,
             ]);
 
+            // Need to reload relationships if needed, maybe just the sender
+            $message->load('sender:UserID,FullName');
+
+            broadcast(new \App\Events\MessageSent($message))->toOthers();
+
             return response()->json([
                 'message' => 'Message sent',
                 'data' => $message,
             ], 201);
         });
     });
-
 
     // =========================================
     // Notifications

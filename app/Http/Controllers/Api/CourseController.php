@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Domain\Communication\Models\Notification;
 use App\Domain\Course\Models\CourseAd;
 use App\Domain\Course\Models\CourseEnrollment;
-use App\Domain\Communication\Models\Notification;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-
 /**
  * Course Controller - Manages course ads and enrollments.
  * User Stories: Create Course Ads, Submit & Cancel Course Registration, Notify Course Participants
@@ -31,13 +29,13 @@ class CourseController extends Controller
      * Get all active courses.
      */
     #[OA\Get(
-        path: "/courses",
-        operationId: "getCourses",
-        tags: ["Courses"],
-        summary: "Get active courses",
-        description: "Returns a list of all active courses available for enrollment."
+        path: '/courses',
+        operationId: 'getCourses',
+        tags: ['Courses'],
+        summary: 'Get active courses',
+        description: 'Returns a list of all active courses available for enrollment.'
     )]
-    #[OA\Response(response: 200, description: "List of courses")]
+    #[OA\Response(response: 200, description: 'List of courses')]
     public function index(): JsonResponse
     {
         $courses = CourseAd::with('company:CompanyID,CompanyName,LogoPath')
@@ -52,14 +50,14 @@ class CourseController extends Controller
      * Get course details.
      */
     #[OA\Get(
-        path: "/courses/{id}",
-        operationId: "getCourseDetails",
-        tags: ["Courses"],
-        summary: "Get course details",
-        description: "Returns detailed information about a specific course."
+        path: '/courses/{id}',
+        operationId: 'getCourseDetails',
+        tags: ['Courses'],
+        summary: 'Get course details',
+        description: 'Returns detailed information about a specific course.'
     )]
-    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
-    #[OA\Response(response: 200, description: "Course details")]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Course details')]
     public function show(int $id): JsonResponse
     {
         $course = CourseAd::with(['company', 'enrollments'])
@@ -77,19 +75,19 @@ class CourseController extends Controller
      * Enroll in a course.
      */
     #[OA\Post(
-        path: "/courses/{id}/enroll",
-        operationId: "enrollCourse",
-        tags: ["Courses"],
-        summary: "Enroll in a course",
-        security: [["bearerAuth" => []]]
+        path: '/courses/{id}/enroll',
+        operationId: 'enrollCourse',
+        tags: ['Courses'],
+        summary: 'Enroll in a course',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
-    #[OA\Response(response: 201, description: "Enrolled successfully")]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 201, description: 'Enrolled successfully')]
     public function enroll(Request $request, int $id): JsonResponse
     {
         $profile = $request->user()->jobSeekerProfile;
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json([
                 'message' => 'فقط الباحثين عن عمل يمكنهم التسجيل في الدورات',
             ], 403);
@@ -99,7 +97,7 @@ class CourseController extends Controller
             ->where('Status', 'Active')
             ->first();
 
-        if (!$course) {
+        if (! $course) {
             return response()->json([
                 'message' => 'الدورة غير متاحة للتسجيل',
             ], 404);
@@ -123,6 +121,15 @@ class CourseController extends Controller
                 'EnrolledAt' => now(),
             ]);
 
+            $notification = \App\Domain\Communication\Models\Notification::create([
+                'UserID' => $course->CompanyID, // CompanyID acts as UserID for employer
+                'Type' => 'Course Enrollment',
+                'Content' => "A job seeker has re-enrolled in your course: {$course->Title}",
+                'IsRead' => false,
+                'CreatedAt' => now(),
+            ]);
+            broadcast(new \App\Events\NotificationReceived($notification))->toOthers();
+
             return response()->json([
                 'message' => 'تم إعادة التسجيل في الدورة بنجاح',
                 'data' => $existingEnrollment->fresh(),
@@ -136,6 +143,15 @@ class CourseController extends Controller
             'Status' => 'Enrolled',
         ]);
 
+        $notification = \App\Domain\Communication\Models\Notification::create([
+            'UserID' => $course->CompanyID,
+            'Type' => 'Course Enrollment',
+            'Content' => "A new job seeker has enrolled in your course: {$course->Title}",
+            'IsRead' => false,
+            'CreatedAt' => now(),
+        ]);
+        broadcast(new \App\Events\NotificationReceived($notification))->toOthers();
+
         return response()->json([
             'message' => 'تم التسجيل في الدورة بنجاح',
             'data' => $enrollment,
@@ -146,19 +162,19 @@ class CourseController extends Controller
      * Cancel enrollment (unenroll).
      */
     #[OA\Delete(
-        path: "/courses/{id}/enroll",
-        operationId: "unenrollCourse",
-        tags: ["Courses"],
-        summary: "Unenroll from a course",
-        security: [["bearerAuth" => []]]
+        path: '/courses/{id}/enroll',
+        operationId: 'unenrollCourse',
+        tags: ['Courses'],
+        summary: 'Unenroll from a course',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
-    #[OA\Response(response: 200, description: "Unenrolled successfully")]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Unenrolled successfully')]
     public function unenroll(Request $request, int $id): JsonResponse
     {
         $profile = $request->user()->jobSeekerProfile;
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json([
                 'message' => 'غير مصرح',
             ], 403);
@@ -168,7 +184,7 @@ class CourseController extends Controller
             ->where('JobSeekerID', $profile->JobSeekerID)
             ->first();
 
-        if (!$enrollment) {
+        if (! $enrollment) {
             return response()->json([
                 'message' => 'أنت غير مسجّل في هذه الدورة',
             ], 404);
@@ -193,18 +209,18 @@ class CourseController extends Controller
      * Get my enrollments.
      */
     #[OA\Get(
-        path: "/courses/my-enrollments",
-        operationId: "getMyEnrollments",
-        tags: ["Courses"],
-        summary: "Get my enrollments",
-        security: [["bearerAuth" => []]]
+        path: '/courses/my-enrollments',
+        operationId: 'getMyEnrollments',
+        tags: ['Courses'],
+        summary: 'Get my enrollments',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Response(response: 200, description: "List of enrollments")]
+    #[OA\Response(response: 200, description: 'List of enrollments')]
     public function myEnrollments(Request $request): JsonResponse
     {
         $profile = $request->user()->jobSeekerProfile;
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json([
                 'message' => 'غير مصرح',
             ], 403);
@@ -226,18 +242,18 @@ class CourseController extends Controller
      * Get employer's courses.
      */
     #[OA\Get(
-        path: "/employer/courses",
-        operationId: "getEmployerCourses",
-        tags: ["Employer", "Courses"],
+        path: '/employer/courses',
+        operationId: 'getEmployerCourses',
+        tags: ['Employer', 'Courses'],
         summary: "Get employer's courses",
-        security: [["bearerAuth" => []]]
+        security: [['bearerAuth' => []]]
     )]
     #[OA\Response(response: 200, description: "List of employer's courses")]
     public function employerCourses(Request $request): JsonResponse
     {
         $company = $request->user()->companyProfile;
 
-        if (!$company) {
+        if (! $company) {
             return response()->json([
                 'message' => 'ملف الشركة غير موجود',
             ], 404);
@@ -255,34 +271,34 @@ class CourseController extends Controller
      * Create a new course ad.
      */
     #[OA\Post(
-        path: "/employer/courses",
-        operationId: "createCourse",
-        tags: ["Employer", "Courses"],
-        summary: "Create a new course",
-        security: [["bearerAuth" => []]]
+        path: '/employer/courses',
+        operationId: 'createCourse',
+        tags: ['Employer', 'Courses'],
+        summary: 'Create a new course',
+        security: [['bearerAuth' => []]]
     )]
     #[OA\RequestBody(
         required: true,
         content: new OA\JsonContent(
-            required: ["title"],
+            required: ['title'],
             properties: [
-                new OA\Property(property: "title", type: "string"),
-                new OA\Property(property: "topics", type: "string"),
-                new OA\Property(property: "duration", type: "string"),
-                new OA\Property(property: "location", type: "string"),
-                new OA\Property(property: "trainer", type: "string"),
-                new OA\Property(property: "fees", type: "number"),
-                new OA\Property(property: "start_date", type: "string", format: "date"),
-                new OA\Property(property: "status", type: "string", enum: ["Draft", "Active"]),
+                new OA\Property(property: 'title', type: 'string'),
+                new OA\Property(property: 'topics', type: 'string'),
+                new OA\Property(property: 'duration', type: 'string'),
+                new OA\Property(property: 'location', type: 'string'),
+                new OA\Property(property: 'trainer', type: 'string'),
+                new OA\Property(property: 'fees', type: 'number'),
+                new OA\Property(property: 'start_date', type: 'string', format: 'date'),
+                new OA\Property(property: 'status', type: 'string', enum: ['Draft', 'Active']),
             ]
         )
     )]
-    #[OA\Response(response: 201, description: "Course created successfully")]
+    #[OA\Response(response: 201, description: 'Course created successfully')]
     public function store(Request $request): JsonResponse
     {
         $company = $request->user()->companyProfile;
 
-        if (!$company) {
+        if (! $company) {
             return response()->json([
                 'message' => 'ملف الشركة غير موجود',
             ], 404);
@@ -324,29 +340,29 @@ class CourseController extends Controller
      * Update a course ad.
      */
     #[OA\Put(
-        path: "/employer/courses/{id}",
-        operationId: "updateCourse",
-        tags: ["Employer", "Courses"],
-        summary: "Update course details",
-        security: [["bearerAuth" => []]]
+        path: '/employer/courses/{id}',
+        operationId: 'updateCourse',
+        tags: ['Employer', 'Courses'],
+        summary: 'Update course details',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
     #[OA\RequestBody(
         required: true,
         content: new OA\JsonContent(
             properties: [
-                new OA\Property(property: "title", type: "string"),
-                new OA\Property(property: "topics", type: "string"),
-                new OA\Property(property: "status", type: "string"),
+                new OA\Property(property: 'title', type: 'string'),
+                new OA\Property(property: 'topics', type: 'string'),
+                new OA\Property(property: 'status', type: 'string'),
             ]
         )
     )]
-    #[OA\Response(response: 200, description: "Course updated successfully")]
+    #[OA\Response(response: 200, description: 'Course updated successfully')]
     public function update(Request $request, int $id): JsonResponse
     {
         $company = $request->user()->companyProfile;
 
-        if (!$company) {
+        if (! $company) {
             return response()->json([
                 'message' => 'ملف الشركة غير موجود',
             ], 404);
@@ -388,14 +404,14 @@ class CourseController extends Controller
      * Publish a course (change status to Active).
      */
     #[OA\Post(
-        path: "/employer/courses/{id}/publish",
-        operationId: "publishCourse",
-        tags: ["Employer", "Courses"],
-        summary: "Publish a course",
-        security: [["bearerAuth" => []]]
+        path: '/employer/courses/{id}/publish',
+        operationId: 'publishCourse',
+        tags: ['Employer', 'Courses'],
+        summary: 'Publish a course',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
-    #[OA\Response(response: 200, description: "Course published")]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Course published')]
     public function publish(Request $request, int $id): JsonResponse
     {
         $company = $request->user()->companyProfile;
@@ -416,14 +432,14 @@ class CourseController extends Controller
      * Close a course.
      */
     #[OA\Post(
-        path: "/employer/courses/{id}/close",
-        operationId: "closeCourse",
-        tags: ["Employer", "Courses"],
-        summary: "Close a course",
-        security: [["bearerAuth" => []]]
+        path: '/employer/courses/{id}/close',
+        operationId: 'closeCourse',
+        tags: ['Employer', 'Courses'],
+        summary: 'Close a course',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
-    #[OA\Response(response: 200, description: "Course closed")]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Course closed')]
     public function close(Request $request, int $id): JsonResponse
     {
         $company = $request->user()->companyProfile;
@@ -444,14 +460,14 @@ class CourseController extends Controller
      * Delete a course ad.
      */
     #[OA\Delete(
-        path: "/employer/courses/{id}",
-        operationId: "deleteCourse",
-        tags: ["Employer", "Courses"],
-        summary: "Delete a course",
-        security: [["bearerAuth" => []]]
+        path: '/employer/courses/{id}',
+        operationId: 'deleteCourse',
+        tags: ['Employer', 'Courses'],
+        summary: 'Delete a course',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
-    #[OA\Response(response: 200, description: "Course deleted")]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Course deleted')]
     public function destroy(Request $request, int $id): JsonResponse
     {
         $company = $request->user()->companyProfile;
@@ -478,14 +494,14 @@ class CourseController extends Controller
      * Get course enrollments (for employer).
      */
     #[OA\Get(
-        path: "/employer/courses/{id}/enrollments",
-        operationId: "getCourseEnrollments",
-        tags: ["Employer", "Courses"],
-        summary: "Get enrollments for a course",
-        security: [["bearerAuth" => []]]
+        path: '/employer/courses/{id}/enrollments',
+        operationId: 'getCourseEnrollments',
+        tags: ['Employer', 'Courses'],
+        summary: 'Get enrollments for a course',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
-    #[OA\Response(response: 200, description: "List of enrollments")]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'List of enrollments')]
     public function enrollments(Request $request, int $id): JsonResponse
     {
         $company = $request->user()->companyProfile;
@@ -506,25 +522,25 @@ class CourseController extends Controller
      * Notify course participants.
      */
     #[OA\Post(
-        path: "/employer/courses/{id}/notify",
-        operationId: "notifyCourseParticipants",
-        tags: ["Employer", "Courses"],
-        summary: "Notify course participants",
-        security: [["bearerAuth" => []]]
+        path: '/employer/courses/{id}/notify',
+        operationId: 'notifyCourseParticipants',
+        tags: ['Employer', 'Courses'],
+        summary: 'Notify course participants',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
     #[OA\RequestBody(
         required: true,
         content: new OA\JsonContent(
-            required: ["title", "message"],
+            required: ['title', 'message'],
             properties: [
-                new OA\Property(property: "title", type: "string"),
-                new OA\Property(property: "message", type: "string"),
-                new OA\Property(property: "type", type: "string", enum: ["reminder", "update", "cancellation", "info"]),
+                new OA\Property(property: 'title', type: 'string'),
+                new OA\Property(property: 'message', type: 'string'),
+                new OA\Property(property: 'type', type: 'string', enum: ['reminder', 'update', 'cancellation', 'info']),
             ]
         )
     )]
-    #[OA\Response(response: 200, description: "Notification sent")]
+    #[OA\Response(response: 200, description: 'Notification sent')]
     public function notifyParticipants(Request $request, int $id): JsonResponse
     {
         $company = $request->user()->companyProfile;
@@ -564,13 +580,15 @@ class CourseController extends Controller
 
         $sentCount = 0;
         foreach ($enrollments as $enrollment) {
-            Notification::create([
+            $notification = Notification::create([
                 'UserID' => $enrollment->jobSeeker->JobSeekerID,
                 'Type' => 'course_notification',
                 'Content' => json_encode($notificationContent),
                 'IsRead' => false,
                 'CreatedAt' => now(),
             ]);
+
+            broadcast(new \App\Events\NotificationReceived($notification))->toOthers();
             $sentCount++;
         }
 

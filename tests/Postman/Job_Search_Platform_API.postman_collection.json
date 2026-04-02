@@ -549,7 +549,7 @@
                             "host": ["{{base_url}}"],
                             "path": ["notifications"]
                         },
-                        "description": "Get user's notifications."
+                        "description": "Get user's notifications. Note: New notifications are also broadcasted via Laravel Reverb websockets on the channel `private-App.Models.User.{id}`."
                     }
                 },
                 {
@@ -894,29 +894,29 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}/jobs?keyword=developer&location=Sana'a&work_type=full_time&workplace_type=remote&salary_min=500&salary_max=2000&per_page=15",
+                            "raw": "{{base_url}}/jobs?search=developer&location=Riyadh&work_type=Full-time&workplace_type=Remote&salary_min=500&salary_max=10000&company_id=1&skill_ids=1,2&industry=Technology&sort=latest&per_page=15",
                             "host": ["{{base_url}}"],
                             "path": ["jobs"],
                             "query": [
                                 {
-                                    "key": "keyword",
+                                    "key": "search",
                                     "value": "developer",
-                                    "description": "Search in title and description"
+                                    "description": "Search in title, description, and requirements"
                                 },
                                 {
                                     "key": "location",
-                                    "value": "Sana'a",
+                                    "value": "Riyadh",
                                     "description": "Filter by location"
                                 },
                                 {
                                     "key": "work_type",
-                                    "value": "full_time",
-                                    "description": "full_time, part_time, contract"
+                                    "value": "Full-time",
+                                    "description": "Full-time, Part-time, Contract, Internship"
                                 },
                                 {
                                     "key": "workplace_type",
-                                    "value": "remote",
-                                    "description": "remote, onsite, hybrid"
+                                    "value": "Remote",
+                                    "description": "Remote, On-site, Hybrid"
                                 },
                                 {
                                     "key": "salary_min",
@@ -925,8 +925,31 @@
                                 },
                                 {
                                     "key": "salary_max",
-                                    "value": "2000",
+                                    "value": "10000",
                                     "description": "Maximum salary"
+                                },
+                                {
+                                    "key": "company_id",
+                                    "value": "1",
+                                    "description": "Filter by company ID",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "skill_ids",
+                                    "value": "1,2",
+                                    "description": "Comma-separated skill IDs",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "industry",
+                                    "value": "Technology",
+                                    "description": "Filter by industry (company field of work)",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "sort",
+                                    "value": "latest",
+                                    "description": "Sort: latest (default), salary_desc, salary_asc"
                                 },
                                 {
                                     "key": "per_page",
@@ -935,7 +958,7 @@
                                 }
                             ]
                         },
-                        "description": "Search and filter jobs. All parameters are optional."
+                        "description": "Advanced job search with filtering and sorting. All parameters are optional."
                     }
                 },
                 {
@@ -1476,7 +1499,7 @@
                             "host": ["{{base_url}}"],
                             "path": ["conversations", "1", "messages"]
                         },
-                        "description": "Send a message in a conversation."
+                        "description": "Send a message in a conversation. Note: Upon success, a `MessageSent` event is broadcasted via Laravel Reverb on the channel `private-conversation.{id}`."
                     }
                 }
             ]
@@ -1957,6 +1980,64 @@
                             "path": ["profile"]
                         },
                         "description": "Delete user profile (JobSeeker or Company)."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🤖 AI Analytics",
+            "item": [
+                {
+                    "name": "Get AI Match (Employer)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/applications/1/ai-match",
+                            "host": ["{{base_url}}"],
+                            "path": ["applications", "1", "ai-match"]
+                        },
+                        "description": "Get AI screening match score, notes, and detailed CV-Job compatibility breakdown for an application. Only the employer who owns the job can view."
+                    }
+                },
+                {
+                    "name": "Get CV Analysis (Job Seeker)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/cvs/1/analysis",
+                            "host": ["{{base_url}}"],
+                            "path": ["cvs", "1", "analysis"]
+                        },
+                        "description": "Get AI analysis of a CV: scores, strengths, gaps, and improvement recommendations. Only the CV owner can view."
+                    }
+                },
+                {
+                    "name": "Get Skill Gaps (Job Seeker)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Accept", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/cvs/1/skill-gaps?job_ad_id=1",
+                            "host": ["{{base_url}}"],
+                            "path": ["cvs", "1", "skill-gaps"],
+                            "query": [
+                                {
+                                    "key": "job_ad_id",
+                                    "value": "1",
+                                    "description": "Optional: filter by specific job ad",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Get skill gap analysis for a CV showing missing skills compared to market demands. Only the CV owner can view."
                     }
                 }
             ]

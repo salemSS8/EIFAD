@@ -104,8 +104,8 @@ class ProfileController extends Controller
             // 3. AI Profile Evaluation (Take the latest CV Analysis score)
             $latestAnalysis = \App\Domain\CV\Models\CVAnalysis::whereHas('cv', function ($q) use ($user) {
                 $q->where('JobSeekerID', $user->UserID);
-            })->latest('CreatedAt')->first();
-            $aiEvaluation = $latestAnalysis ? $latestAnalysis->Score : 0;
+            })->latest()->first();
+            $aiEvaluation = $latestAnalysis ? ($latestAnalysis->OverallScore ?? $latestAnalysis->overall_score ?? 0) : 0;
 
             return response()->json([
                 'type' => 'job_seeker',

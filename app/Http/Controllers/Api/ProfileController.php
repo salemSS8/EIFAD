@@ -94,7 +94,18 @@ class ProfileController extends Controller
                 ->whereIn('Status', ['Hired', 'Offered'])->count();
             $rejectedCount = \App\Domain\Application\Models\JobApplication::where('JobSeekerID', $user->UserID)
                 ->where('Status', 'Rejected')->count();
-            // Profile views can be mocked for now or queried if a table exists.
+
+            // 1. Profile Views (mocked but deterministic based on ID so it does not jump)
+            $profileViews = ($user->UserID * 13) % 200 + 45;
+
+            // 2. Connections Count (Number of conversations/people contacted)
+            $connectionsCount = \App\Domain\Communication\Models\ConversationParticipant::where('UserID', $user->UserID)->count();
+
+            // 3. AI Profile Evaluation (Take the latest CV Analysis score)
+            $latestAnalysis = \App\Domain\CV\Models\CVAnalysis::whereHas('cv', function ($q) use ($user) {
+                $q->where('JobSeekerID', $user->UserID);
+            })->latest('CreatedAt')->first();
+            $aiEvaluation = $latestAnalysis ? $latestAnalysis->Score : 0;
 
             return response()->json([
                 'type' => 'job_seeker',
@@ -102,7 +113,9 @@ class ProfileController extends Controller
                     'total_applications' => $applicationsCount,
                     'accepted_applications' => $acceptedCount,
                     'rejected_applications' => $rejectedCount,
-                    'profile_views' => rand(10, 500), // Dummy data for views since we lack a visits table
+                    'profile_views' => $profileViews,
+                    'connections_count' => $connectionsCount,
+                    'ai_profile_evaluation' => $aiEvaluation,
                 ],
             ]);
         }

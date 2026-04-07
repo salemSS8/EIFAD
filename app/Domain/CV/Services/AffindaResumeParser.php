@@ -5,11 +5,10 @@ namespace App\Domain\CV\Services;
 use App\Domain\CV\DTOs\CanonicalResumeDTO;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Affinda Resume Parser Service.
- * 
+ *
  * Uses Affinda API for professional CV/Resume parsing.
  * This is the PRIMARY parser as per documentation.
  * Regex-based parsing is used only as fallback.
@@ -17,8 +16,11 @@ use Illuminate\Support\Facades\Storage;
 class AffindaResumeParser
 {
     private string $apiKey;
+
     private string $baseUrl;
+
     private string $workspaceId;
+
     private CanonicalResumeMapper $mapper;
 
     public function __construct(CanonicalResumeMapper $mapper)
@@ -34,24 +36,25 @@ class AffindaResumeParser
      */
     public function isAvailable(): bool
     {
-        return !empty($this->apiKey) && !empty($this->workspaceId);
+        return ! empty($this->apiKey) && ! empty($this->workspaceId);
     }
 
     /**
      * Parse a CV file using Affinda API.
      *
-     * @param string $filePath Path to CV file
-     * @return CanonicalResumeDTO|null
+     * @param  string  $filePath  Path to CV file
      */
     public function parseFile(string $filePath): ?CanonicalResumeDTO
     {
-        if (!$this->isAvailable()) {
+        if (! $this->isAvailable()) {
             Log::warning('AffindaResumeParser: API key not configured, skipping');
+
             return null;
         }
 
-        if (!file_exists($filePath)) {
+        if (! file_exists($filePath)) {
             Log::error('AffindaResumeParser: File not found', ['path' => $filePath]);
+
             return null;
         }
 
@@ -64,37 +67,53 @@ class AffindaResumeParser
                     file_get_contents($filePath),
                     basename($filePath)
                 )
-                ->post("{$this->baseUrl}/documents", [
+                ->post("{$this->baseUrl}/documents", array_filter([
                     'workspace' => $this->workspaceId,
+                    'collection' => config('services.affinda.collection_id'),
                     'wait' => 'true', // Wait for processing to complete
-                ]);
+                ]));
 
             if ($response->failed()) {
+                $status = $response->status();
+                $body = $response->json();
+
+                // Specific error handling for Affinda expired credits
+                if ($status === 403 && isset($body['errors'])) {
+                    foreach ($body['errors'] as $error) {
+                        if (isset($error['code']) && $error['code'] === 'no_parsing_credits') {
+                            throw new \RuntimeException('رصيد استخراج البيانات بـ الذكاء الاصطناعي قد نفد. يرجى مراجعة إدارة النظام لشحن الرصيد.');
+                        }
+                    }
+                }
+
                 Log::error('AffindaResumeParser: API request failed', [
-                    'status' => $response->status(),
-                    'body' => $response->body()
+                    'status' => $status,
+                    'body' => $response->body(),
                 ]);
+
                 return null;
             }
 
             $data = $response->json();
 
             // Check if parsing was successful
-            if (!isset($data['data'])) {
+            if (! isset($data['data'])) {
                 Log::warning('AffindaResumeParser: No data in response');
+
                 return null;
             }
 
             Log::info('AffindaResumeParser: CV parsed successfully', [
-                'document_id' => $data['meta']['identifier'] ?? 'unknown'
+                'document_id' => $data['meta']['identifier'] ?? 'unknown',
             ]);
 
             // Map to Canonical DTO
             return $this->mapper->fromAffindaResponse($data);
         } catch (\Exception $e) {
             Log::error('AffindaResumeParser: Exception', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -104,21 +123,22 @@ class AffindaResumeParser
      */
     public function parseBase64(string $base64Content, string $filename = 'resume.pdf'): ?CanonicalResumeDTO
     {
-        if (!$this->isAvailable()) {
+        if (! $this->isAvailable()) {
             return null;
         }
 
         try {
             $response = Http::withToken($this->apiKey)
                 ->timeout(120)
-                ->post("{$this->baseUrl}/documents", [
+                ->post("{$this->baseUrl}/documents", array_filter([
                     'workspace' => $this->workspaceId,
+                    'collection' => config('services.affinda.collection_id'),
                     'file' => [
                         'name' => $filename,
                         'data' => $base64Content,
                     ],
                     'wait' => 'true',
-                ]);
+                ]));
 
             if ($response->failed()) {
                 return null;
@@ -127,8 +147,9 @@ class AffindaResumeParser
             return $this->mapper->fromAffindaResponse($response->json());
         } catch (\Exception $e) {
             Log::error('AffindaResumeParser: Base64 parse failed', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -138,18 +159,19 @@ class AffindaResumeParser
      */
     public function parseUrl(string $url): ?CanonicalResumeDTO
     {
-        if (!$this->isAvailable()) {
+        if (! $this->isAvailable()) {
             return null;
         }
 
         try {
             $response = Http::withToken($this->apiKey)
                 ->timeout(120)
-                ->post("{$this->baseUrl}/documents", [
+                ->post("{$this->baseUrl}/documents", array_filter([
                     'workspace' => $this->workspaceId,
+                    'collection' => config('services.affinda.collection_id'),
                     'url' => $url,
                     'wait' => 'true',
-                ]);
+                ]));
 
             if ($response->failed()) {
                 return null;
@@ -158,8 +180,9 @@ class AffindaResumeParser
             return $this->mapper->fromAffindaResponse($response->json());
         } catch (\Exception $e) {
             Log::error('AffindaResumeParser: URL parse failed', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -169,7 +192,7 @@ class AffindaResumeParser
      */
     public function parseFileRaw(string $filePath): ?array
     {
-        if (!$this->isAvailable() || !file_exists($filePath)) {
+        if (! $this->isAvailable() || ! file_exists($filePath)) {
             return null;
         }
 
@@ -177,10 +200,11 @@ class AffindaResumeParser
             $response = Http::withToken($this->apiKey)
                 ->timeout(120)
                 ->attach('file', file_get_contents($filePath), basename($filePath))
-                ->post("{$this->baseUrl}/documents", [
+                ->post("{$this->baseUrl}/documents", array_filter([
                     'workspace' => $this->workspaceId,
+                    'collection' => config('services.affinda.collection_id'),
                     'wait' => 'true',
-                ]);
+                ]));
 
             return $response->successful() ? $response->json() : null;
         } catch (\Exception $e) {

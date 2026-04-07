@@ -607,4 +607,89 @@ class CVController extends Controller
 
         return response()->json(['message' => 'Custom section removed successfully']);
     }
+
+    // ==========================================
+    // Resume Parsing (AI Extraction)
+    // ==========================================
+
+    /**
+     * Parse CV file into structured data using AI (Affinda)
+     */
+    #[OA\Post(
+        path: '/cvs/parse',
+        operationId: 'parseCVFile',
+        tags: ['CVs'],
+        summary: 'Extract structured data from a CV file',
+        description: 'Upload a PDF or DOCX file to extract its contents automatically using AI.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(
+                required: ['file'],
+                properties: [
+                    new OA\Property(property: 'file', type: 'string', format: 'binary', description: 'The CV document (PDF, DOC, DOCX)'),
+                ]
+            )
+        )
+    )]
+    #[OA\Response(response: 200, description: 'Parsed CV data')]
+    public function parse(Request $request, \App\Domain\CV\Services\AffindaResumeParser $parser): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:pdf,doc,docx|max:10240', // Max 10MB
+        ], [
+            'file.required' => 'الرجاء إرفاق ملف السيرة الذاتية',
+            'file.mimes' => 'يجب أن يكون الملف بصيغة PDF أو Word',
+            'file.max' => 'حجم الملف يجب ألا يتجاوز 10 ميغابايت',
+        ]);
+
+        $file = $request->file('file');
+
+        // Save temporarily
+        $path = $file->storeAs('tmp', 'resume_'.time().'.'.$file->getClientOriginalExtension());
+        $absolutePath = storage_path('app/'.$path);
+
+        try {
+            $parsedData = $parser->parseFile($absolutePath);
+
+            // Cleanup temp file
+            if (file_exists($absolutePath)) {
+                unlink($absolutePath);
+            }
+
+            if (! $parsedData) {
+                return response()->json([
+                    'message' => 'حدث خطأ أثناء محاولة تحليل السيرة الذاتية. يرجى التأكد من أن الملف مقروء ومعد بشكل صحيح.',
+                ], 422);
+            }
+
+            return response()->json([
+                'message' => 'تم استخراج البيانات بنجاح',
+                'data' => $parsedData->toArray(),
+            ]);
+        } catch (\RuntimeException $e) {
+            // Cleanup Temp file
+            if (file_exists($absolutePath)) {
+                unlink($absolutePath);
+            }
+
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 403);
+
+        } catch (\Exception $e) {
+            // Cleanup on error too
+            if (file_exists($absolutePath)) {
+                unlink($absolutePath);
+            }
+
+            return response()->json([
+                'message' => 'حدث خطأ غير متوقع أثناء معالجة الملف',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
 }

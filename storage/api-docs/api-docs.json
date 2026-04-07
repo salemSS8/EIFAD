@@ -2001,6 +2001,46 @@
                 ]
             }
         },
+        "/cvs/parse": {
+            "post": {
+                "tags": [
+                    "CVs"
+                ],
+                "summary": "Extract structured data from a CV file",
+                "description": "Upload a PDF or DOCX file to extract its contents automatically using AI.",
+                "operationId": "parseCVFile",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "file"
+                                ],
+                                "properties": {
+                                    "file": {
+                                        "description": "The CV document (PDF, DOC, DOCX)",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Parsed CV data"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/companies": {
             "get": {
                 "tags": [

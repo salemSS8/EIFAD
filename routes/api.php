@@ -100,6 +100,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('cvs')->group(function () {
         Route::get('/', [CVController::class, 'index']);
         Route::post('/', [CVController::class, 'store']);
+        Route::post('/parse', [CVController::class, 'parse']);
         Route::get('/{id}', [CVController::class, 'show']);
         Route::put('/{id}', [CVController::class, 'update']);
         Route::delete('/{id}', [CVController::class, 'destroy']);

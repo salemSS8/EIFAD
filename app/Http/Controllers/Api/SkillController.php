@@ -51,6 +51,46 @@ class SkillController extends Controller
     }
 
     /**
+     * Create a new skill in the system catalog.
+     */
+    #[OA\Post(
+        path: "/skills",
+        operationId: "createSkill",
+        tags: ["Skills"],
+        summary: "Create a new skill",
+        description: "Creates a new skill in the system catalog. Useful when a user cannot find a skill they want to add.",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['skill_name'],
+            properties: [
+                new OA\Property(property: 'skill_name', type: 'string', example: 'Vue.js'),
+                new OA\Property(property: 'category_id', type: 'integer', nullable: true, example: 1)
+            ]
+        )
+    )]
+    #[OA\Response(response: 201, description: "Skill created successfully")]
+    public function store(Request $request): JsonResponse
+    {
+        $request->validate([
+            'skill_name' => 'required|string|max:255|unique:skill,SkillName',
+            'category_id' => 'nullable|exists:skillcategory,CategoryID'
+        ]);
+
+        $skill = Skill::create([
+            'SkillName' => $request->input('skill_name'),
+            'CategoryID' => $request->input('category_id')
+        ]);
+
+        return response()->json([
+            'message' => 'Skill created successfully in the system',
+            'data' => $skill->load('category')
+        ], 201);
+    }
+
+    /**
      * Get skill categories.
      */
     #[OA\Get(
@@ -86,5 +126,42 @@ class SkillController extends Controller
         $languages = Language::orderBy('LanguageName')->get();
 
         return response()->json(['data' => $languages]);
+    }
+
+    /**
+     * Create a new language in the system catalog.
+     */
+    #[OA\Post(
+        path: "/languages",
+        operationId: "createLanguage",
+        tags: ["Skills"],
+        summary: "Create a new language",
+        description: "Creates a new language in the system catalog. Useful when a user cannot find a language they want to add.",
+        security: [["bearerAuth" => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['language_name'],
+            properties: [
+                new OA\Property(property: 'language_name', type: 'string', example: 'German')
+            ]
+        )
+    )]
+    #[OA\Response(response: 201, description: "Language created successfully")]
+    public function storeLanguage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'language_name' => 'required|string|max:255|unique:language,LanguageName'
+        ]);
+
+        $language = Language::create([
+            'LanguageName' => $request->input('language_name')
+        ]);
+
+        return response()->json([
+            'message' => 'Language created successfully in the system',
+            'data' => $language
+        ], 201);
     }
 }

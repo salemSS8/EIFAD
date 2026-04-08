@@ -68,6 +68,10 @@ Route::get('/languages', [SkillController::class, 'languages']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
+    // ------- Skills & Languages (Creation) -------
+    Route::post('/skills', [SkillController::class, 'store']);
+    Route::post('/languages', [SkillController::class, 'storeLanguage']);
+
     // ------- Auth -------
     Route::prefix('auth')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);

@@ -64,6 +64,14 @@ class CV extends Model
     }
 
     /**
+     * Get CV certifications.
+     */
+    public function certifications(): HasMany
+    {
+        return $this->hasMany(CVCertification::class, 'CVID', 'CVID');
+    }
+
+    /**
      * Get education entries.
      */
     public function education(): HasMany

@@ -66,7 +66,7 @@ return [
         'api_key' => env('AFFINDA_API_KEY'),
         'base_url' => env('AFFINDA_BASE_URL', 'https://api.affinda.com/v3'),
         'workspace_id' => env('AFFINDA_WORKSPACE_ID'),
-        'collection_id' => env('AFFINDA_COLLECTION_ID'),
+        'documentType' => env('AFFINDA_DOCUMENTTYPE'),
     ],
 
 ];

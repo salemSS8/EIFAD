@@ -128,6 +128,10 @@ Route::middleware('auth:sanctum')->group(function () {
         // CV Languages
         Route::post('/{cvId}/languages', [CVController::class, 'addLanguage']);
         Route::delete('/{cvId}/languages/{languageId}', [CVController::class, 'removeLanguage']);
+
+        // CV Certifications
+        Route::post('/{cvId}/certifications', [CVController::class, 'addCertification']);
+        Route::delete('/{cvId}/certifications/{certId}', [CVController::class, 'removeCertification']);
     });
 
     // Favorites

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Domain\CV\Models\CV;
+use App\Domain\CV\Models\CVCertification;
 use App\Domain\CV\Models\CVCustomSection;
 use App\Domain\CV\Models\CVLanguage;
 use App\Domain\CV\Models\CVSkill;
@@ -73,6 +74,7 @@ class CVController extends Controller
             'education',
             'experiences',
             'volunteering',
+            'certifications',
         ])
             ->where('CVID', $id)
             ->where('JobSeekerID', $jobSeekerProfile->JobSeekerID)
@@ -520,6 +522,86 @@ class CVController extends Controller
             ->delete();
 
         return response()->json(['message' => 'Language removed from CV']);
+    }
+
+    // ==========================================
+    // CV Certifications
+    // ==========================================
+
+    /**
+     * Add certification to CV
+     */
+    #[OA\Post(
+        path: '/cvs/{cvId}/certifications',
+        operationId: 'addCertification',
+        tags: ['CVs'],
+        summary: 'Add certification to CV',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Parameter(name: 'cvId', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['certificate_name'],
+            properties: [
+                new OA\Property(property: 'certificate_name', type: 'string', example: 'PMP Certification'),
+                new OA\Property(property: 'issuing_organization', type: 'string', example: 'PMI'),
+                new OA\Property(property: 'is_verified', type: 'boolean', example: false),
+            ]
+        )
+    )]
+    #[OA\Response(response: 201, description: 'Certification added successfully')]
+    public function addCertification(Request $request, int $cvId): JsonResponse
+    {
+        $cv = CV::where('CVID', $cvId)
+            ->where('JobSeekerID', $request->user()->jobSeekerProfile->JobSeekerID)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'certificate_name' => 'required|string|max:255',
+            'issuing_organization' => 'nullable|string|max:255',
+            'is_verified' => 'nullable|boolean',
+        ]);
+
+        $certification = CVCertification::create([
+            'CVID' => $cv->CVID,
+            'CertificateName' => $validated['certificate_name'],
+            'IssuingOrganization' => $validated['issuing_organization'] ?? null,
+            'IsVerified' => $validated['is_verified'] ?? false,
+        ]);
+
+        return response()->json([
+            'message' => 'Certification added successfully',
+            'data' => $certification,
+        ], 201);
+    }
+
+    /**
+     * Remove certification from CV
+     */
+    #[OA\Delete(
+        path: '/cvs/{cvId}/certifications/{certId}',
+        operationId: 'removeCertification',
+        tags: ['CVs'],
+        summary: 'Remove certification from CV',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Parameter(name: 'cvId', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Parameter(name: 'certId', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Certification removed successfully')]
+    public function removeCertification(Request $request, int $cvId, int $certId): JsonResponse
+    {
+        $cv = CV::where('CVID', $cvId)
+            ->where('JobSeekerID', $request->user()->jobSeekerProfile->JobSeekerID)
+            ->firstOrFail();
+
+        $certification = CVCertification::where('CVID', $cvId)
+            ->where('CertificationID', $certId)
+            ->firstOrFail();
+
+        $certification->delete();
+
+        return response()->json(['message' => 'Certification removed successfully']);
     }
 
     // ==========================================

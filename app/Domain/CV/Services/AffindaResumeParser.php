@@ -69,7 +69,7 @@ class AffindaResumeParser
                 )
                 ->post("{$this->baseUrl}/documents", array_filter([
                     'workspace' => $this->workspaceId,
-                    'collection' => config('services.affinda.collection_id'),
+                    'documentType' => config('services.affinda.documentType'),
                     'wait' => 'true', // Wait for processing to complete
                 ]));
 
@@ -132,7 +132,7 @@ class AffindaResumeParser
                 ->timeout(120)
                 ->post("{$this->baseUrl}/documents", array_filter([
                     'workspace' => $this->workspaceId,
-                    'collection' => config('services.affinda.collection_id'),
+                    'documentType' => config('services.affinda.documentType'),
                     'file' => [
                         'name' => $filename,
                         'data' => $base64Content,
@@ -168,7 +168,7 @@ class AffindaResumeParser
                 ->timeout(120)
                 ->post("{$this->baseUrl}/documents", array_filter([
                     'workspace' => $this->workspaceId,
-                    'collection' => config('services.affinda.collection_id'),
+                    'documentType' => config('services.affinda.documentType'),
                     'url' => $url,
                     'wait' => 'true',
                 ]));
@@ -202,7 +202,7 @@ class AffindaResumeParser
                 ->attach('file', file_get_contents($filePath), basename($filePath))
                 ->post("{$this->baseUrl}/documents", array_filter([
                     'workspace' => $this->workspaceId,
-                    'collection' => config('services.affinda.collection_id'),
+                    'documentType' => config('services.affinda.documentType'),
                     'wait' => 'true',
                 ]));
 

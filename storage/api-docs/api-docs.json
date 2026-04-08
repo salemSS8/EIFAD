@@ -3598,6 +3598,48 @@
                         "description": "List of skills"
                     }
                 }
+            },
+            "post": {
+                "tags": [
+                    "Skills"
+                ],
+                "summary": "Create a new skill",
+                "description": "Creates a new skill in the system catalog. Useful when a user cannot find a skill they want to add.",
+                "operationId": "createSkill",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "skill_name"
+                                ],
+                                "properties": {
+                                    "skill_name": {
+                                        "type": "string",
+                                        "example": "Vue.js"
+                                    },
+                                    "category_id": {
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Skill created successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/skill-categories": {
@@ -3628,6 +3670,43 @@
                         "description": "List of languages"
                     }
                 }
+            },
+            "post": {
+                "tags": [
+                    "Skills"
+                ],
+                "summary": "Create a new language",
+                "description": "Creates a new language in the system catalog. Useful when a user cannot find a language they want to add.",
+                "operationId": "createLanguage",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "language_name"
+                                ],
+                                "properties": {
+                                    "language_name": {
+                                        "type": "string",
+                                        "example": "German"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Language created successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         }
     },

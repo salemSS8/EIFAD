@@ -109,6 +109,9 @@ class AffindaResumeParser
 
             // Map to Canonical DTO
             return $this->mapper->fromAffindaResponse($data);
+        } catch (\RuntimeException $e) {
+            // Rethrow runtime exceptions (like no credits) so they can be explicitly caught by the caller
+            throw $e;
         } catch (\Exception $e) {
             Log::error('AffindaResumeParser: Exception', [
                 'error' => $e->getMessage(),

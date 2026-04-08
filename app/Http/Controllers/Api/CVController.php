@@ -732,7 +732,7 @@ class CVController extends Controller
 
         // Save temporarily
         $path = $file->storeAs('tmp', 'resume_'.time().'.'.$file->getClientOriginalExtension());
-        $absolutePath = storage_path('app/'.$path);
+        $absolutePath = \Illuminate\Support\Facades\Storage::disk('local')->path($path);
 
         try {
             $parsedData = $parser->parseFile($absolutePath);

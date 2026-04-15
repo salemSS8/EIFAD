@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('notification_settings', function (Blueprint $table) {
             $table->id('SettingID');
-            $table->foreignId('UserID')->constrained('user', 'UserID')->cascadeOnDelete();
+            $table->integer('UserID');
+            $table->foreign('UserID')->references('UserID')->on('user')->cascadeOnDelete();
             $table->boolean('EmailNotifications')->default(true);
             $table->boolean('PushNotifications')->default(true);
             $table->boolean('JobAlerts')->default(true);

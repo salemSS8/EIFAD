@@ -91,9 +91,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ------- Notifications -------
     Route::prefix('notifications')->group(function () {
+        Route::get('/settings', [NotificationController::class, 'getSettings']);
+        Route::put('/settings', [NotificationController::class, 'updateSettings']);
         Route::get('/', [NotificationController::class, 'index']);
+        Route::put('/read-all', [NotificationController::class, 'markAllAsRead']);
         Route::put('/{id}/read', [NotificationController::class, 'markAsRead']);
-        Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead']);
     });
 
     // =========================================
@@ -111,26 +113,32 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // CV Skills
         Route::post('/{cvId}/skills', [CVController::class, 'addSkill']);
+        Route::put('/{cvId}/skills/{skillId}', [CVController::class, 'updateSkill']);
         Route::delete('/{cvId}/skills/{skillId}', [CVController::class, 'removeSkill']);
 
         // CV Education
         Route::post('/{cvId}/education', [CVController::class, 'addEducation']);
+        Route::put('/{cvId}/education/{educationId}', [CVController::class, 'updateEducation']);
         Route::delete('/{cvId}/education/{educationId}', [CVController::class, 'removeEducation']);
 
         // CV Experience
         Route::post('/{cvId}/experience', [CVController::class, 'addExperience']);
+        Route::put('/{cvId}/experience/{experienceId}', [CVController::class, 'updateExperience']);
         Route::delete('/{cvId}/experience/{experienceId}', [CVController::class, 'removeExperience']);
 
         // CV Custom Sections (For generic additions like Volunteering, Awards, Projects, etc)
         Route::post('/{cvId}/custom-sections', [CVController::class, 'addCustomSection']);
+        Route::put('/{cvId}/custom-sections/{sectionId}', [CVController::class, 'updateCustomSection']);
         Route::delete('/{cvId}/custom-sections/{sectionId}', [CVController::class, 'removeCustomSection']);
 
         // CV Languages
         Route::post('/{cvId}/languages', [CVController::class, 'addLanguage']);
+        Route::put('/{cvId}/languages/{languageId}', [CVController::class, 'updateLanguage']);
         Route::delete('/{cvId}/languages/{languageId}', [CVController::class, 'removeLanguage']);
 
         // CV Certifications
         Route::post('/{cvId}/certifications', [CVController::class, 'addCertification']);
+        Route::put('/{cvId}/certifications/{certId}', [CVController::class, 'updateCertification']);
         Route::delete('/{cvId}/certifications/{certId}', [CVController::class, 'removeCertification']);
     });
 
@@ -153,6 +161,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // =========================================
     // AI Analytics & Matching
     // =========================================
+
+    // Market Trends
+    Route::get('/market-trends', [AiAnalyticsController::class, 'marketTrends']);
 
     // Job Matching
     Route::prefix('jobs')->group(function () {
@@ -195,6 +206,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // =========================================
 
     Route::prefix('companies')->group(function () {
+        Route::get('/following', [\App\Http\Controllers\Api\CompanyController::class, 'following']);
         Route::get('/', [\App\Http\Controllers\Api\CompanyController::class, 'index']);
         Route::get('/{id}', [\App\Http\Controllers\Api\CompanyController::class, 'show']);
         Route::post('/{id}/follow', [\App\Http\Controllers\Api\CompanyController::class, 'follow']);
@@ -319,13 +331,5 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
-    // =========================================
-    // Notifications
-    // =========================================
 
-    Route::prefix('notifications')->group(function () {
-        Route::get('/', [NotificationController::class, 'index']);
-        Route::put('/read-all', [NotificationController::class, 'markAllAsRead']);
-        Route::put('/{id}/read', [NotificationController::class, 'markAsRead']);
-    });
 });

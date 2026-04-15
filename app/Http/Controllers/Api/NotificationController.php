@@ -89,4 +89,84 @@ class NotificationController extends Controller
 
         return response()->json(['message' => 'All notifications marked as read']);
     }
+
+    /**
+     * Get user's notification settings.
+     */
+    #[OA\Get(
+        path: '/notifications/settings',
+        operationId: 'getNotificationSettings',
+        tags: ['Notifications'],
+        summary: 'Get notification settings',
+        description: 'Returns the current notification preferences for the user.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Response(response: 200, description: 'Notification settings')]
+    public function getSettings(Request $request): JsonResponse
+    {
+        $settings = \App\Domain\Communication\Models\NotificationSetting::firstOrCreate(
+            ['UserID' => $request->user()->UserID],
+            [
+                'EmailNotifications' => true,
+                'PushNotifications' => true,
+                'JobAlerts' => true,
+                'ApplicationUpdates' => true,
+                'MarketingEmails' => false,
+            ]
+        );
+
+        return response()->json(['data' => $settings]);
+    }
+
+    /**
+     * Update user's notification settings.
+     */
+    #[OA\Put(
+        path: '/notifications/settings',
+        operationId: 'updateNotificationSettings',
+        tags: ['Notifications'],
+        summary: 'Update notification settings',
+        description: 'Updates the notification preferences for the user.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'email_notifications', type: 'boolean'),
+                new OA\Property(property: 'push_notifications', type: 'boolean'),
+                new OA\Property(property: 'job_alerts', type: 'boolean'),
+                new OA\Property(property: 'application_updates', type: 'boolean'),
+                new OA\Property(property: 'marketing_emails', type: 'boolean'),
+            ]
+        )
+    )]
+    #[OA\Response(response: 200, description: 'Settings updated successfully')]
+    public function updateSettings(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email_notifications' => 'sometimes|boolean',
+            'push_notifications' => 'sometimes|boolean',
+            'job_alerts' => 'sometimes|boolean',
+            'application_updates' => 'sometimes|boolean',
+            'marketing_emails' => 'sometimes|boolean',
+        ]);
+
+        $settings = \App\Domain\Communication\Models\NotificationSetting::firstOrCreate(
+            ['UserID' => $request->user()->UserID]
+        );
+
+        if ($request->has('email_notifications')) $settings->EmailNotifications = $request->input('email_notifications');
+        if ($request->has('push_notifications')) $settings->PushNotifications = $request->input('push_notifications');
+        if ($request->has('job_alerts')) $settings->JobAlerts = $request->input('job_alerts');
+        if ($request->has('application_updates')) $settings->ApplicationUpdates = $request->input('application_updates');
+        if ($request->has('marketing_emails')) $settings->MarketingEmails = $request->input('marketing_emails');
+
+        $settings->save();
+
+        return response()->json([
+            'message' => 'Settings updated successfully',
+            'data' => $settings
+        ]);
+    }
 }

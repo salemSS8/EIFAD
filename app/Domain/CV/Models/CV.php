@@ -12,7 +12,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class CV extends Model
 {
     protected $table = 'cv';
+
     protected $primaryKey = 'CVID';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -93,6 +95,14 @@ class CV extends Model
     public function volunteering(): HasMany
     {
         return $this->hasMany(Volunteering::class, 'CVID', 'CVID');
+    }
+
+    /**
+     * Get custom sections for this CV.
+     */
+    public function customSections(): HasMany
+    {
+        return $this->hasMany(CVCustomSection::class, 'CVID', 'CVID');
     }
 
     /**

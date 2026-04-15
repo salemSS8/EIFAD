@@ -24,6 +24,7 @@ class SearchJobsAction implements ActionInterface
                 'company:CompanyID,CompanyName,LogoPath,OrganizationName,FieldOfWork',
                 'skills.skill',
             ])
+            ->withCount('applications')
             ->where('Status', 'Active');
 
         $this->applyKeywordFilter($query, $filters);
@@ -161,6 +162,7 @@ class SearchJobsAction implements ActionInterface
         match ($sort) {
             'salary_desc' => $query->orderByDesc('SalaryMax'),
             'salary_asc' => $query->orderBy('SalaryMin'),
+            'popular' => $query->orderByDesc('applications_count'),
             default => $query->orderByDesc('PostedAt'),
         };
     }

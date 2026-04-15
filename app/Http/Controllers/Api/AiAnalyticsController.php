@@ -189,29 +189,54 @@ class AiAnalyticsController extends Controller
             ->where('JobAdID', $jobId)
             ->first();
 
-        $matchScore = $cvJobMatch ? $cvJobMatch->MatchScore : $this->calculatePreMatch($cvModel, $jobModel);
-
-        return response()->json([
-            'data' => [
+        if ($cvJobMatch) {
+            $matchData = [
                 'job_id' => $jobId,
                 'cv_id' => $cvModel->CVID,
-                'match_score' => $matchScore,
-            ],
+                'match_score' => $cvJobMatch->MatchScore,
+                'strengths' => $cvJobMatch->Strengths ?? [],
+                'gaps' => $cvJobMatch->Gaps ?? [],
+                'explanation' => $cvJobMatch->Explanation ?? 'AI analysis processed.',
+            ];
+        } else {
+            $preview = $this->calculatePreMatch($cvModel, $jobModel);
+            $matchData = [
+                'job_id' => $jobId,
+                'cv_id' => $cvModel->CVID,
+                'match_score' => $preview['score'],
+                'strengths' => $preview['strengths'],
+                'gaps' => $preview['gaps'],
+                'explanation' => $preview['explanation'],
+            ];
+        }
+
+        return response()->json([
+            'data' => $matchData,
         ]);
     }
 
-    private function calculatePreMatch($cv, $job): int
+    private function calculatePreMatch($cv, $job): array
     {
         $cv->load(['skills.skill', 'experiences', 'education']);
         $job->load(['skills.skill']);
 
-        $jobSkills = $job->skills->pluck('skill.SkillName')->map(fn ($s) => strtolower($s))->toArray();
-        $cvSkills = $cv->skills->pluck('skill.SkillName')->map(fn ($s) => strtolower($s))->toArray();
+        $jobSkills = $job->skills->pluck('skill.SkillName')->map(fn ($s) => strtolower(trim($s)))->toArray();
+        $cvSkills = $cv->skills->pluck('skill.SkillName')->map(fn ($s) => strtolower(trim($s)))->toArray();
+
+        $strengths = [];
+        $gaps = [];
 
         $skillsScore = 100;
         if (! empty($jobSkills)) {
             $matchedSkills = array_intersect($jobSkills, $cvSkills);
+            $missingSkills = array_diff($jobSkills, $cvSkills);
+            
+            if (!empty($matchedSkills)) $strengths[] = "Your CV contains matching skills: " . implode(', ', array_slice($matchedSkills, 0, 3));
+            if (!empty($missingSkills)) $gaps[] = "Consider adding missing skills: " . implode(', ', array_slice($missingSkills, 0, 3));
+
             $skillsScore = min(100, (int) round((count($matchedSkills) / count($jobSkills)) * 100 + max(0, min(10, count($cvSkills) - count($jobSkills)))));
+        } else {
+            $strengths[] = "No specific skills required for this job.";
         }
 
         $experienceScore = 20;
@@ -232,25 +257,27 @@ class AiAnalyticsController extends Controller
                 }
             }
 
-            if ($totalYears >= 10) {
-                $experienceScore = 90;
-            } elseif ($totalYears >= 5) {
-                $experienceScore = 75;
-            } elseif ($totalYears >= 3) {
-                $experienceScore = 60;
-            } elseif ($totalYears >= 1) {
-                $experienceScore = 45;
-            } else {
-                $experienceScore = 30;
-            }
+            if ($totalYears >= 10) $experienceScore = 90;
+            elseif ($totalYears >= 5) $experienceScore = 75;
+            elseif ($totalYears >= 3) $experienceScore = 60;
+            elseif ($totalYears >= 1) $experienceScore = 45;
+            else $experienceScore = 30;
 
             if ($relevantExperience) {
                 $experienceScore = min(100, $experienceScore + 10);
+                $strengths[] = "Experience titles closely match the job role.";
+            } else {
+                $gaps[] = "Your previous job titles do not perfectly match the advertised role.";
             }
+
+            $strengths[] = "You have approximately " . round($totalYears, 1) . " years of experience.";
+        } else {
+            $gaps[] = "No experience listed on your CV.";
         }
 
         $educationScore = 30;
         if ($cv->education->isNotEmpty()) {
+            $strengths[] = "You have an educational background.";
             foreach ($cv->education as $edu) {
                 $degree = strtolower($edu->DegreeName ?? '');
                 if (str_contains($degree, 'phd') || str_contains($degree, 'doctorate')) {
@@ -263,8 +290,46 @@ class AiAnalyticsController extends Controller
                     $educationScore = max($educationScore, 50);
                 }
             }
+        } else {
+            $gaps[] = "No formal education listed.";
         }
 
-        return round(($skillsScore * 0.4) + ($experienceScore * 0.35) + ($educationScore * 0.25));
+        return [
+            'score' => (int) round(($skillsScore * 0.4) + ($experienceScore * 0.35) + ($educationScore * 0.25)),
+            'strengths' => $strengths,
+            'gaps' => $gaps,
+            'explanation' => 'Calculated heuristically based on your CV details against job requirements.',
+        ];
+    }
+
+    /**
+     * Get market trends (top skills).
+     * (For Job Seekers to know which skills are popular)
+     */
+    #[OA\Get(
+        path: '/market-trends',
+        operationId: 'getMarketTrends',
+        tags: ['AI Analytics', 'Market'],
+        summary: 'Get market skill trends',
+        description: 'Returns the most in-demand skills in the market based on AI analysis.',
+        security: [['sanctum' => []]]
+    )]
+    #[OA\Response(response: 200, description: 'List of trending skills')]
+    public function marketTrends(Request $request): JsonResponse
+    {
+        $latestSnapshotDate = \App\Domain\AI\Models\SkillDemandSnapshot::max('SnapshotDate');
+
+        $trends = \App\Domain\AI\Models\SkillDemandSnapshot::with('skill.category')
+            ->where('SnapshotDate', $latestSnapshotDate)
+            ->orderByDesc('DemandCount')
+            ->take(20)
+            ->get();
+
+        return response()->json([
+            'data' => $trends,
+            'meta' => [
+                'snapshot_date' => $latestSnapshotDate,
+            ],
+        ]);
     }
 }

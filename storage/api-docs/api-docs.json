@@ -460,6 +460,27 @@
                 ]
             }
         },
+        "/market-trends": {
+            "get": {
+                "tags": [
+                    "AI Analytics",
+                    "Market"
+                ],
+                "summary": "Get market skill trends",
+                "description": "Returns the most in-demand skills in the market based on AI analysis.",
+                "operationId": "getMarketTrends",
+                "responses": {
+                    "200": {
+                        "description": "List of trending skills"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/applications": {
             "get": {
                 "tags": [
@@ -1562,6 +1583,59 @@
             }
         },
         "/cvs/{cvId}/skills/{skillId}": {
+            "put": {
+                "tags": [
+                    "CVs",
+                    "Skills"
+                ],
+                "summary": "Update skill in CV",
+                "description": "Update a CV skill.",
+                "operationId": "updateCVSkill",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "skillId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "skill_level": {
+                                        "type": "string",
+                                        "example": "Advanced"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Skill updated in CV"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
             "delete": {
                 "tags": [
                     "CVs",
@@ -1660,6 +1734,67 @@
             }
         },
         "/cvs/{cvId}/education/{educationId}": {
+            "put": {
+                "tags": [
+                    "CVs",
+                    "Education"
+                ],
+                "summary": "Update education entry in CV",
+                "description": "Update an education entry in CV.",
+                "operationId": "updateCVEducation",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "educationId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "institution": {
+                                        "type": "string"
+                                    },
+                                    "degree_name": {
+                                        "type": "string"
+                                    },
+                                    "major": {
+                                        "type": "string"
+                                    },
+                                    "graduation_year": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Education updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
             "delete": {
                 "tags": [
                     "CVs",
@@ -1765,6 +1900,72 @@
             }
         },
         "/cvs/{cvId}/experience/{experienceId}": {
+            "put": {
+                "tags": [
+                    "CVs",
+                    "Experience"
+                ],
+                "summary": "Update experience entry in CV",
+                "description": "Update an experience entry in CV.",
+                "operationId": "updateCVExperience",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "experienceId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "job_title": {
+                                        "type": "string"
+                                    },
+                                    "company_name": {
+                                        "type": "string"
+                                    },
+                                    "start_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "responsibilities": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Experience updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
             "delete": {
                 "tags": [
                     "CVs",
@@ -1857,6 +2058,61 @@
             }
         },
         "/cvs/{cvId}/languages/{languageId}": {
+            "put": {
+                "tags": [
+                    "CVs",
+                    "Languages"
+                ],
+                "summary": "Update language entry in CV",
+                "description": "Update a language entry in CV.",
+                "operationId": "updateCVLanguage",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "languageId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "language_id": {
+                                        "type": "integer"
+                                    },
+                                    "language_level": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Language updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
             "delete": {
                 "tags": [
                     "CVs",
@@ -1895,13 +2151,166 @@
                 ]
             }
         },
+        "/cvs/{cvId}/certifications": {
+            "post": {
+                "tags": [
+                    "CVs"
+                ],
+                "summary": "Add certification to CV",
+                "description": "Add certification to CV",
+                "operationId": "addCertification",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "certificate_name"
+                                ],
+                                "properties": {
+                                    "certificate_name": {
+                                        "type": "string",
+                                        "example": "PMP Certification"
+                                    },
+                                    "issuing_organization": {
+                                        "type": "string",
+                                        "example": "PMI"
+                                    },
+                                    "is_verified": {
+                                        "type": "boolean",
+                                        "example": false
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Certification added successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/cvs/{cvId}/certifications/{certId}": {
+            "put": {
+                "tags": [
+                    "CVs",
+                    "Certifications"
+                ],
+                "summary": "Update certification entry in CV",
+                "description": "Update a certification entry in CV.",
+                "operationId": "updateCVCertification",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "certId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "certificate_name": {
+                                        "type": "string"
+                                    },
+                                    "issuing_organization": {
+                                        "type": "string"
+                                    },
+                                    "is_verified": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Certification updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "CVs"
+                ],
+                "summary": "Remove certification from CV",
+                "description": "Remove certification from CV",
+                "operationId": "removeCertification",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "certId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Certification removed successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/cvs/{cvId}/custom-sections": {
             "post": {
                 "tags": [
                     "CVs"
                 ],
                 "summary": "Add custom section to CV",
-                "description": "Add generic custom section to CV (e.g., Volunteering, Awards, Projects, Certifications)",
+                "description": "Add generic custom section to CV",
                 "operationId": "addCustomSection",
                 "parameters": [
                     {
@@ -1944,6 +2353,16 @@
                                         "type": "string",
                                         "format": "date",
                                         "example": "2022-12-31"
+                                    },
+                                    "content_data": {
+                                        "type": "object",
+                                        "example": {
+                                            "key1": "value1",
+                                            "key2": "value2"
+                                        },
+                                        "additionalProperties": {
+                                            "type": "string"
+                                        }
                                     }
                                 },
                                 "type": "object"
@@ -1964,6 +2383,77 @@
             }
         },
         "/cvs/{cvId}/custom-sections/{sectionId}": {
+            "put": {
+                "tags": [
+                    "CVs"
+                ],
+                "summary": "Update custom section in CV",
+                "description": "Update a custom section in CV.",
+                "operationId": "updateCustomSection",
+                "parameters": [
+                    {
+                        "name": "cvId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "sectionId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "SectionType": {
+                                        "type": "string"
+                                    },
+                                    "Title": {
+                                        "type": "string"
+                                    },
+                                    "Description": {
+                                        "type": "string"
+                                    },
+                                    "StartDate": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "EndDate": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "content_data": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Custom section updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
             "delete": {
                 "tags": [
                     "CVs"
@@ -2151,6 +2641,27 @@
                 "responses": {
                     "200": {
                         "description": "Unfollowed company successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/companies/following": {
+            "get": {
+                "tags": [
+                    "Companies",
+                    "Follow"
+                ],
+                "summary": "Get followed companies",
+                "description": "Returns a list of companies followed by the current job seeker.",
+                "operationId": "getFollowingCompanies",
+                "responses": {
+                    "200": {
+                        "description": "List of followed companies"
                     }
                 },
                 "security": [
@@ -2691,14 +3202,15 @@
                     {
                         "name": "sort",
                         "in": "query",
-                        "description": "Sort order: latest (default), salary_desc, salary_asc",
+                        "description": "Sort order: latest (default), salary_desc, salary_asc, popular",
                         "required": false,
                         "schema": {
                             "type": "string",
                             "enum": [
                                 "latest",
                                 "salary_desc",
-                                "salary_asc"
+                                "salary_asc",
+                                "popular"
                             ]
                         }
                     },
@@ -3291,17 +3803,82 @@
                 ]
             }
         },
+        "/notifications/settings": {
+            "get": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Get notification settings",
+                "description": "Returns the current notification preferences for the user.",
+                "operationId": "getNotificationSettings",
+                "responses": {
+                    "200": {
+                        "description": "Notification settings"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Update notification settings",
+                "description": "Updates the notification preferences for the user.",
+                "operationId": "updateNotificationSettings",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "email_notifications": {
+                                        "type": "boolean"
+                                    },
+                                    "push_notifications": {
+                                        "type": "boolean"
+                                    },
+                                    "job_alerts": {
+                                        "type": "boolean"
+                                    },
+                                    "application_updates": {
+                                        "type": "boolean"
+                                    },
+                                    "marketing_emails": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Settings updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/profile": {
             "get": {
                 "tags": [
                     "Profile"
                 ],
                 "summary": "Get current user profile",
-                "description": "Returns the profile of the authenticated user (Job Seeker or Employer).",
+                "description": "Returns the merged data of the authenticated user and their specific profile.",
                 "operationId": "getProfile",
                 "responses": {
                     "200": {
-                        "description": "User profile",
+                        "description": "User profile retrieved successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -3313,6 +3890,36 @@
                                                     "example": "job_seeker"
                                                 },
                                                 "data": {
+                                                    "properties": {
+                                                        "JobSeekerID": {
+                                                            "type": "integer",
+                                                            "example": 13
+                                                        },
+                                                        "FullName": {
+                                                            "type": "string",
+                                                            "example": "علوي الصبان"
+                                                        },
+                                                        "Email": {
+                                                            "type": "string",
+                                                            "example": "alwimoo@gmail.com"
+                                                        },
+                                                        "Phone": {
+                                                            "type": "string",
+                                                            "example": "778928541"
+                                                        },
+                                                        "PersonalPhoto": {
+                                                            "type": "string",
+                                                            "nullable": true
+                                                        },
+                                                        "Location": {
+                                                            "type": "string",
+                                                            "example": "المكلا - الإنشاءات"
+                                                        },
+                                                        "ProfileSummary": {
+                                                            "type": "string",
+                                                            "example": "واحد يبغى صبر والله"
+                                                        }
+                                                    },
                                                     "type": "object"
                                                 }
                                             },
@@ -3325,6 +3932,26 @@
                                                     "example": "company"
                                                 },
                                                 "data": {
+                                                    "properties": {
+                                                        "FullName": {
+                                                            "type": "string",
+                                                            "example": "اسم مدير الشركة"
+                                                        },
+                                                        "Phone": {
+                                                            "type": "string",
+                                                            "example": "777000000"
+                                                        },
+                                                        "CompanyName": {
+                                                            "type": "string",
+                                                            "example": "شركة المسار اللامع"
+                                                        },
+                                                        "specializations": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "object"
+                                                            }
+                                                        }
+                                                    },
                                                     "type": "object"
                                                 }
                                             },
@@ -3361,6 +3988,9 @@
                                             "full_name": {
                                                 "type": "string"
                                             },
+                                            "email": {
+                                                "type": "string"
+                                            },
                                             "phone": {
                                                 "type": "string"
                                             },
@@ -3383,6 +4013,9 @@
                                         ],
                                         "properties": {
                                             "full_name": {
+                                                "type": "string"
+                                            },
+                                            "email": {
                                                 "type": "string"
                                             },
                                             "phone": {
@@ -3453,6 +4086,9 @@
                                             "full_name": {
                                                 "type": "string"
                                             },
+                                            "email": {
+                                                "type": "string"
+                                            },
                                             "phone": {
                                                 "type": "string"
                                             },
@@ -3475,6 +4111,9 @@
                                         ],
                                         "properties": {
                                             "full_name": {
+                                                "type": "string"
+                                            },
+                                            "email": {
                                                 "type": "string"
                                             },
                                             "phone": {
@@ -3728,6 +4367,10 @@
             "description": "AI Analytics"
         },
         {
+            "name": "Market",
+            "description": "Market"
+        },
+        {
             "name": "Applications",
             "description": "Applications"
         },
@@ -3762,6 +4405,10 @@
         {
             "name": "Languages",
             "description": "Languages"
+        },
+        {
+            "name": "Certifications",
+            "description": "Certifications"
         },
         {
             "name": "Companies",

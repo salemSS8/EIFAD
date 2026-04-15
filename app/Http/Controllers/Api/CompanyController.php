@@ -110,4 +110,31 @@ class CompanyController extends Controller
 
         return response()->json(['message' => 'Unfollowed company']);
     }
+
+    /**
+     * Get companies followed by the authenticated user.
+     */
+    #[OA\Get(
+        path: '/companies/following',
+        operationId: 'getFollowingCompanies',
+        tags: ['Companies', 'Follow'],
+        summary: 'Get followed companies',
+        description: 'Returns a list of companies followed by the current job seeker.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Response(response: 200, description: 'List of followed companies')]
+    public function following(Request $request): JsonResponse
+    {
+        $profile = $request->user()->jobSeekerProfile;
+        
+        if (! $profile) {
+            return response()->json(['message' => 'Only job seekers can follow companies'], 403);
+        }
+
+        $following = FollowCompany::with('company')
+            ->where('JobSeekerID', $profile->JobSeekerID)
+            ->paginate(15);
+
+        return response()->json($following);
+    }
 }

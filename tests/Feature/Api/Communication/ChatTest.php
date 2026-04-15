@@ -17,7 +17,7 @@ class ChatTest extends TestCase
         $user2 = User::factory()->create();
 
         $convId = DB::table('conversation')->insertGetId([
-            'LatestMessageAt' => now(),
+            'CreatedAt' => now(),
         ]);
 
         DB::table('conversationparticipant')->insert([

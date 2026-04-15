@@ -22,24 +22,39 @@ class ProfileController extends Controller
         operationId: 'getProfile',
         tags: ['Profile'],
         summary: 'Get current user profile',
-        description: 'Returns the profile of the authenticated user (Job Seeker or Employer).',
+        description: 'Returns the merged data of the authenticated user and their specific profile.',
         security: [['bearerAuth' => []]]
     )]
     #[OA\Response(
         response: 200,
-        description: 'User profile',
+        description: 'User profile retrieved successfully',
         content: new OA\JsonContent(
             oneOf: [
+                // مبرمج النوكست سيشوف هذا الجزء لو كان النوع باحث عن عمل
                 new OA\Schema(
                     properties: [
                         new OA\Property(property: 'type', type: 'string', example: 'job_seeker'),
-                        new OA\Property(property: 'data', type: 'object'),
+                        new OA\Property(property: 'data', properties: [
+                            new OA\Property(property: 'JobSeekerID', type: 'integer', example: 13),
+                            new OA\Property(property: 'FullName', type: 'string', example: 'علوي الصبان'),
+                            new OA\Property(property: 'Email', type: 'string', example: 'alwimoo@gmail.com'),
+                            new OA\Property(property: 'Phone', type: 'string', example: '778928541'),
+                            new OA\Property(property: 'PersonalPhoto', type: 'string', nullable: true),
+                            new OA\Property(property: 'Location', type: 'string', example: 'المكلا - الإنشاءات'),
+                            new OA\Property(property: 'ProfileSummary', type: 'string', example: 'واحد يبغى صبر والله'),
+                        ], type: 'object'),
                     ]
                 ),
+                // مبرمج النوكست سيشوف هذا الجزء لو كان النوع شركة
                 new OA\Schema(
                     properties: [
                         new OA\Property(property: 'type', type: 'string', example: 'company'),
-                        new OA\Property(property: 'data', type: 'object'),
+                        new OA\Property(property: 'data', properties: [
+                            new OA\Property(property: 'FullName', type: 'string', example: 'اسم مدير الشركة'),
+                            new OA\Property(property: 'Phone', type: 'string', example: '777000000'),
+                            new OA\Property(property: 'CompanyName', type: 'string', example: 'شركة المسار اللامع'),
+                            new OA\Property(property: 'specializations', type: 'array', items: new OA\Items(type: 'object')),
+                        ], type: 'object'),
                     ]
                 ),
             ]
@@ -55,7 +70,15 @@ class ProfileController extends Controller
 
             return response()->json([
                 'type' => 'job_seeker',
-                'data' => $profile,
+                'data' => [
+                    'JobSeekerID' => $user->UserID,
+                    'FullName' => $user->FullName,
+                    'Email' => $user->Email,
+                    'Phone' => $user->Phone,
+                    'PersonalPhoto' => $profile?->PersonalPhoto,
+                    'Location' => $profile?->Location,
+                    'ProfileSummary' => $profile?->ProfileSummary,
+                ],
             ]);
         }
 
@@ -158,6 +181,7 @@ class ProfileController extends Controller
                     description: 'Job Seeker Profile',
                     properties: [
                         new OA\Property(property: 'full_name', type: 'string'),
+                        new OA\Property(property: 'email', type: 'string'),
                         new OA\Property(property: 'phone', type: 'string'),
                         new OA\Property(property: 'personal_photo', type: 'string'),
                         new OA\Property(property: 'location', type: 'string'),
@@ -169,6 +193,7 @@ class ProfileController extends Controller
                     required: ['company_name'],
                     properties: [
                         new OA\Property(property: 'full_name', type: 'string'),
+                        new OA\Property(property: 'email', type: 'string'),
                         new OA\Property(property: 'phone', type: 'string'),
                         new OA\Property(property: 'company_name', type: 'string'),
                         new OA\Property(property: 'organization_name', type: 'string'),
@@ -191,11 +216,17 @@ class ProfileController extends Controller
         $role = $user->roles->first();
 
         // Update User info if present
-        if ($request->has('full_name') || $request->has('phone')) {
-            $user->update([
-                'FullName' => $request->input('full_name', $user->FullName),
-                'Phone' => $request->input('phone', $user->Phone),
-            ]);
+        if ($request->has('full_name') || $request->has('phone') || $request->has('email')) {
+            $updates = [];
+            if ($request->has('full_name')) $updates['FullName'] = $request->input('full_name');
+            if ($request->has('phone')) $updates['Phone'] = $request->input('phone');
+            if ($request->has('email') && $request->input('email') !== $user->Email) {
+                $request->validate(['email' => 'email|unique:user,Email,' . $user->UserID . ',UserID']);
+                $updates['Email'] = $request->input('email');
+            }
+            if (!empty($updates)) {
+                $user->update($updates);
+            }
         }
 
         if ($role?->RoleName === 'JobSeeker') {
@@ -228,6 +259,7 @@ class ProfileController extends Controller
                     description: 'Job Seeker Profile',
                     properties: [
                         new OA\Property(property: 'full_name', type: 'string'),
+                        new OA\Property(property: 'email', type: 'string'),
                         new OA\Property(property: 'phone', type: 'string'),
                         new OA\Property(property: 'personal_photo', type: 'string'),
                         new OA\Property(property: 'location', type: 'string'),
@@ -239,6 +271,7 @@ class ProfileController extends Controller
                     required: ['company_name'],
                     properties: [
                         new OA\Property(property: 'full_name', type: 'string'),
+                        new OA\Property(property: 'email', type: 'string'),
                         new OA\Property(property: 'phone', type: 'string'),
                         new OA\Property(property: 'company_name', type: 'string'),
                         new OA\Property(property: 'organization_name', type: 'string'),

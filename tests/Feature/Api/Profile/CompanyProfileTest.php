@@ -123,4 +123,44 @@ class CompanyProfileTest extends TestCase
 
         $this->assertDatabaseHas('companyprofile', ['CompanyID' => $user->UserID]);
     }
+
+    public function test_job_seeker_can_get_following_companies()
+    {
+        $jobSeeker = User::factory()->create();
+        $jobSeeker->roles()->attach(Role::where('RoleName', 'JobSeeker')->first() ?? Role::create(['RoleName' => 'JobSeeker']));
+
+        DB::table('jobseekerprofile')->insert([
+            'JobSeekerID' => $jobSeeker->UserID,
+        ]);
+
+        $employer = User::factory()->create();
+        $employer->roles()->attach(Role::where('RoleName', 'Employer')->first());
+        DB::table('companyprofile')->insert([
+            'CompanyID' => $employer->UserID,
+            'CompanyName' => 'Awesome Company',
+        ]);
+
+        DB::table('followcompany')->insert([
+            'JobSeekerID' => $jobSeeker->UserID,
+            'CompanyID' => $employer->UserID,
+            'FollowedAt' => now(),
+        ]);
+
+        $response = $this->actingAs($jobSeeker)->getJson('/api/companies/following');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'FollowID',
+                        'JobSeekerID',
+                        'CompanyID',
+                        'company' => [
+                            'CompanyID',
+                            'CompanyName'
+                        ]
+                    ]
+                ]
+            ]);
+    }
 }

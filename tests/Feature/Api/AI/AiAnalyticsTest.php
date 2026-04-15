@@ -253,4 +253,40 @@ class AiAnalyticsTest extends TestCase
         $this->getJson("/api/cvs/{$this->cvId}/skill-gaps")
             ->assertStatus(401);
     }
+
+    // ==========================================
+    // Market Trends Endpoint Tests
+    // ==========================================
+
+    public function test_authenticated_user_can_view_market_trends(): void
+    {
+        $skillId = DB::table('skill')->insertGetId([
+            'SkillName' => 'Laravel',
+            'CategoryID' => null,
+        ]);
+
+        DB::table('skilldemandsnapshot')->insert([
+            'SkillID' => $skillId,
+            'DemandCount' => 100,
+            'SnapshotDate' => now()->toDateString(),
+        ]);
+
+        $response = $this->actingAs($this->jobSeeker)
+            ->getJson('/api/market-trends');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'SnapshotID',
+                        'SkillID',
+                        'DemandCount',
+                        'SnapshotDate',
+                    ]
+                ],
+                'meta' => [
+                    'snapshot_date'
+                ]
+            ]);
+    }
 }

@@ -14,11 +14,16 @@ class CVCustomSection extends Model
 
     protected $primaryKey = 'CustomSectionID';
 
+    protected $casts = [
+        'content_data' => 'array',
+    ];
+
     protected $fillable = [
         'CVID',
         'SectionType',
         'Title',
         'Description',
+        'content_data',
         'StartDate',
         'EndDate',
     ];

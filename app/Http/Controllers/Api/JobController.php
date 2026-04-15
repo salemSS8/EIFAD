@@ -31,7 +31,7 @@ class JobController extends Controller
     #[OA\Parameter(name: 'company_id', in: 'query', description: 'Filter by company ID', required: false, schema: new OA\Schema(type: 'integer'))]
     #[OA\Parameter(name: 'skill_ids', in: 'query', description: 'Comma-separated skill IDs', required: false, schema: new OA\Schema(type: 'string'))]
     #[OA\Parameter(name: 'industry', in: 'query', description: 'Filter by industry (company field of work)', required: false, schema: new OA\Schema(type: 'string'))]
-    #[OA\Parameter(name: 'sort', in: 'query', description: 'Sort order: latest (default), salary_desc, salary_asc', required: false, schema: new OA\Schema(type: 'string', enum: ['latest', 'salary_desc', 'salary_asc']))]
+    #[OA\Parameter(name: 'sort', in: 'query', description: 'Sort order: latest (default), salary_desc, salary_asc, popular', required: false, schema: new OA\Schema(type: 'string', enum: ['latest', 'salary_desc', 'salary_asc', 'popular']))]
     #[OA\Parameter(name: 'per_page', in: 'query', description: 'Items per page (default 15, max 50)', required: false, schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(
         response: 200,
@@ -76,6 +76,7 @@ class JobController extends Controller
             'company',
             'skills.skill.category',
         ])
+            ->withCount('applications')
             ->where('JobAdID', $id)
             ->firstOrFail();
 

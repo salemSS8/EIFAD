@@ -29,7 +29,7 @@ class AiAnalyticsController extends Controller
         tags: ['AI Analytics'],
         summary: 'Get AI match analysis for an application',
         description: 'Returns the AI screening match score, notes, and detailed CV-Job compatibility breakdown.',
-        security: [['sanctum' => []]]
+        security: [['bearerAuth' => []]]
     )]
     #[OA\Parameter(name: 'application', in: 'path', required: true, description: 'Application ID', schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(response: 200, description: 'AI match details')]
@@ -44,7 +44,7 @@ class AiAnalyticsController extends Controller
         // Authorization: only the employer who owns the job can view
         $user = $request->user();
         if ($jobApplication->jobAd && $jobApplication->jobAd->CompanyID !== $user->UserID) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'Unauthorized: Only the company owning this job can view AI matches.'], 403);
         }
 
         // Load CVJobMatch separately (matching both CVID and JobAdID)
@@ -70,7 +70,7 @@ class AiAnalyticsController extends Controller
         tags: ['AI Analytics'],
         summary: 'Get AI analysis of a CV',
         description: 'Returns scores, strengths, gaps, and improvement recommendations for a CV.',
-        security: [['sanctum' => []]]
+        security: [['bearerAuth' => []]]
     )]
     #[OA\Parameter(name: 'cv', in: 'path', required: true, description: 'CV ID', schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(response: 200, description: 'CV analysis results')]
@@ -84,7 +84,7 @@ class AiAnalyticsController extends Controller
         $user = $request->user();
         $jobSeekerProfile = $user->jobSeekerProfile;
         if (! $jobSeekerProfile || $cvModel->JobSeekerID !== $jobSeekerProfile->JobSeekerID) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'Unauthorized: You can only view analysis for your own CV.'], 403);
         }
 
         $analysis = CVAnalysis::where('CVID', $cv)
@@ -113,7 +113,7 @@ class AiAnalyticsController extends Controller
         tags: ['AI Analytics'],
         summary: 'Get skill gap analysis for a CV',
         description: 'Returns a list of skills the job seeker is missing compared to market demands.',
-        security: [['sanctum' => []]]
+        security: [['bearerAuth' => []]]
     )]
     #[OA\Parameter(name: 'cv', in: 'path', required: true, description: 'CV ID', schema: new OA\Schema(type: 'integer'))]
     #[OA\Parameter(name: 'job_ad_id', in: 'query', required: false, description: 'Filter by specific job ad', schema: new OA\Schema(type: 'integer'))]
@@ -127,7 +127,7 @@ class AiAnalyticsController extends Controller
         $user = $request->user();
         $jobSeekerProfile = $user->jobSeekerProfile;
         if (! $jobSeekerProfile || $cvModel->JobSeekerID !== $jobSeekerProfile->JobSeekerID) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'Unauthorized: You can only view skill gaps for your own CV.'], 403);
         }
 
         $query = SkillGapAnalysis::with(['skill', 'jobAd:JobAdID,Title'])
@@ -158,7 +158,7 @@ class AiAnalyticsController extends Controller
         tags: ['AI Analytics'],
         summary: 'Get match score before applying',
         description: 'Returns the CV match score for a specific job without actually applying.',
-        security: [['sanctum' => []]]
+        security: [['bearerAuth' => []]]
     )]
     #[OA\Parameter(name: 'jobId', in: 'path', required: true, description: 'Job Ad ID', schema: new OA\Schema(type: 'integer'))]
     #[OA\Parameter(name: 'cv_id', in: 'query', required: true, description: 'CV ID', schema: new OA\Schema(type: 'integer'))]
@@ -175,7 +175,7 @@ class AiAnalyticsController extends Controller
         $jobSeekerProfile = $user->jobSeekerProfile;
 
         if (! $jobSeekerProfile) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'Unauthorized: Only job seekers with a valid profile can view match scores.'], 403);
         }
 
         $cvModel = CV::where('CVID', $request->input('cv_id'))
@@ -230,13 +230,17 @@ class AiAnalyticsController extends Controller
         if (! empty($jobSkills)) {
             $matchedSkills = array_intersect($jobSkills, $cvSkills);
             $missingSkills = array_diff($jobSkills, $cvSkills);
-            
-            if (!empty($matchedSkills)) $strengths[] = "Your CV contains matching skills: " . implode(', ', array_slice($matchedSkills, 0, 3));
-            if (!empty($missingSkills)) $gaps[] = "Consider adding missing skills: " . implode(', ', array_slice($missingSkills, 0, 3));
+
+            if (! empty($matchedSkills)) {
+                $strengths[] = 'Your CV contains matching skills: '.implode(', ', array_slice($matchedSkills, 0, 3));
+            }
+            if (! empty($missingSkills)) {
+                $gaps[] = 'Consider adding missing skills: '.implode(', ', array_slice($missingSkills, 0, 3));
+            }
 
             $skillsScore = min(100, (int) round((count($matchedSkills) / count($jobSkills)) * 100 + max(0, min(10, count($cvSkills) - count($jobSkills)))));
         } else {
-            $strengths[] = "No specific skills required for this job.";
+            $strengths[] = 'No specific skills required for this job.';
         }
 
         $experienceScore = 20;
@@ -257,27 +261,33 @@ class AiAnalyticsController extends Controller
                 }
             }
 
-            if ($totalYears >= 10) $experienceScore = 90;
-            elseif ($totalYears >= 5) $experienceScore = 75;
-            elseif ($totalYears >= 3) $experienceScore = 60;
-            elseif ($totalYears >= 1) $experienceScore = 45;
-            else $experienceScore = 30;
+            if ($totalYears >= 10) {
+                $experienceScore = 90;
+            } elseif ($totalYears >= 5) {
+                $experienceScore = 75;
+            } elseif ($totalYears >= 3) {
+                $experienceScore = 60;
+            } elseif ($totalYears >= 1) {
+                $experienceScore = 45;
+            } else {
+                $experienceScore = 30;
+            }
 
             if ($relevantExperience) {
                 $experienceScore = min(100, $experienceScore + 10);
-                $strengths[] = "Experience titles closely match the job role.";
+                $strengths[] = 'Experience titles closely match the job role.';
             } else {
-                $gaps[] = "Your previous job titles do not perfectly match the advertised role.";
+                $gaps[] = 'Your previous job titles do not perfectly match the advertised role.';
             }
 
-            $strengths[] = "You have approximately " . round($totalYears, 1) . " years of experience.";
+            $strengths[] = 'You have approximately '.round($totalYears, 1).' years of experience.';
         } else {
-            $gaps[] = "No experience listed on your CV.";
+            $gaps[] = 'No experience listed on your CV.';
         }
 
         $educationScore = 30;
         if ($cv->education->isNotEmpty()) {
-            $strengths[] = "You have an educational background.";
+            $strengths[] = 'You have an educational background.';
             foreach ($cv->education as $edu) {
                 $degree = strtolower($edu->DegreeName ?? '');
                 if (str_contains($degree, 'phd') || str_contains($degree, 'doctorate')) {
@@ -291,7 +301,7 @@ class AiAnalyticsController extends Controller
                 }
             }
         } else {
-            $gaps[] = "No formal education listed.";
+            $gaps[] = 'No formal education listed.';
         }
 
         return [
@@ -312,7 +322,7 @@ class AiAnalyticsController extends Controller
         tags: ['AI Analytics', 'Market'],
         summary: 'Get market skill trends',
         description: 'Returns the most in-demand skills in the market based on AI analysis.',
-        security: [['sanctum' => []]]
+        security: [['bearerAuth' => []]]
     )]
     #[OA\Response(response: 200, description: 'List of trending skills')]
     public function marketTrends(Request $request): JsonResponse

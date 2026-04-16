@@ -74,7 +74,9 @@ class JobController extends Controller
     {
         $job = JobAd::with([
             'company',
-            'company.user',
+            'company.user' => function ($query) {
+                $query->select('Phone', 'Email');
+            },
             'skills.skill.category',
         ])
             ->withCount('applications')

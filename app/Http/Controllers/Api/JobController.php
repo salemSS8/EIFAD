@@ -74,6 +74,7 @@ class JobController extends Controller
     {
         $job = JobAd::with([
             'company',
+            'company.user',
             'skills.skill.category',
         ])
             ->withCount('applications')

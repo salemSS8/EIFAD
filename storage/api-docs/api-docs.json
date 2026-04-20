@@ -355,13 +355,135 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "CV analysis results"
+                        "description": "CV analysis results",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "cv_id": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                },
+                                                "scores": {
+                                                    "properties": {
+                                                        "overall": {
+                                                            "type": "integer",
+                                                            "example": 75
+                                                        },
+                                                        "skills": {
+                                                            "type": "integer",
+                                                            "example": 80
+                                                        },
+                                                        "experience": {
+                                                            "type": "integer",
+                                                            "example": 70
+                                                        },
+                                                        "education": {
+                                                            "type": "integer",
+                                                            "example": 65
+                                                        },
+                                                        "completeness": {
+                                                            "type": "integer",
+                                                            "example": 85
+                                                        },
+                                                        "consistency": {
+                                                            "type": "integer",
+                                                            "example": 90
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "score_breakdown": {
+                                                    "type": "object",
+                                                    "nullable": true
+                                                },
+                                                "scoring_method": {
+                                                    "type": "string",
+                                                    "example": "rule_based"
+                                                },
+                                                "strengths": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "nullable": true
+                                                },
+                                                "potential_gaps": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "nullable": true
+                                                },
+                                                "improvement_recommendations": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "nullable": true
+                                                },
+                                                "ai_explanation": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "ai_model": {
+                                                    "type": "string",
+                                                    "example": "gemini-1.5-flash",
+                                                    "nullable": true
+                                                },
+                                                "analyzed_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "nullable": true
+                                                },
+                                                "scored_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "nullable": true
+                                                },
+                                                "explained_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "403": {
-                        "description": "Unauthorized"
+                        "description": "Unauthorized — only the CV owner can view analysis"
                     },
                     "404": {
-                        "description": "No analysis found for this CV"
+                        "description": "No analysis found for this CV",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No analysis found for this CV"
+                                        },
+                                        "data": {
+                                            "type": "string",
+                                            "example": null,
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -1529,6 +1651,43 @@
                 ]
             }
         },
+        "/cvs/{cv}/analyze": {
+            "post": {
+                "tags": [
+                    "CVs"
+                ],
+                "summary": "Trigger CV analysis",
+                "description": "Dispatches the analysis pipeline (parse → score → AI explain) for an existing CV. Useful for CVs created before auto-analysis was enabled, or to re-analyze after updating CV data.",
+                "operationId": "analyzeCv",
+                "parameters": [
+                    {
+                        "name": "cv",
+                        "in": "path",
+                        "description": "CV ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Analysis queued successfully"
+                    },
+                    "403": {
+                        "description": "Unauthorized — not the CV owner"
+                    },
+                    "404": {
+                        "description": "CV not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/cvs/{cvId}/skills": {
             "post": {
                 "tags": [
@@ -2536,12 +2695,41 @@
                 "tags": [
                     "Companies"
                 ],
-                "summary": "Get all verified companies",
-                "description": "Returns a paginated list of all verified companies.",
+                "summary": "Get verified companies",
+                "description": "Returns a paginated list of all verified companies with optional filtering by name, location, and field.",
                 "operationId": "getCompanies",
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "query",
+                        "description": "Filter by company name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "location",
+                        "in": "query",
+                        "description": "Filter by address/location",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "field",
+                        "in": "query",
+                        "description": "Filter by job field/field of work",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "List of verified companies"
+                        "description": "List of companies"
                     }
                 },
                 "security": [

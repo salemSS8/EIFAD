@@ -12,7 +12,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class JobSeekerProfile extends Model
 {
     protected $table = 'jobseekerprofile';
+
     protected $primaryKey = 'JobSeekerID';
+
     public $timestamps = false;
 
     // Note: JobSeekerID references UserID (1:1 relationship)
@@ -31,6 +33,14 @@ class JobSeekerProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'JobSeekerID', 'UserID');
+    }
+
+    /**
+     * Check if job seeker has a CV.
+     */
+    public function hascv(): bool
+    {
+        return $this->cvs()->exists();
     }
 
     /**

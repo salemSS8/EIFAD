@@ -15,20 +15,25 @@ use OpenApi\Attributes as OA;
 class CompanyController extends Controller
 {
     /**
-     * Get a list of verified companies.
+     * Get a list of verified companies with optional filtering.
      */
     #[OA\Get(
         path: '/companies',
         operationId: 'getCompanies',
         tags: ['Companies'],
-        summary: 'Get all verified companies',
-        description: 'Returns a paginated list of all verified companies.',
+        summary: 'Get verified companies',
+        description: 'Returns a paginated list of all verified companies with optional filtering by name, location, and field.',
         security: [['bearerAuth' => []]]
     )]
-    #[OA\Response(response: 200, description: 'List of verified companies')]
-    public function index(): JsonResponse
+    #[OA\Parameter(name: 'name', in: 'query', description: 'Filter by company name', required: false, schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'location', in: 'query', description: 'Filter by address/location', required: false, schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'field', in: 'query', description: 'Filter by job field/field of work', required: false, schema: new OA\Schema(type: 'string'))]
+    #[OA\Response(response: 200, description: 'List of companies')]
+    public function index(Request $request): JsonResponse
     {
-        $companies = CompanyProfile::where('IsCompanyVerified', true)->paginate(15);
+        $filters = $request->only(['name', 'location', 'field']);
+
+        $companies = (new \App\Domain\Company\Actions\SearchCompaniesAction)->execute($filters);
 
         return response()->json($companies);
     }
@@ -126,7 +131,7 @@ class CompanyController extends Controller
     public function following(Request $request): JsonResponse
     {
         $profile = $request->user()->jobSeekerProfile;
-        
+
         if (! $profile) {
             return response()->json(['message' => 'Only job seekers can follow companies'], 403);
         }

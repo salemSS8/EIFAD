@@ -14,18 +14,18 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Job: Explain CV Analysis using Gemini AI.
- * 
+ *
  * This job uses Gemini ONLY for semantic interpretation and explanation.
- * 
+ *
  * Input:
  * - Canonical CV data (already extracted)
  * - Rule-based scores (already calculated)
- * 
+ *
  * Output (TEXT ONLY):
  * - strengths: textual description
  * - potential_gaps: textual description
  * - improvement_recommendations: textual description
- * 
+ *
  * Constraints:
  * ❌ NO numeric scoring
  * ❌ NO parsing
@@ -35,8 +35,15 @@ class ExplainCvAnalysisWithGeminiJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 3;
-    public int $backoff = 60;
+    public int $tries = 10;
+
+    /**
+     * Get the backoff strategy for the job.
+     */
+    public function backoff(): array
+    {
+        return [10, 30, 60, 120, 240, 480];
+    }
 
     public function __construct(
         public CV $cv
@@ -53,10 +60,11 @@ class ExplainCvAnalysisWithGeminiJob implements ShouldQueue
 
             $analysis = $this->cv->analysis;
 
-            if (!$analysis || !$analysis->OverallScore) {
+            if (! $analysis || ! $analysis->OverallScore) {
                 Log::warning('ExplainCvAnalysisWithGeminiJob: No scores found, skipping', [
-                    'cv_id' => $this->cv->CVID
+                    'cv_id' => $this->cv->CVID,
                 ]);
+
                 return ['success' => false, 'error' => 'CV must be scored first'];
             }
 
@@ -80,7 +88,7 @@ class ExplainCvAnalysisWithGeminiJob implements ShouldQueue
         } catch (\Exception $e) {
             Log::error('ExplainCvAnalysisWithGeminiJob failed', [
                 'cv_id' => $this->cv->CVID,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -95,7 +103,7 @@ class ExplainCvAnalysisWithGeminiJob implements ShouldQueue
             'cv_title' => $this->cv->Title,
             'personal_summary' => $this->cv->PersonalSummary,
             'skills_count' => $this->cv->skills->count(),
-            'skills_list' => $this->cv->skills->map(fn($s) => $s->skill->SkillName ?? '')->toArray(),
+            'skills_list' => $this->cv->skills->map(fn ($s) => $s->skill->SkillName ?? '')->toArray(),
             'experience_count' => $this->cv->experiences->count(),
             'education_count' => $this->cv->education->count(),
             'scores' => [

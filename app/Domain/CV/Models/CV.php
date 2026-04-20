@@ -5,6 +5,7 @@ namespace App\Domain\CV\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * CV Model - Matches `cv` table in database.
@@ -119,6 +120,14 @@ class CV extends Model
     public function skillGapAnalyses(): HasMany
     {
         return $this->hasMany(\App\Domain\AI\Models\SkillGapAnalysis::class, 'CVID', 'CVID');
+    }
+
+    /**
+     * Get the analysis for this CV.
+     */
+    public function analysis(): HasOne
+    {
+        return $this->hasOne(CVAnalysis::class, 'CVID', 'CVID');
     }
 
     /**

@@ -75,7 +75,7 @@ class JobController extends Controller
         $job = JobAd::with([
             'company',
             'company.user' => function ($query) {
-                $query->select('Phone', 'Email');
+                $query->select('UserID', 'Phone', 'Email');
             },
             'skills.skill.category',
         ])

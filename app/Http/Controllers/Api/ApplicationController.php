@@ -39,6 +39,7 @@ class ApplicationController extends Controller
 
         $applications = JobApplication::with(['jobAd.company:CompanyID,CompanyName,LogoPath', 'cv:CVID,Title'])
             ->where('JobSeekerID', $profile->JobSeekerID)
+            ->where('Status', '!=', 'withdrawn')
             ->orderByDesc('AppliedAt')
             ->paginate(15);
 

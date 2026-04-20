@@ -54,7 +54,7 @@ Route::prefix('auth')->group(function () {
 // Public Job Listings
 Route::prefix('jobs')->group(function () {
     Route::get('/', [JobController::class, 'index']);
-    Route::get('/{id}', [JobController::class, 'show']);
+    Route::get('/{id}', [JobController::class, 'show'])->whereNumber('id');
 });
 
 // Skills & Languages (for dropdowns)
@@ -176,6 +176,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // CV Analysis & Skill Gaps (Job Seeker views own analysis)
     Route::get('/cvs/{cv}/analysis', [AiAnalyticsController::class, 'cvAnalysis']);
+    Route::post('/cvs/{cv}/analyze', [CVController::class, 'analyze']);
     Route::get('/cvs/{cv}/skill-gaps', [AiAnalyticsController::class, 'skillGaps']);
 
     // =========================================
@@ -330,6 +331,5 @@ Route::middleware('auth:sanctum')->group(function () {
             ], 201);
         });
     });
-
 
 });

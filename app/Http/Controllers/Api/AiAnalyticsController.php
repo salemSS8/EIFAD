@@ -73,9 +73,55 @@ class AiAnalyticsController extends Controller
         security: [['bearerAuth' => []]]
     )]
     #[OA\Parameter(name: 'cv', in: 'path', required: true, description: 'CV ID', schema: new OA\Schema(type: 'integer'))]
-    #[OA\Response(response: 200, description: 'CV analysis results')]
-    #[OA\Response(response: 403, description: 'Unauthorized')]
-    #[OA\Response(response: 404, description: 'No analysis found for this CV')]
+    #[OA\Response(
+        response: 200,
+        description: 'CV analysis results',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(
+                    property: 'data',
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'cv_id', type: 'integer', example: 5),
+                        new OA\Property(
+                            property: 'scores',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'overall', type: 'integer', example: 75),
+                                new OA\Property(property: 'skills', type: 'integer', example: 80),
+                                new OA\Property(property: 'experience', type: 'integer', example: 70),
+                                new OA\Property(property: 'education', type: 'integer', example: 65),
+                                new OA\Property(property: 'completeness', type: 'integer', example: 85),
+                                new OA\Property(property: 'consistency', type: 'integer', example: 90),
+                            ]
+                        ),
+                        new OA\Property(property: 'score_breakdown', type: 'object', nullable: true),
+                        new OA\Property(property: 'scoring_method', type: 'string', example: 'rule_based'),
+                        new OA\Property(property: 'strengths', type: 'array', items: new OA\Items(type: 'string'), nullable: true),
+                        new OA\Property(property: 'potential_gaps', type: 'array', items: new OA\Items(type: 'string'), nullable: true),
+                        new OA\Property(property: 'improvement_recommendations', type: 'array', items: new OA\Items(type: 'string'), nullable: true),
+                        new OA\Property(property: 'ai_explanation', type: 'string', nullable: true),
+                        new OA\Property(property: 'ai_model', type: 'string', nullable: true, example: 'gemini-1.5-flash'),
+                        new OA\Property(property: 'analyzed_at', type: 'string', format: 'date-time', nullable: true),
+                        new OA\Property(property: 'scored_at', type: 'string', format: 'date-time', nullable: true),
+                        new OA\Property(property: 'explained_at', type: 'string', format: 'date-time', nullable: true),
+                    ]
+                ),
+            ]
+        )
+    )]
+    #[OA\Response(response: 403, description: 'Unauthorized — only the CV owner can view analysis')]
+    #[OA\Response(
+        response: 404,
+        description: 'No analysis found for this CV',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'message', type: 'string', example: 'No analysis found for this CV'),
+                new OA\Property(property: 'data', type: 'string', nullable: true, example: null),
+            ]
+        )
+    )]
     public function cvAnalysis(Request $request, int $cv): JsonResponse
     {
         $cvModel = CV::where('CVID', $cv)->firstOrFail();
@@ -200,10 +246,38 @@ class AiAnalyticsController extends Controller
             ];
         } else {
             $preview = $this->calculatePreMatch($cvModel, $jobModel);
+
+            // Persist the match result so it's available in /jobs/matching
+            \App\Domain\AI\Models\CVJobMatch::updateOrCreate(
+                [
+                    'CVID' => $cvModel->CVID,
+                    'JobAdID' => $jobId,
+                ],
+                [
+                    'MatchScore' => $preview['score'],
+                    'SkillsScore' => $preview['skills_score'],
+                    'ExperienceScore' => $preview['experience_score'],
+                    'EducationScore' => $preview['education_score'],
+                    'Strengths' => $preview['strengths'],
+                    'Gaps' => $preview['gaps'],
+                    'Explanation' => $preview['explanation'],
+                    'ScoreBreakdown' => [
+                        'skills' => $preview['skills_score'],
+                        'experience' => $preview['experience_score'],
+                        'education' => $preview['education_score'],
+                    ],
+                    'ScoringMethod' => 'rule_based_heuristic',
+                    'CalculatedAt' => now(),
+                ]
+            );
+
             $matchData = [
                 'job_id' => $jobId,
                 'cv_id' => $cvModel->CVID,
                 'match_score' => $preview['score'],
+                'skills_score' => $preview['skills_score'],
+                'experience_score' => $preview['experience_score'],
+                'education_score' => $preview['education_score'],
                 'strengths' => $preview['strengths'],
                 'gaps' => $preview['gaps'],
                 'explanation' => $preview['explanation'],
@@ -232,15 +306,15 @@ class AiAnalyticsController extends Controller
             $missingSkills = array_diff($jobSkills, $cvSkills);
 
             if (! empty($matchedSkills)) {
-                $strengths[] = 'Your CV contains matching skills: '.implode(', ', array_slice($matchedSkills, 0, 3));
+                $strengths[] = $this->transBoth('skills_matched', ['skills' => implode(', ', array_slice($matchedSkills, 0, 3))]);
             }
             if (! empty($missingSkills)) {
-                $gaps[] = 'Consider adding missing skills: '.implode(', ', array_slice($missingSkills, 0, 3));
+                $gaps[] = $this->transBoth('skills_missing', ['skills' => implode(', ', array_slice($missingSkills, 0, 3))]);
             }
 
             $skillsScore = min(100, (int) round((count($matchedSkills) / count($jobSkills)) * 100 + max(0, min(10, count($cvSkills) - count($jobSkills)))));
         } else {
-            $strengths[] = 'No specific skills required for this job.';
+            $strengths[] = $this->transBoth('no_skills_required');
         }
 
         $experienceScore = 20;
@@ -275,19 +349,19 @@ class AiAnalyticsController extends Controller
 
             if ($relevantExperience) {
                 $experienceScore = min(100, $experienceScore + 10);
-                $strengths[] = 'Experience titles closely match the job role.';
+                $strengths[] = $this->transBoth('experience_match');
             } else {
-                $gaps[] = 'Your previous job titles do not perfectly match the advertised role.';
+                $gaps[] = $this->transBoth('experience_mismatch');
             }
 
-            $strengths[] = 'You have approximately '.round($totalYears, 1).' years of experience.';
+            $strengths[] = $this->transBoth('years_of_experience', ['years' => round($totalYears, 1)]);
         } else {
-            $gaps[] = 'No experience listed on your CV.';
+            $gaps[] = $this->transBoth('no_experience');
         }
 
         $educationScore = 30;
         if ($cv->education->isNotEmpty()) {
-            $strengths[] = 'You have an educational background.';
+            $strengths[] = $this->transBoth('education_found');
             foreach ($cv->education as $edu) {
                 $degree = strtolower($edu->DegreeName ?? '');
                 if (str_contains($degree, 'phd') || str_contains($degree, 'doctorate')) {
@@ -301,14 +375,28 @@ class AiAnalyticsController extends Controller
                 }
             }
         } else {
-            $gaps[] = 'No formal education listed.';
+            $gaps[] = $this->transBoth('no_education');
         }
 
         return [
             'score' => (int) round(($skillsScore * 0.4) + ($experienceScore * 0.35) + ($educationScore * 0.25)),
+            'skills_score' => $skillsScore,
+            'experience_score' => $experienceScore,
+            'education_score' => $educationScore,
             'strengths' => $strengths,
             'gaps' => $gaps,
-            'explanation' => 'Calculated heuristically based on your CV details against job requirements.',
+            'explanation' => $this->transBoth('explanation'),
+        ];
+    }
+
+    /**
+     * Helper to get translations in both Arabic and English.
+     */
+    private function transBoth(string $key, array $replace = []): array
+    {
+        return [
+            'en' => \Illuminate\Support\Facades\Lang::get('match_analysis.'.$key, $replace, 'en'),
+            'ar' => \Illuminate\Support\Facades\Lang::get('match_analysis.'.$key, $replace, 'ar'),
         ];
     }
 

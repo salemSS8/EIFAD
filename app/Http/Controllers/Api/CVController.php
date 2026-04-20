@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\CV\Jobs\AnalyzeCVJob;
 use App\Domain\CV\Models\CV;
 use App\Domain\CV\Models\CVCertification;
 use App\Domain\CV\Models\CVCustomSection;
@@ -12,6 +13,7 @@ use App\Domain\CV\Models\Experience;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Validation\Rule;
 use OpenApi\Attributes as OA;
 
@@ -129,10 +131,46 @@ class CVController extends Controller
             'UpdatedAt' => now(),
         ]);
 
+        // Auto-trigger CV analysis pipeline (async)
+        AnalyzeCVJob::dispatch($cv);
+
         return response()->json([
             'message' => 'CV created successfully',
             'data' => $cv,
         ], 201);
+    }
+
+    /**
+     * Trigger CV analysis for an existing CV.
+     * Useful for CVs created before auto-trigger was enabled.
+     */
+    #[OA\Post(
+        path: '/cvs/{cv}/analyze',
+        operationId: 'analyzeCv',
+        tags: ['CVs'],
+        summary: 'Trigger CV analysis',
+        description: 'Dispatches the analysis pipeline (parse → score → AI explain) for an existing CV. Useful for CVs created before auto-analysis was enabled, or to re-analyze after updating CV data.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Parameter(name: 'cv', in: 'path', required: true, description: 'CV ID', schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Analysis queued successfully')]
+    #[OA\Response(response: 403, description: 'Unauthorized — not the CV owner')]
+    #[OA\Response(response: 404, description: 'CV not found')]
+    public function analyze(Request $request, int $cv): JsonResponse
+    {
+        $jobSeekerProfile = $this->getJobSeekerProfile($request);
+
+        $cvModel = CV::where('CVID', $cv)
+            ->where('JobSeekerID', $jobSeekerProfile->JobSeekerID)
+            ->firstOrFail();
+
+        AnalyzeCVJob::dispatch($cvModel);
+
+        // Artisan::call('queue:work --once');
+        return response()->json([
+            'message' => 'CV analysis has been queued. Results will be available shortly.',
+            'cv_id' => $cvModel->CVID,
+        ]);
     }
 
     /**

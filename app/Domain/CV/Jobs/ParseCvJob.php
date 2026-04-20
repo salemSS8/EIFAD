@@ -2,16 +2,16 @@
 
 namespace App\Domain\CV\Jobs;
 
+use App\Domain\CV\DTOs\CanonicalResumeDTO;
 use App\Domain\CV\Models\CV;
+use App\Domain\CV\Models\CVLanguage;
 use App\Domain\CV\Models\CVSkill;
 use App\Domain\CV\Models\Education;
 use App\Domain\CV\Models\Experience;
-use App\Domain\CV\Models\CVLanguage;
-use App\Domain\CV\DTOs\CanonicalResumeDTO;
 use App\Domain\CV\Services\AffindaResumeParser;
 use App\Domain\CV\Services\CanonicalResumeMapper;
-use App\Domain\Skill\Models\Skill;
 use App\Domain\Skill\Models\Language;
+use App\Domain\Skill\Models\Skill;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -23,12 +23,12 @@ use Smalot\PdfParser\Parser as PdfParser;
 
 /**
  * Job: Parse CV and extract structured data.
- * 
+ *
  * Parsing Pipeline (as per documentation):
  * 1. Try Affinda Resume Parser (PRIMARY)
  * 2. Fallback to Regex-based parsing if Affinda fails
  * 3. Output: CanonicalResumeDTO (normalized model)
- * 
+ *
  * NO AI is used in this job - pure extraction logic.
  */
 class ParseCvJob implements ShouldQueue
@@ -36,6 +36,7 @@ class ParseCvJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $backoff = 60;
 
     public function __construct(
@@ -67,12 +68,12 @@ class ParseCvJob implements ShouldQueue
             }
 
             // Step 2: Fallback to Regex-based parsing
-            if (!$canonicalResume) {
+            if (! $canonicalResume) {
                 Log::info('ParseCvJob: Falling back to regex parsing', ['cv_id' => $this->cv->CVID]);
 
                 $rawContent = $this->extractRawContent();
 
-                if (!empty($rawContent)) {
+                if (! empty($rawContent)) {
                     $parsedData = $this->parseWithRegex($rawContent);
                     $canonicalResume = $mapper->fromRegexParsedData($parsedData, $rawContent);
                     $sourceType = 'regex';
@@ -80,7 +81,7 @@ class ParseCvJob implements ShouldQueue
             }
 
             // Step 3: Fallback to database existing data
-            if (!$canonicalResume || !$canonicalResume->isValid()) {
+            if (! $canonicalResume || ! $canonicalResume->isValid()) {
                 Log::info('ParseCvJob: Using database data', ['cv_id' => $this->cv->CVID]);
                 $canonicalResume = $mapper->fromCvModel($this->cv);
                 $sourceType = 'database';
@@ -111,7 +112,7 @@ class ParseCvJob implements ShouldQueue
         } catch (\Exception $e) {
             Log::error('ParseCvJob failed', [
                 'cv_id' => $this->cv->CVID,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -138,7 +139,7 @@ class ParseCvJob implements ShouldQueue
     {
         $filePath = $this->getFullFilePath();
 
-        if (!$filePath || !file_exists($filePath)) {
+        if (! $filePath || ! file_exists($filePath)) {
             return $this->cv->PersonalSummary ?? '';
         }
 
@@ -158,11 +159,13 @@ class ParseCvJob implements ShouldQueue
     private function extractFromPdf(string $filePath): string
     {
         try {
-            $parser = new PdfParser();
+            $parser = new PdfParser;
             $pdf = $parser->parseFile($filePath);
+
             return $pdf->getText();
         } catch (\Exception $e) {
             Log::warning('PDF parsing failed', ['error' => $e->getMessage()]);
+
             return '';
         }
     }
@@ -173,15 +176,17 @@ class ParseCvJob implements ShouldQueue
     private function extractFromDocx(string $filePath): string
     {
         try {
-            $zip = new \ZipArchive();
+            $zip = new \ZipArchive;
             if ($zip->open($filePath) === true) {
                 $content = $zip->getFromName('word/document.xml');
                 $zip->close();
+
                 return strip_tags($content);
             }
         } catch (\Exception $e) {
             Log::warning('DOCX parsing failed', ['error' => $e->getMessage()]);
         }
+
         return '';
     }
 
@@ -218,9 +223,9 @@ class ParseCvJob implements ShouldQueue
 
         // Name - usually first line
         $lines = array_filter(explode("\n", $content));
-        if (!empty($lines)) {
+        if (! empty($lines)) {
             $firstLine = trim(reset($lines));
-            if (strlen($firstLine) < 50 && !str_contains($firstLine, '@')) {
+            if (strlen($firstLine) < 50 && ! str_contains($firstLine, '@')) {
                 $info['name'] = $firstLine;
             }
         }
@@ -295,8 +300,8 @@ class ParseCvJob implements ShouldQueue
         foreach ($matches as $match) {
             $experiences[] = [
                 'date_range' => $match[0],
-                'start_date' => $match[1] . '-01-01',
-                'end_date' => is_numeric($match[2]) ? $match[2] . '-12-31' : null,
+                'start_date' => $match[1].'-01-01',
+                'end_date' => is_numeric($match[2]) ? $match[2].'-12-31' : null,
             ];
         }
 
@@ -306,12 +311,14 @@ class ParseCvJob implements ShouldQueue
     /**
      * Extract education entries.
      */
-    private function extractEducation(array $content = null): array
+    // 1. غيرنا النوع إلى ?string ليقبل نصوصاً أو null
+    private function extractEducation(?string $content = null): array
     {
         $education = [];
         $degrees = ['phd', 'doctorate', 'master', 'mba', 'bachelor', 'diploma'];
 
-        $contentStr = is_array($content) ? '' : ($content ?? '');
+        // 2. الآن $content هو نص أصلاً، لا داعي للتحقق المعقد
+        $contentStr = $content ?? '';
         $contentLower = strtolower($contentStr);
 
         foreach ($degrees as $degree) {
@@ -352,7 +359,9 @@ class ParseCvJob implements ShouldQueue
         // Persist skills
         foreach ($resume->skills as $skillData) {
             $skillName = $skillData['name'] ?? null;
-            if (!$skillName) continue;
+            if (! $skillName) {
+                continue;
+            }
 
             $skill = Skill::firstOrCreate(
                 ['SkillName' => $skillName],
@@ -370,7 +379,9 @@ class ParseCvJob implements ShouldQueue
         // Persist languages
         foreach ($resume->languages as $langData) {
             $langName = $langData['name'] ?? null;
-            if (!$langName) continue;
+            if (! $langName) {
+                continue;
+            }
 
             $language = Language::firstOrCreate(
                 ['LanguageName' => $langName],

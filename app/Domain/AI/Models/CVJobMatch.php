@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * CVJobMatch Model - Matches `cvjobmatch` table in database.
- * 
+ *
  * Supports both:
  * - Rule-based matching (no AI)
  * - AI-generated explanations (Gemini)
@@ -16,7 +16,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class CVJobMatch extends Model
 {
     protected $table = 'cvjobmatch';
+
     protected $primaryKey = 'MatchID';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -53,6 +55,8 @@ class CVJobMatch extends Model
             'ScoreBreakdown' => 'array',
             'Strengths' => 'array',
             'Gaps' => 'array',
+            'lanation' => 'array',
+            'Explanation' => 'array', // <--- Add this if Explanation is an array
             'CalculatedAt' => 'datetime',
             'ExplainedAt' => 'datetime',
         ];

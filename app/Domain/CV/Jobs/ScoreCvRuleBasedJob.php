@@ -14,14 +14,14 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Job: Score CV using Rule-Based Logic (NO AI).
- * 
+ *
  * This job calculates CV scores using deterministic PHP logic
  * based on predefined evaluation rubrics.
- * 
+ *
  * Output:
  * - cv_score: 0-100
  * - breakdown: skills, experience, education, completeness, consistency
- * 
+ *
  * NO AI is used in this job.
  */
 class ScoreCvRuleBasedJob implements ShouldQueue
@@ -29,6 +29,7 @@ class ScoreCvRuleBasedJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $backoff = 30;
 
     public function __construct(
@@ -62,7 +63,7 @@ class ScoreCvRuleBasedJob implements ShouldQueue
         } catch (\Exception $e) {
             Log::error('ScoreCvRuleBasedJob failed', [
                 'cv_id' => $this->cv->CVID,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -121,6 +122,7 @@ class ScoreCvRuleBasedJob implements ShouldQueue
         CVAnalysis::updateOrCreate(
             ['CVID' => $this->cv->CVID],
             [
+                'cv_id' => $this->cv->CVID,
                 'OverallScore' => $scores['total_score'],
                 'SkillsScore' => $scores['breakdown']['skills']['score'] ?? null,
                 'ExperienceScore' => $scores['breakdown']['experience']['score'] ?? null,

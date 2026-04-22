@@ -25,12 +25,9 @@ use Illuminate\Support\Facades\Route;
 // Public Routes (No Authentication)
 // =========================================
 
-// Health Check
-Route::get('/health', fn () => response()->json([
-    'status' => 'ok',
-    'timestamp' => now(),
-    'database' => \Illuminate\Support\Facades\DB::connection()->getDatabaseName(),
-]));
+// Health Check & Locale
+Route::get('/health', [AuthController::class, 'healthCheck']);
+Route::get('/locale', [AuthController::class, 'getLocale']);
 
 // Authentication
 Route::prefix('auth')->group(function () {

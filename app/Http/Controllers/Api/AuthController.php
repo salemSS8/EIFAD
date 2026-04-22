@@ -44,6 +44,48 @@ class AuthController extends Controller
     }
 
     /**
+     * Get the current application locale.
+     */
+    #[OA\Get(
+        path: '/locale',
+        operationId: 'getLocale',
+        tags: ['Public'],
+        summary: 'Get current locale',
+        description: 'Returns the current application locale. Language can be changed by sending the X-Locale header (en, ar), the locale query parameter, or the Accept-Language header.'
+    )]
+    #[OA\Parameter(
+        name: 'X-Locale',
+        in: 'header',
+        description: 'Language code (en, ar)',
+        required: false,
+        schema: new OA\Schema(type: 'string', enum: ['en', 'ar'])
+    )]
+    #[OA\Parameter(
+        name: 'locale',
+        in: 'query',
+        description: 'Language code (en, ar)',
+        required: false,
+        schema: new OA\Schema(type: 'string', enum: ['en', 'ar'])
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Current locale data',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'locale', type: 'string', example: 'en'),
+                new OA\Property(property: 'supported', type: 'array', items: new OA\Items(type: 'string', example: 'en')),
+            ]
+        )
+    )]
+    public function getLocale(): JsonResponse
+    {
+        return response()->json([
+            'locale' => app()->getLocale(),
+            'supported' => ['en', 'ar'],
+        ]);
+    }
+
+    /**
      * Register with email and password.
      */
     #[OA\Post(

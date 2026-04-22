@@ -83,13 +83,22 @@ class ApplicationController extends Controller
     )]
     #[OA\RequestBody(
         required: true,
-        content: new OA\JsonContent(
-            required: ['job_id', 'cv_id'],
-            properties: [
-                new OA\Property(property: 'job_id', type: 'integer'),
-                new OA\Property(property: 'cv_id', type: 'integer'),
-                new OA\Property(property: 'notes', type: 'string'),
-            ]
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(
+                required: ['job_id'],
+                properties: [
+                    new OA\Property(property: 'job_id', type: 'integer', description: 'ID of the job to apply for'),
+                    new OA\Property(property: 'cv_id', type: 'integer', description: 'ID of an existing internal CV (required if cv file is not provided)'),
+                    new OA\Property(property: 'cv', type: 'string', format: 'binary', description: 'PDF resume file (required if cv_id is not provided)'),
+                    new OA\Property(property: 'JobSeekerName', type: 'string', description: 'Override full name for this application'),
+                    new OA\Property(property: 'JobSeekerEmail', type: 'string', format: 'email', description: 'Override email for this application'),
+                    new OA\Property(property: 'JobSeekerPhone', type: 'string', description: 'Override phone for this application'),
+                    new OA\Property(property: 'JobSeekerAddress', type: 'string', description: 'Override address for this application'),
+                    new OA\Property(property: 'AboutMe', type: 'string', description: 'Short candidate summary'),
+                    new OA\Property(property: 'notes', type: 'string', description: 'Additional notes for the employer'),
+                ]
+            )
         )
     )]
     #[OA\Response(response: 201, description: 'Application submitted successfully')]
@@ -97,7 +106,13 @@ class ApplicationController extends Controller
     {
         $request->validate([
             'job_id' => 'required|exists:jobad,JobAdID',
-            'cv_id' => 'required|exists:cv,CVID',
+            'cv_id' => 'required_without:cv|exists:cv,CVID',
+            'cv' => 'required_without:cv_id|file|mimes:pdf|max:5120',
+            'JobSeekerName' => 'nullable|string|max:255',
+            'JobSeekerEmail' => 'nullable|string|email|max:255',
+            'JobSeekerPhone' => 'nullable|string|max:20',
+            'JobSeekerAddress' => 'nullable|string|max:500',
+            'AboutMe' => 'nullable|string|max:1000',
             'notes' => 'nullable|string|max:1000',
         ]);
 
@@ -105,17 +120,11 @@ class ApplicationController extends Controller
         $profile = $user->jobSeekerProfile;
 
         if (! $profile) {
-            return response()->json(['message' => 'Only job seekers can apply to jobs'], 403);
+            return response()->json(['message' => __('application.only_job_seekers_can_apply')], 403);
         }
 
-        // Verify CV belongs to user
-        $cv = CV::where('CVID', $request->input('cv_id'))
-            ->where('JobSeekerID', $profile->JobSeekerID)
-            ->first();
-
-        if (! $cv) {
-            return response()->json(['message' => 'Invalid CV specified'], 422);
-        }
+        $cvFile = $request->file('cv');
+        $cvId = $request->input('cv_id');
 
         // Check if job is active
         $job = JobAd::where('JobAdID', $request->input('job_id'))
@@ -123,7 +132,7 @@ class ApplicationController extends Controller
             ->first();
 
         if (! $job) {
-            return response()->json(['message' => 'This job is not accepting applications'], 422);
+            return response()->json(['message' => __('application.job_not_active')], 422);
         }
 
         // Check if job is expired
@@ -137,21 +146,47 @@ class ApplicationController extends Controller
             ->exists();
 
         if ($existingApplication) {
-            return response()->json(['message' => 'You have already applied to this job'], 422);
+            return response()->json(['message' => __('application.application_already_exists')], 422);
         }
 
-        // Get match score if available
-        $matchScore = CVJobMatch::where('CVID', $cv->CVID)
-            ->where('JobAdID', $job->JobAdID)
-            ->value('MatchScore');
+        $matchScore = null;
+        $cvPath = null;
+
+        if ($cvId) {
+            // Verify CV belongs to user
+            $cv = CV::where('CVID', $cvId)
+                ->where('JobSeekerID', $profile->JobSeekerID)
+                ->first();
+
+            if (! $cv) {
+                return response()->json(['message' => __('application.cv_not_found')], 422);
+            }
+
+            // Get match score if available (only for internal CVs)
+            $matchScore = CVJobMatch::where('CVID', $cv->CVID)
+                ->where('JobAdID', $job->JobAdID)
+                ->value('MatchScore');
+        }
+
+        if ($cvFile) {
+            $cvPath = $cvFile->storeAs('cvs', $profile->JobSeekerID . '_' . time() . '_' . $cvFile->getClientOriginalName(), 'public');
+            // If user chose to upload a PDF file, do not calculate the match score.
+            $matchScore = null;
+        }
 
         $application = JobApplication::create([
             'JobAdID' => $job->JobAdID,
             'JobSeekerID' => $profile->JobSeekerID,
-            'CVID' => $cv->CVID,
+            'CVID' => $cvId,
+            'CV' => $cvPath,
+            'JobSeekerName' => $request->input('JobSeekerName') ?? $user->FullName ?? $user->Name,
+            'JobSeekerEmail' => $request->input('JobSeekerEmail') ?? $user->Email,
+            'JobSeekerPhone' => $request->input('JobSeekerPhone') ?? $user->Phone,
+            'JobSeekerAddress' => $request->input('JobSeekerAddress') ?? $user->Address,
             'AppliedAt' => now(),
-            'Status' => 'Pending',
+            'Status' => __('application.Pending'),
             'MatchScore' => $matchScore,
+            'AboutMe' => $request->input('AboutMe'),
             'Notes' => $request->input('notes'),
         ]);
 
@@ -170,7 +205,7 @@ class ApplicationController extends Controller
         \App\Jobs\ProcessApplicationScreener::dispatch($application);
 
         return response()->json([
-            'message' => 'Application submitted successfully',
+            'message' => __('application.application_submitted'),
             'data' => $application->load(['jobAd', 'cv']),
         ], 201);
     }

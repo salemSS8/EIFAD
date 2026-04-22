@@ -18,7 +18,7 @@ class ApplyToJobAction implements ActionInterface
     /**
      * Execute the apply to job use case.
      */
-    public function execute(User $user, JobAd $job, ?int $cvId = null, ?string $coverLetter = null): JobApplication
+    public function execute(User $user, JobAd $job, ?int $cvId = null, ?string $coverLetter = null, ): JobApplication
     {
         // Validate eligibility
         $this->validateEligibility($user, $job);

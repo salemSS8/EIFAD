@@ -632,20 +632,48 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "multipart/form-data": {
                             "schema": {
                                 "required": [
-                                    "job_id",
-                                    "cv_id"
+                                    "job_id"
                                 ],
                                 "properties": {
                                     "job_id": {
+                                        "description": "ID of the job to apply for",
                                         "type": "integer"
                                     },
                                     "cv_id": {
+                                        "description": "ID of an existing internal CV (required if cv file is not provided)",
                                         "type": "integer"
                                     },
+                                    "cv": {
+                                        "description": "PDF resume file (required if cv_id is not provided)",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "JobSeekerName": {
+                                        "description": "Override full name for this application",
+                                        "type": "string"
+                                    },
+                                    "JobSeekerEmail": {
+                                        "description": "Override email for this application",
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "JobSeekerPhone": {
+                                        "description": "Override phone for this application",
+                                        "type": "string"
+                                    },
+                                    "JobSeekerAddress": {
+                                        "description": "Override address for this application",
+                                        "type": "string"
+                                    },
+                                    "AboutMe": {
+                                        "description": "Short candidate summary",
+                                        "type": "string"
+                                    },
                                     "notes": {
+                                        "description": "Additional notes for the employer",
                                         "type": "string"
                                     }
                                 },
@@ -867,6 +895,69 @@
                 "responses": {
                     "200": {
                         "description": "Successful operation"
+                    }
+                }
+            }
+        },
+        "/locale": {
+            "get": {
+                "tags": [
+                    "Public"
+                ],
+                "summary": "Get current locale",
+                "description": "Returns the current application locale. Language can be changed by sending the X-Locale header (en, ar), the locale query parameter, or the Accept-Language header.",
+                "operationId": "getLocale",
+                "parameters": [
+                    {
+                        "name": "X-Locale",
+                        "in": "header",
+                        "description": "Language code (en, ar)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "en",
+                                "ar"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "locale",
+                        "in": "query",
+                        "description": "Language code (en, ar)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "en",
+                                "ar"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Current locale data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "locale": {
+                                            "type": "string",
+                                            "example": "en"
+                                        },
+                                        "supported": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string",
+                                                "example": "en"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }

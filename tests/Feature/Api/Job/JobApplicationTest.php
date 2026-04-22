@@ -49,25 +49,64 @@ class JobApplicationTest extends TestCase
             'notes' => 'I am interested',
         ]);
 
-        if ($response->status() !== 201) {
-            dump("Apply Failure Response:", $response->json());
-            dump("Seeker ID:", $seeker->UserID);
-            dump("CV Owner ID:", DB::table('cv')->where('CVID', $cvId)->value('JobSeekerID'));
-        }
-
         $response->assertStatus(201)
-            ->assertJson(['message' => 'Application submitted successfully']);
+            ->assertJson(['message' => __('application.application_submitted')]);
 
         $this->assertDatabaseHas('jobapplication', [
             'JobAdID' => $jobId,
             'JobSeekerID' => $seeker->UserID,
             'CVID' => $cvId,
+            'JobSeekerName' => $seeker->FullName ?? $seeker->Name,
         ]);
+    }
+
+    public function test_job_seeker_can_apply_with_pdf_resume()
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        // 1. Setup Employer & Job
+        $employer = User::factory()->create();
+        DB::table('companyprofile')->insert(['CompanyID' => $employer->UserID]);
+        $jobId = DB::table('jobad')->insertGetId([
+            'CompanyID' => $employer->UserID,
+            'Title' => 'Job with PDF',
+            'Status' => 'Active',
+            'PostedAt' => now(),
+        ]);
+
+        // 2. Setup Seeker
+        $seeker = User::factory()->create();
+        $seeker->roles()->attach(Role::where('RoleName', 'JobSeeker')->first());
+        DB::table('jobseekerprofile')->insert(['JobSeekerID' => $seeker->UserID]);
+
+        // 3. Apply with PDF
+        $file = \Illuminate\Http\UploadedFile::fake()->create('resume.pdf', 100);
+        $response = $this->actingAs($seeker)->post('/api/applications', [
+            'job_id' => $jobId,
+            'cv' => $file,
+            'JobSeekerName' => 'Override Name',
+            'AboutMe' => 'I am an expert',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJson(['message' => __('application.application_submitted')]);
+
+        $this->assertDatabaseHas('jobapplication', [
+            'JobAdID' => $jobId,
+            'JobSeekerID' => $seeker->UserID,
+            'CVID' => null,
+            'JobSeekerName' => 'Override Name',
+            'AboutMe' => 'I am an expert',
+        ]);
+
+        $application = \App\Domain\Application\Models\JobApplication::latest('ApplicationID')->first();
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($application->CV);
+        $this->assertNull($application->MatchScore);
     }
 
     public function test_cannot_apply_twice()
     {
-        // Setup similar to above
+        // Setup
         $employer = User::factory()->create();
         DB::table('companyprofile')->insert(['CompanyID' => $employer->UserID]);
         $jobId = DB::table('jobad')->insertGetId([
@@ -96,7 +135,7 @@ class JobApplicationTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJson(['message' => 'You have already applied to this job']);
+            ->assertJson(['message' => __('application.application_already_exists')]);
     }
 
     public function test_cannot_apply_to_expired_job()

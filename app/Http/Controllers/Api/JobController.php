@@ -317,7 +317,7 @@ class JobController extends Controller
             'salary_min' => 'nullable|integer|min:0',
             'salary_max' => 'nullable|integer|min:0',
             'currency' => 'nullable|string|max:10',
-            'expiry_date' => 'nullable|date',
+            'expiry_date' => 'nullable|date|after_or_equal:today',
             'skills' => 'nullable|array',
             'skills.*.skill_id' => 'required|exists:skill,SkillID',
             'skills.*.required_level' => 'nullable|string',
@@ -423,7 +423,7 @@ class JobController extends Controller
             'salary_min' => 'nullable|integer|min:0',
             'salary_max' => 'nullable|integer|min:0',
             'currency' => 'nullable|string|max:10',
-            'expiry_date' => 'nullable|date',
+            'expiry_date' => 'nullable|date|after_or_equal:today',
             'status' => 'sometimes|string|in:Draft,Active,Closed',
         ]);
 

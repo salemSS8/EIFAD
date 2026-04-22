@@ -20,9 +20,15 @@ class JobApplication extends Model
         'JobAdID',
         'JobSeekerID',
         'CVID',
+        'CV',
+        'JobSeekerName',
+        'JobSeekerEmail',
+        'JobSeekerPhone',
+        'JobSeekerAddress',
         'AppliedAt',
         'Status',
         'MatchScore',
+        'AboutMe',
         'Notes',
     ];
 
@@ -33,6 +39,8 @@ class JobApplication extends Model
             'MatchScore' => 'integer',
         ];
     }
+
+    
 
     /**
      * Get the job ad being applied for.

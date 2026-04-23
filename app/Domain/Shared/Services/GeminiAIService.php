@@ -3,21 +3,21 @@
 namespace App\Domain\Shared\Services;
 
 use App\Domain\Shared\Contracts\AIServiceInterface;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Gemini AI Service - Refactored for Explanation-Only Role.
- * 
+ *
  * ⚠️ IMPORTANT: This service is restricted to EXPLANATION and TEXT GENERATION only.
- * 
+ *
  * Gemini must NOT:
  * ❌ Parse or extract data
  * ❌ Calculate scores
  * ❌ Make hiring decisions
  * ❌ Perform matching algorithms
- * 
+ *
  * Gemini CAN:
  * ✅ Explain analysis results
  * ✅ Generate human-readable descriptions
@@ -27,8 +27,11 @@ use Illuminate\Support\Facades\Cache;
 class GeminiAIService implements AIServiceInterface
 {
     private string $apiKey;
+
     private string $baseUrl;
+
     private string $model;
+
     private const PROMPT_VERSION = '2.0.0';
 
     public function __construct()
@@ -44,11 +47,11 @@ class GeminiAIService implements AIServiceInterface
 
     /**
      * Explain CV Analysis - TEXT ONLY, NO SCORING.
-     * 
+     *
      * Input: Pre-calculated scores and CV data
      * Output: Human-readable explanation
-     * 
-     * @param array $context CV data with scores
+     *
+     * @param  array  $context  CV data with scores
      * @return array Textual explanations
      */
     public function explainCvAnalysis(array $context): array
@@ -81,10 +84,10 @@ class GeminiAIService implements AIServiceInterface
 
     /**
      * Explain Compatibility - TEXT ONLY, NO DECISIONS.
-     * 
+     *
      * Input: Pre-calculated compatibility scores
      * Output: Why compatibility is HIGH/MEDIUM/LOW
-     * 
+     *
      * ❌ NO: strong_hire, hire, maybe, no_hire
      */
     public function explainCompatibility(array $context): array
@@ -113,7 +116,7 @@ class GeminiAIService implements AIServiceInterface
 
     /**
      * Explain Job Match - TEXT ONLY.
-     * 
+     *
      * Input: Pre-calculated match scores
      * Output: Human-readable explanation of match reasons
      */
@@ -143,7 +146,7 @@ class GeminiAIService implements AIServiceInterface
 
     /**
      * Generate Career Roadmap - TEXT ONLY.
-     * 
+     *
      * Input: Skill gaps (already computed), target role
      * Output: Ordered roadmap steps (no scoring, no guarantees)
      */
@@ -181,6 +184,7 @@ class GeminiAIService implements AIServiceInterface
     public function analyzeCV(string $cvContent): array
     {
         Log::warning('GeminiAIService::analyzeCV is deprecated. Use rule-based pipeline instead.');
+
         return ['deprecated' => true, 'message' => 'Use ParseCvJob + ScoreCvRuleBasedJob + ExplainCvAnalysisWithGeminiJob'];
     }
 
@@ -190,6 +194,7 @@ class GeminiAIService implements AIServiceInterface
     public function generateJobRecommendations(array $userProfile, array $availableJobs): array
     {
         Log::warning('GeminiAIService::generateJobRecommendations is deprecated. Use ComputeMatchScoreJob instead.');
+
         return ['deprecated' => true, 'message' => 'Use ComputeMatchScoreJob + ExplainMatchResultJob'];
     }
 
@@ -199,6 +204,7 @@ class GeminiAIService implements AIServiceInterface
     public function scoreCandidateForJob(array $candidateProfile, array $jobRequirements): array
     {
         Log::warning('GeminiAIService::scoreCandidateForJob is deprecated. Use ComputeCompatibilityJob instead.');
+
         return ['deprecated' => true, 'message' => 'Use ComputeCompatibilityJob + ExplainCompatibilityJob'];
     }
 
@@ -208,6 +214,7 @@ class GeminiAIService implements AIServiceInterface
     public function suggestSkillGaps(array $currentSkills, array $targetRole): array
     {
         Log::warning('GeminiAIService::suggestSkillGaps is deprecated. Use ComputeSkillGapJob instead.');
+
         return ['deprecated' => true, 'message' => 'Use ComputeSkillGapJob'];
     }
 
@@ -334,37 +341,39 @@ PROMPT;
     {
         if (empty($this->apiKey)) {
             Log::warning('Gemini API key not configured');
+
             return '{"error": "API key not configured"}';
         }
 
         $url = "{$this->baseUrl}/models/{$this->model}:generateContent?key={$this->apiKey}";
 
         try {
-            $response = Http::timeout(60)->post($url, [
+            $response = Http::timeout(60)->withoutVerifying()->post($url, [
                 'contents' => [
                     [
                         'parts' => [
-                            ['text' => $prompt]
-                        ]
-                    ]
+                            ['text' => $prompt],
+                        ],
+                    ],
                 ],
                 'generationConfig' => [
                     'temperature' => 0,  // ⚠️ Must be 0 for reproducibility
                     'topK' => 1,
                     'topP' => 1,
                     'maxOutputTokens' => 2048,
-                ]
+                ],
             ]);
 
             if ($response->failed()) {
                 Log::error('Gemini API error', [
                     'status' => $response->status(),
-                    'body' => $response->body()
+                    'body' => $response->body(),
                 ]);
                 throw new \RuntimeException('Gemini API request failed');
             }
 
             $data = $response->json();
+
             return $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
         } catch (\Exception $e) {
             Log::error('Gemini API exception', ['error' => $e->getMessage()]);
@@ -394,8 +403,9 @@ PROMPT;
         if (json_last_error() !== JSON_ERROR_NONE) {
             Log::warning('Failed to parse Gemini response as JSON', [
                 'response' => substr($response, 0, 500),
-                'error' => json_last_error_msg()
+                'error' => json_last_error_msg(),
             ]);
+
             return ['raw_response' => $response, 'parse_error' => true];
         }
 
@@ -411,7 +421,7 @@ PROMPT;
      */
     private function generateInputHash(array $input): string
     {
-        return md5(json_encode($input) . self::PROMPT_VERSION);
+        return md5(json_encode($input).self::PROMPT_VERSION);
     }
 
     /**
@@ -420,6 +430,7 @@ PROMPT;
     private function getCachedResponse(string $inputHash): ?array
     {
         $cacheKey = "gemini_response_{$inputHash}";
+
         return Cache::get($cacheKey);
     }
 

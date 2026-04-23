@@ -98,10 +98,9 @@ class AnalyzeCVJob implements ShouldQueue
 
             // Step 3: Explain with AI (Optional - TEXT ONLY)
             if (! $this->skipExplanation) {
-                ExplainCvAnalysisWithGeminiJob::dispatch($this->cv->fresh())
-                    ->delay(now()->addSeconds(5));
+                ExplainCvAnalysisWithGeminiJob::dispatchSync($this->cv->fresh());
 
-                Log::info('AnalyzeCVJob: AI explanation job dispatched', [
+                Log::info('AnalyzeCVJob: AI explanation job dispatched synchronously', [
                     'cv_id' => $this->cv->CVID,
                 ]);
             }

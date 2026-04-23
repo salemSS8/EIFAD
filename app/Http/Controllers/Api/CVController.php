@@ -13,7 +13,6 @@ use App\Domain\CV\Models\Experience;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Validation\Rule;
 use OpenApi\Attributes as OA;
 
@@ -131,8 +130,8 @@ class CVController extends Controller
             'UpdatedAt' => now(),
         ]);
 
-        // Auto-trigger CV analysis pipeline (async)
-        AnalyzeCVJob::dispatch($cv);
+        // Auto-trigger CV analysis pipeline (sync)
+        AnalyzeCVJob::dispatchSync($cv);
 
         return response()->json([
             'message' => 'CV created successfully',
@@ -160,16 +159,31 @@ class CVController extends Controller
     {
         $jobSeekerProfile = $this->getJobSeekerProfile($request);
 
-        $cvModel = CV::where('CVID', $cv)
+        $cvModel = CV::with('analysis')->where('CVID', $cv)
             ->where('JobSeekerID', $jobSeekerProfile->JobSeekerID)
             ->firstOrFail();
 
-        AnalyzeCVJob::dispatch($cvModel);
+        $needsAnalysis = true;
+        if ($cvModel->analysis && $cvModel->analysis->ExplainedAt) {
+            if ($cvModel->UpdatedAt <= $cvModel->analysis->ExplainedAt) {
+                $needsAnalysis = false;
+            }
+        }
 
-        // Artisan::call('queue:work --once');
+        if ($needsAnalysis) {
+            AnalyzeCVJob::dispatchSync($cvModel);
+            $cvModel->load('analysis');
+        }
+
+        if (! $cvModel->analysis) {
+            return response()->json([
+                'message' => 'Analysis could not be generated at this time.',
+            ], 500);
+        }
+
         return response()->json([
-            'message' => 'CV analysis has been queued. Results will be available shortly.',
-            'cv_id' => $cvModel->CVID,
+            'message' => $needsAnalysis ? 'CV analysis completed successfully.' : 'Cached CV analysis retrieved successfully.',
+            'data' => new \App\Http\Resources\CvAnalysisResource($cvModel->analysis),
         ]);
     }
 

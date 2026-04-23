@@ -54,7 +54,12 @@ class CompanyController extends Controller
     #[OA\Response(response: 404, description: 'Company not found')]
     public function show(int $id): JsonResponse
     {
-        $company = CompanyProfile::with('jobAds')
+        $company = CompanyProfile::with([
+            'user' => function ($query) {
+                $query->select('UserID', 'Phone', 'Email');
+            },
+            'jobAds',
+        ])
             ->where('CompanyID', $id)
             ->firstOrFail();
 

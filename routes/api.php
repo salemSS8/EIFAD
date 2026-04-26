@@ -181,6 +181,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/cvs/{cv}/analyze', [CVController::class, 'analyze']);
     Route::get('/cvs/{cv}/skill-gaps', [AiAnalyticsController::class, 'skillGaps']);
 
+    // Career Roadmap (AI-generated career development plan)
+    Route::post('/career-roadmap', [AiAnalyticsController::class, 'generateRoadmap']);
+    Route::get('/career-roadmap', [AiAnalyticsController::class, 'showRoadmap']);
+
     // =========================================
     // Employer Routes
     // =========================================

@@ -315,7 +315,8 @@ PROMPT;
 
 الهدف المهني: {$targetRole}
 
-أعطني خارطة طريق بتنسيق JSON:
+أعطني خارطة طريق بتنسيق JSON حصراً. لا تضف أي نص قبل أو بعد الـ JSON.
+يجب أن يكون الرد عبارة عن كائن JSON صالح فقط:
 {
     "current_level": "وصف المستوى الحالي",
     "target_level": "وصف المستوى المستهدف",
@@ -362,7 +363,7 @@ PROMPT;
                     'temperature' => 0,  // ⚠️ Must be 0 for reproducibility
                     'topK' => 1,
                     'topP' => 1,
-                    'maxOutputTokens' => 2048,
+                    'maxOutputTokens' => 8192,
                 ],
             ]);
 
@@ -375,8 +376,18 @@ PROMPT;
             }
 
             $data = $response->json();
+            $candidate = $data['candidates'][0] ?? null;
+            $text = $candidate['content']['parts'][0]['text'] ?? '';
+            $finishReason = $candidate['finishReason'] ?? 'UNKNOWN';
 
-            return $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+            if ($finishReason !== 'STOP') {
+                Log::warning('Gemini response finished with non-stop reason', [
+                    'finishReason' => $finishReason,
+                    'text_length' => strlen($text),
+                ]);
+            }
+
+            return $text;
         } catch (\Exception $e) {
             Log::error('Gemini API exception', ['error' => $e->getMessage()]);
             throw $e;
@@ -395,25 +406,38 @@ PROMPT;
 
     private function parseJsonResponse(string $response): array
     {
-        // Extract JSON from response
-        $response = preg_replace('/```json\s*/', '', $response);
-        $response = preg_replace('/```\s*/', '', $response);
-        $response = trim($response);
+        // Step 1: Strip markdown code fences
+        $cleaned = preg_replace('/```json\s*/', '', $response);
+        $cleaned = preg_replace('/```\s*/', '', $cleaned);
+        $cleaned = trim($cleaned);
 
-        $decoded = json_decode($response, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            Log::warning('Failed to parse Gemini response as JSON', [
-                'response_prefix' => substr($response, 0, 100),
-                'response_suffix' => substr($response, -100),
-                'full_length' => strlen($response),
-                'error' => json_last_error_msg(),
-            ]);
-
-            return ['raw_response' => $response, 'parse_error' => true];
+        // Step 2: Try parsing the cleaned response directly
+        $decoded = json_decode($cleaned, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $decoded;
         }
 
-        return $decoded;
+        // Step 3: Gemini often prepends free text before JSON — extract the JSON object
+        $firstBrace = strpos($cleaned, '{');
+        $lastBrace = strrpos($cleaned, '}');
+
+        if ($firstBrace !== false && $lastBrace !== false && $lastBrace > $firstBrace) {
+            $jsonCandidate = substr($cleaned, $firstBrace, $lastBrace - $firstBrace + 1);
+            $decoded = json_decode($jsonCandidate, true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $decoded;
+            }
+        }
+
+        Log::warning('Failed to parse Gemini response as JSON', [
+            'response_prefix' => substr($cleaned, 0, 100),
+            'response_suffix' => substr($cleaned, -100),
+            'full_length' => strlen($cleaned),
+            'error' => json_last_error_msg(),
+        ]);
+
+        return ['raw_response' => $cleaned, 'parse_error' => true];
     }
 
     // =========================================================================

@@ -6,11 +6,14 @@ use App\Domain\AI\Models\JobDemandSnapshot;
 use App\Domain\AI\Models\SkillDemandSnapshot;
 use App\Domain\AI\Models\SkillGapAnalysis;
 use App\Domain\Application\Models\JobApplication;
+use App\Domain\Course\Models\Roadmap;
 use App\Domain\CV\Models\CV;
 use App\Domain\CV\Models\CVAnalysis;
+use App\Domain\Shared\Services\GeminiAIService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AiMatchResource;
 use App\Http\Resources\CvAnalysisResource;
+use App\Http\Resources\RoadmapResource;
 use App\Http\Resources\SkillGapResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -495,6 +498,227 @@ class AiAnalyticsController extends Controller
                 'snapshot_date' => $latestSnapshotDate,
                 'total_active_jobs' => $totalActiveJobs,
             ],
+        ]);
+    }
+
+    /**
+     * Generate a career roadmap for the authenticated user.
+     * Calls Gemini AI synchronously and stores the result.
+     */
+    #[OA\Post(
+        path: '/career-roadmap',
+        operationId: 'generateCareerRoadmap',
+        tags: ['AI Analytics'],
+        summary: 'Generate a career roadmap',
+        description: 'Uses AI to generate a step-by-step career roadmap based on the user\'s CV and a target role. The AI call is synchronous — the response may take several seconds.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['target_role', 'cv_id'],
+            properties: [
+                new OA\Property(property: 'target_role', type: 'string', example: 'Senior Backend Developer'),
+                new OA\Property(property: 'cv_id', type: 'integer', example: 5),
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Career roadmap generated successfully',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'message', type: 'string', example: 'Career roadmap generated successfully.'),
+                new OA\Property(
+                    property: 'data',
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'user_id', type: 'integer', example: 155),
+                        new OA\Property(property: 'title', type: 'string', example: 'Senior Backend Developer Roadmap'),
+                        new OA\Property(property: 'target_role', type: 'string', example: 'Senior Backend Developer'),
+                        new OA\Property(property: 'current_level', type: 'string', nullable: true, example: 'Junior Developer'),
+                        new OA\Property(property: 'target_level', type: 'string', nullable: true, example: 'Senior Backend Developer'),
+                        new OA\Property(
+                            property: 'milestones',
+                            type: 'array',
+                            nullable: true,
+                            items: new OA\Items(
+                                properties: [
+                                    new OA\Property(property: 'title', type: 'string', example: 'Phase 1: Foundations'),
+                                    new OA\Property(property: 'duration', type: 'string', example: '3 months'),
+                                    new OA\Property(property: 'skills_to_learn', type: 'array', items: new OA\Items(type: 'string'), example: '["Design Patterns", "Testing"]'),
+                                    new OA\Property(property: 'actions', type: 'array', items: new OA\Items(type: 'string'), example: '["Read Clean Code", "Write unit tests"]'),
+                                ]
+                            )
+                        ),
+                        new OA\Property(property: 'total_estimated_time', type: 'string', nullable: true, example: '12 months'),
+                        new OA\Property(property: 'generated_at', type: 'string', format: 'date-time', nullable: true),
+                        new OA\Property(property: 'is_active', type: 'boolean', example: true),
+                        new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+                    ]
+                ),
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 403,
+        description: 'Unauthorized — only job seekers can generate a roadmap',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'message', type: 'string', example: 'Unauthorized: Only job seekers can generate a career roadmap.'),
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 422,
+        description: 'Validation error',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'message', type: 'string', example: 'The target role field is required.'),
+                new OA\Property(property: 'errors', type: 'object'),
+            ]
+        )
+    )]
+    public function generateRoadmap(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'target_role' => 'required|string|max:255',
+            'cv_id' => 'required|integer|exists:cv,CVID',
+        ]);
+
+        $user = $request->user();
+        $jobSeekerProfile = $user->jobSeekerProfile;
+
+        if (! $jobSeekerProfile) {
+            return response()->json(['message' => 'Unauthorized: Only job seekers can generate a career roadmap.'], 403);
+        }
+
+        $cv = CV::where('CVID', $validated['cv_id'])
+            ->where('JobSeekerID', $jobSeekerProfile->JobSeekerID)
+            ->firstOrFail();
+
+        $cv->load(['skills.skill', 'experiences', 'education', 'certifications', 'languages.language']);
+
+        $userProfile = [
+            'title' => $cv->Title,
+            'summary' => $cv->PersonalSummary,
+            'skills' => $cv->skills->map(fn ($s) => [
+                'name' => $s->skill->SkillName ?? 'Unknown',
+                'level' => $s->SkillLevel,
+            ])->toArray(),
+            'experience' => $cv->experiences->map(fn ($e) => [
+                'job_title' => $e->JobTitle,
+                'company' => $e->CompanyName,
+                'start_date' => $e->StartDate,
+                'end_date' => $e->EndDate,
+            ])->toArray(),
+            'education' => $cv->education->map(fn ($e) => [
+                'institution' => $e->Institution,
+                'degree' => $e->DegreeName,
+                'major' => $e->Major,
+                'graduation_year' => $e->GraduationYear,
+            ])->toArray(),
+            'certifications' => $cv->certifications->map(fn ($c) => [
+                'name' => $c->CertificateName,
+                'issuer' => $c->IssuingOrganization,
+            ])->toArray(),
+            'languages' => $cv->languages->map(fn ($l) => [
+                'name' => $l->language->LanguageName ?? 'Unknown',
+                'level' => $l->LanguageLevel,
+            ])->toArray(),
+        ];
+
+        $aiService = app(GeminiAIService::class);
+        $result = $aiService->generateCareerRoadmap($userProfile, $validated['target_role']);
+
+        // Deactivate any previous active roadmap for this user
+        Roadmap::where('user_id', $user->UserID)
+            ->where('is_active', true)
+            ->update(['is_active' => false]);
+
+        $roadmap = Roadmap::create([
+            'user_id' => $user->UserID,
+            'title' => $validated['target_role'].' Roadmap',
+            'target_role' => $validated['target_role'],
+            'current_level' => $result['current_level'] ?? null,
+            'target_level' => $result['target_level'] ?? null,
+            'milestones' => $result['milestones'] ?? null,
+            'total_estimated_time' => $result['total_estimated_time'] ?? null,
+            'generated_at' => now(),
+            'is_active' => true,
+        ]);
+
+        return response()->json([
+            'message' => 'Career roadmap generated successfully.',
+            'data' => new RoadmapResource($roadmap),
+        ]);
+    }
+
+    /**
+     * Get the user's currently active career roadmap.
+     */
+    #[OA\Get(
+        path: '/career-roadmap',
+        operationId: 'getCareerRoadmap',
+        tags: ['AI Analytics'],
+        summary: 'Get active career roadmap',
+        description: 'Returns the user\'s most recent active career roadmap from the database.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Active career roadmap',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(
+                    property: 'data',
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'user_id', type: 'integer', example: 155),
+                        new OA\Property(property: 'title', type: 'string', example: 'Senior Backend Developer Roadmap'),
+                        new OA\Property(property: 'target_role', type: 'string', example: 'Senior Backend Developer'),
+                        new OA\Property(property: 'current_level', type: 'string', nullable: true),
+                        new OA\Property(property: 'target_level', type: 'string', nullable: true),
+                        new OA\Property(property: 'milestones', type: 'array', nullable: true, items: new OA\Items(type: 'object')),
+                        new OA\Property(property: 'total_estimated_time', type: 'string', nullable: true),
+                        new OA\Property(property: 'generated_at', type: 'string', format: 'date-time', nullable: true),
+                        new OA\Property(property: 'is_active', type: 'boolean', example: true),
+                        new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+                    ]
+                ),
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'No active roadmap found',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'message', type: 'string', example: 'No active career roadmap found. Generate one first.'),
+                new OA\Property(property: 'data', type: 'string', nullable: true, example: null),
+            ]
+        )
+    )]
+    public function showRoadmap(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $roadmap = Roadmap::where('user_id', $user->UserID)
+            ->where('is_active', true)
+            ->latest('generated_at')
+            ->first();
+
+        if (! $roadmap) {
+            return response()->json([
+                'message' => 'No active career roadmap found. Generate one first.',
+                'data' => null,
+            ], 404);
+        }
+
+        return response()->json([
+            'data' => new RoadmapResource($roadmap),
         ]);
     }
 }

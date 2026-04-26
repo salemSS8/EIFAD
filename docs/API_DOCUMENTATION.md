@@ -2033,6 +2033,134 @@ Authorization: Bearer {token}
 
 ---
 
+## 🤖 AI Analytics & Market Trends Routes
+
+🔒 **Requires Authentication**
+
+### Get Market Trends
+
+#### `GET /api/market-trends`
+
+الحصول على اتجاهات السوق (أكثر المهارات طلباً والوظائف الرائجة).
+
+**Response (200):**
+
+```json
+{
+    "data": {
+        "top_skills": [
+            {
+                "skill_id": 1,
+                "skill_name": "Laravel",
+                "demand_count": 150,
+                "popularity_percentage": 85.5
+            }
+        ],
+        "trending_jobs": [
+            {
+                "JobTitle": "Backend Developer",
+                "AverageSalary": 5500.00,
+                "PostCount": 45,
+                "SnapshotDate": "2024-01-10"
+            }
+        ]
+    },
+    "meta": {
+        "snapshot_date": "2024-01-10",
+        "total_active_jobs": 500
+    }
+}
+```
+
+---
+
+### Get AI Match Details
+
+#### `GET /api/applications/{id}/ai-match`
+
+الحصول على تحليل المطابقة الذكي لطلب توظيف محدد (لأصحاب العمل).
+
+**Response (200):**
+
+```json
+{
+    "data": {
+        "application_id": 1,
+        "match_score": 85,
+        "compatibility_level": "HIGH",
+        "notes": "Excellent technical fit...",
+        "cv_job_match": {
+            "skills_score": 90,
+            "experience_score": 80,
+            "education_score": 85,
+            "strengths": ["Strong PHP skills", "5 years experience"],
+            "gaps": ["Missing Docker experience"]
+        }
+    }
+}
+```
+
+---
+
+### Get CV AI Analysis
+
+#### `GET /api/cvs/{id}/analysis`
+
+الحصول على تقييم ذكي للسيرة الذاتية (للباحثين عن عمل).
+
+**Response (200):**
+
+```json
+{
+    "data": {
+        "id": 1,
+        "scores": {
+            "overall": 85,
+            "skills": 90,
+            "experience": 80,
+            "education": 85
+        },
+        "strengths": ["Professional layout", "Consistent career path"],
+        "potential_gaps": ["Missing certifications"],
+        "improvement_recommendations": ["Add more keywords", "Quantify achievements"]
+    }
+}
+```
+
+---
+
+### Get Skill Gaps
+
+#### `GET /api/cvs/{id}/skill-gaps`
+
+الحصول على فجوات المهارات مقارنة بمتطلبات السوق أو وظيفة محددة.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `job_ad_id` | integer | Filter gaps for a specific job |
+
+**Response (200):**
+
+```json
+{
+    "data": [
+        {
+            "skill": { "name": "Docker" },
+            "gap_type": "MISSING",
+            "required_level": "Intermediate"
+        }
+    ],
+    "summary": {
+        "total_gaps": 5
+    }
+}
+```
+
+---
+
+---
+
 ## 📊 Summary Statistics
 
 | Category                  | Endpoints Count |

@@ -258,6 +258,34 @@ GET /api/languages → قائمة اللغات
 
 ---
 
+## 🤖 تدفق التحليلات الذكية (AI Analytics)
+
+### 1. اتجاهات السوق (للباحثين)
+```
+GET /api/market-trends
+→ { top_skills, trending_jobs, snapshots }
+```
+
+### 2. تحليل السيرة الذاتية (للباحثين)
+```
+GET /api/cvs/{id}/analysis
+→ { overall_score, strengths, gaps, recommendations }
+```
+
+### 3. فجوات المهارات (للباحثين)
+```
+GET /api/cvs/{id}/skill-gaps?job_ad_id=5
+→ { missing_skills, required_levels }
+```
+
+### 4. تحليل المطابقة (لأصحاب العمل)
+```
+GET /api/applications/{id}/ai-match
+→ { match_score, compatibility_level, breakdown }
+```
+
+---
+
 ## 🔐 إدارة الحساب
 
 ### تغيير كلمة المرور

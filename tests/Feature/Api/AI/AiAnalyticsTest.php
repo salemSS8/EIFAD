@@ -265,9 +265,22 @@ class AiAnalyticsTest extends TestCase
             'CategoryID' => null,
         ]);
 
+        // Create 2 active jobs to test percentage (1/2 = 50%)
+        DB::table('jobad')->insert([
+            ['CompanyID' => $this->employer->UserID, 'Title' => 'Job 1', 'Status' => 'Active', 'PostedAt' => now()],
+            ['CompanyID' => $this->employer->UserID, 'Title' => 'Job 2', 'Status' => 'Active', 'PostedAt' => now()],
+        ]);
+
         DB::table('skilldemandsnapshot')->insert([
             'SkillID' => $skillId,
-            'DemandCount' => 100,
+            'DemandCount' => 1,
+            'SnapshotDate' => now()->toDateString(),
+        ]);
+
+        DB::table('jobdemandsnapshot')->insert([
+            'JobTitle' => 'Backend Developer',
+            'AverageSalary' => 5000,
+            'PostCount' => 10,
             'SnapshotDate' => now()->toDateString(),
         ]);
 
@@ -277,16 +290,55 @@ class AiAnalyticsTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
-                    '*' => [
-                        'SnapshotID',
-                        'SkillID',
-                        'DemandCount',
-                        'SnapshotDate',
-                    ]
+                    'top_skills' => [
+                        '*' => ['skill_id', 'skill_name', 'demand_count', 'popularity_percentage'],
+                    ],
+                    'trending_jobs' => [
+                        '*' => ['JobTitle', 'AverageSalary', 'PostCount', 'SnapshotDate'],
+                    ],
                 ],
-                'meta' => [
-                    'snapshot_date'
-                ]
-            ]);
+                'meta' => ['snapshot_date', 'total_active_jobs'],
+            ])
+            ->assertJsonPath('data.top_skills.0.skill_name', 'Laravel')
+            ->assertJsonPath('data.top_skills.0.popularity_percentage', 33.3) // 1 skill / 3 jobs (2 new + 1 from setUp)
+            ->assertJsonPath('data.trending_jobs.0.JobTitle', 'Backend Developer');
+    }
+
+    public function test_sync_market_trends_command(): void
+    {
+        // Clear existing snapshots
+        DB::table('skilldemandsnapshot')->delete();
+        DB::table('jobdemandsnapshot')->delete();
+
+        $skillId = DB::table('skill')->insertGetId(['SkillName' => 'PHP']);
+
+        // Ensure we have active jobs with skills
+        $jobId = DB::table('jobad')->insertGetId([
+            'CompanyID' => $this->employer->UserID,
+            'Title' => 'PHP Expert',
+            'Status' => 'Active',
+            'SalaryMin' => 1000,
+            'SalaryMax' => 2000,
+            'PostedAt' => now(),
+        ]);
+
+        DB::table('jobskill')->insert([
+            'JobAdID' => $jobId,
+            'SkillID' => $skillId,
+        ]);
+
+        $this->artisan('market:sync-trends')
+            ->assertExitCode(0);
+
+        $this->assertDatabaseHas('skilldemandsnapshot', [
+            'SkillID' => $skillId,
+            'DemandCount' => 1,
+        ]);
+
+        $this->assertDatabaseHas('jobdemandsnapshot', [
+            'JobTitle' => 'PHP Expert',
+            'AverageSalary' => 1500.00,
+            'PostCount' => 1,
+        ]);
     }
 }

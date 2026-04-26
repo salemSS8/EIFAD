@@ -4,9 +4,11 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AiAnalyticsController;
 use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CompanyVerificationController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\CVController;
 use App\Http\Controllers\Api\JobController;
+use App\Http\Controllers\Api\JobSeekerController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SkillController;
@@ -58,6 +60,9 @@ Route::prefix('jobs')->group(function () {
 Route::get('/skills', [SkillController::class, 'index']);
 Route::get('/skill-categories', [SkillController::class, 'categories']);
 Route::get('/languages', [SkillController::class, 'languages']);
+
+// Job Seekers Search
+Route::get('/job-seekers', [JobSeekerController::class, 'index']);
 
 // =========================================
 // Protected Routes (Require Authentication)
@@ -193,10 +198,19 @@ Route::middleware('auth:sanctum')->group(function () {
 
             // Applications for a job
             Route::get('/{jobId}/applications', [ApplicationController::class, 'jobApplications']);
+
+            // Candidate Recommendations
+            Route::get('/{id}/recommendations', [JobController::class, 'recommendCandidates']);
         });
 
         // Application Management
         Route::put('/applications/{id}/status', [ApplicationController::class, 'updateStatus']);
+
+        // Company Verification (Upload)
+        Route::prefix('verify')->group(function () {
+            Route::get('/status', [CompanyVerificationController::class, 'status']);
+            Route::post('/documents', [CompanyVerificationController::class, 'upload']);
+        });
     });
 
     // =========================================
@@ -252,6 +266,14 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/{id}', [AdminController::class, 'update']);
             Route::post('/{id}/block', [AdminController::class, 'block']);
             Route::post('/{id}/unblock', [AdminController::class, 'unblock']);
+        });
+
+        // Company Verification Management
+        Route::prefix('companies')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\Admin\CompanyVerificationController::class, 'index']);
+            Route::put('/{id}/verify', [\App\Http\Controllers\Api\Admin\CompanyVerificationController::class, 'verify']);
+            Route::get('/{id}/documents/{index}', [\App\Http\Controllers\Api\Admin\CompanyVerificationController::class, 'getDocument']);
+            Route::get('/{id}/documents/{index}/serve', [\App\Http\Controllers\Api\Admin\CompanyVerificationController::class, 'serveDocument'])->name('admin.company.document.serve');
         });
     });
 

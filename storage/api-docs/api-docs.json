@@ -297,6 +297,142 @@
                 ]
             }
         },
+        "/admin/companies": {
+            "get": {
+                "tags": [
+                    "Admin",
+                    "Company Verification"
+                ],
+                "summary": "Get all companies for management",
+                "description": "Returns a paginated list of companies including their verification status.",
+                "operationId": "adminGetCompanies",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter by status (Unverified, Pending, Verified, Rejected)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by company name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of companies"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/companies/{id}/verify": {
+            "put": {
+                "tags": [
+                    "Admin",
+                    "Company Verification"
+                ],
+                "summary": "Verify or reject a company",
+                "description": "Update company verification status.",
+                "operationId": "adminVerifyCompany",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "Verified",
+                                            "Rejected"
+                                        ]
+                                    },
+                                    "notes": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Status updated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/companies/{id}/documents/{index}": {
+            "get": {
+                "tags": [
+                    "Admin",
+                    "Company Verification"
+                ],
+                "summary": "Get temporary document link",
+                "description": "Get a temporary link for a verification document.",
+                "operationId": "adminGetCompanyDocument",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "index",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Temporary URL"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/applications/{application}/ai-match": {
             "get": {
                 "tags": [
@@ -2950,6 +3086,69 @@
                 ]
             }
         },
+        "/company/verify/documents": {
+            "post": {
+                "tags": [
+                    "Company Verification"
+                ],
+                "summary": "Upload verification documents",
+                "description": "Allows a company to upload verification files (PDF/Images) to a private storage.",
+                "operationId": "uploadVerificationDocuments",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "documents"
+                                ],
+                                "properties": {
+                                    "documents": {
+                                        "description": "Verification files (PDF, JPG, PNG)",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Documents uploaded successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/company/verify/status": {
+            "get": {
+                "tags": [
+                    "Company Verification"
+                ],
+                "summary": "Get verification status",
+                "description": "Get verification status for the authenticated company.",
+                "operationId": "getVerificationStatus",
+                "responses": {
+                    "200": {
+                        "description": "Verification status details"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/courses": {
             "get": {
                 "tags": [
@@ -4001,6 +4200,96 @@
                 ]
             }
         },
+        "/employer/jobs/{id}/recommendations": {
+            "get": {
+                "tags": [
+                    "Employer",
+                    "Jobs"
+                ],
+                "summary": "Recommend suitable candidates",
+                "description": "Returns a ranked list of job seekers whose CVs match the job requirements.",
+                "operationId": "getJobRecommendations",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Job Ad ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "min_score",
+                        "in": "query",
+                        "description": "Minimum match score (default 60)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of recommended candidates"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/job-seekers": {
+            "get": {
+                "tags": [
+                    "Job Seekers"
+                ],
+                "summary": "Search and filter job seekers",
+                "description": "Returns a paginated list of job seekers with optional search and location filters.",
+                "operationId": "getJobSeekers",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by name or email",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "location",
+                        "in": "query",
+                        "description": "Filter by location",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page (default 15)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of job seekers"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/notifications": {
             "get": {
                 "tags": [
@@ -4642,6 +4931,10 @@
             "description": "Admin"
         },
         {
+            "name": "Company Verification",
+            "description": "Company Verification"
+        },
+        {
             "name": "AI Analytics",
             "description": "AI Analytics"
         },
@@ -4708,6 +5001,10 @@
         {
             "name": "Favorites",
             "description": "Favorites"
+        },
+        {
+            "name": "Job Seekers",
+            "description": "Job Seekers"
         },
         {
             "name": "Notifications",

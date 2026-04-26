@@ -32,7 +32,7 @@ class GeminiAIService implements AIServiceInterface
 
     private string $model;
 
-    private const PROMPT_VERSION = '2.0.0';
+    private const PROMPT_VERSION = '2.1.0';
 
     public function __construct()
     {
@@ -227,25 +227,27 @@ class GeminiAIService implements AIServiceInterface
         $contextJson = json_encode($context, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
         return <<<PROMPT
-أنت مساعد ذكي لتحليل السير الذاتية. لقد تم تحليل السيرة الذاتية وحساب الدرجات مسبقاً.
-مهمتك هي شرح النتائج بلغة واضحة ومفهومة.
+You are an intelligent CV analysis assistant. The CV has been analyzed and scores calculated.
+Your task is to explain the results in clear, professional language.
 
-⚠️ قواعد مهمة:
-- لا تقم بإعطاء أي درجات أو أرقام جديدة
-- لا تعطي قرارات توظيف
-- فقط اشرح النتائج المحسوبة مسبقاً
-
-البيانات المحسوبة مسبقاً:
+PRE-CALCULATED DATA:
 {$contextJson}
 
-أعطني تفسيراً بتنسيق JSON:
-{
-    "strengths": "وصف نصي لنقاط القوة في السيرة الذاتية",
-    "potential_gaps": "وصف نصي للفجوات المحتملة أو مجالات التحسين",
-    "improvement_recommendations": "توصيات نصية لتحسين السيرة الذاتية"
-}
+INSTRUCTIONS:
+1. Identify the language of the CV (Arabic or English).
+2. Provide the explanation in the SAME language as the CV.
+3. If the CV is mixed, use English.
+4. DO NOT provide multiple versions or nested language objects.
+5. Provide simple, direct textual descriptions.
+6. NO numeric scoring.
+7. NO hiring decisions.
 
-أجب بالعربية والإنجليزية حسب لغة البيانات.
+Return ONLY a JSON object with this exact structure:
+{
+    "strengths": "Direct description of strengths",
+    "potential_gaps": "Direct description of gaps/weaknesses",
+    "improvement_recommendations": "Direct recommendations"
+}
 PROMPT;
     }
 
@@ -402,7 +404,9 @@ PROMPT;
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             Log::warning('Failed to parse Gemini response as JSON', [
-                'response' => substr($response, 0, 500),
+                'response_prefix' => substr($response, 0, 100),
+                'response_suffix' => substr($response, -100),
+                'full_length' => strlen($response),
                 'error' => json_last_error_msg(),
             ]);
 

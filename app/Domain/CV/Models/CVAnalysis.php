@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * CVAnalysis Model - Stores CV analysis results.
- * 
+ *
  * Supports both:
  * - Rule-based scoring (no AI)
  * - AI-generated explanations (Gemini)
@@ -70,6 +70,9 @@ class CVAnalysis extends Model
             'strengths' => 'array',
             'areas_for_improvement' => 'array',
             'ScoreBreakdown' => 'array',
+            'PotentialGaps' => 'array',
+            'ImprovementRecommendations' => 'array',
+            'AIExplanation' => 'array',
             'analyzed_at' => 'datetime',
             'ScoredAt' => 'datetime',
             'ExplainedAt' => 'datetime',

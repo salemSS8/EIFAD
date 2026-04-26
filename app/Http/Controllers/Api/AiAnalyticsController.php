@@ -289,7 +289,7 @@ class AiAnalyticsController extends Controller
         ]);
     }
 
-    private function calculatePreMatch($cv, $job): array
+    protected function calculatePreMatch($cv, $job): array
     {
         $cv->load(['skills.skill', 'experiences', 'education']);
         $job->load(['skills.skill']);
@@ -392,7 +392,7 @@ class AiAnalyticsController extends Controller
     /**
      * Helper to get translations in both Arabic and English.
      */
-    private function transBoth(string $key, array $replace = []): array
+    protected function transBoth(string $key, array $replace = []): array
     {
         return [
             'en' => \Illuminate\Support\Facades\Lang::get('match_analysis.'.$key, $replace, 'en'),

@@ -537,4 +537,52 @@ class JobController extends Controller
 
         return response()->json(['message' => 'Job deleted successfully']);
     }
+
+    /**
+     * Recommend the most suitable candidates for a specific job.
+     * (For Employers)
+     */
+    #[OA\Get(
+        path: '/employer/jobs/{id}/recommendations',
+        operationId: 'getJobRecommendations',
+        tags: ['Employer', 'Jobs'],
+        summary: 'Recommend suitable candidates',
+        description: 'Returns a ranked list of job seekers whose CVs match the job requirements.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, description: 'Job Ad ID', schema: new OA\Schema(type: 'integer'))]
+    #[OA\Parameter(name: 'min_score', in: 'query', description: 'Minimum match score (default 60)', required: false, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'List of recommended candidates')]
+    public function recommendCandidates(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+        $company = $user->companyProfile;
+
+        if (! $company) {
+            return response()->json(['message' => 'Company profile not found'], 404);
+        }
+
+        // Verify job ownership
+        $job = JobAd::where('JobAdID', $id)
+            ->where('CompanyID', $company->CompanyID)
+            ->firstOrFail();
+
+        $minScore = $request->input('min_score', 60);
+
+        // Fetch matches for this job
+        $recommendations = \App\Domain\AI\Models\CVJobMatch::with(['cv.jobSeeker.user'])
+            ->where('JobAdID', $id)
+            ->where('MatchScore', '>=', $minScore)
+            ->orderByDesc('MatchScore')
+            ->paginate(15);
+
+        return response()->json([
+            'data' => \App\Http\Resources\CandidateRecommendationResource::collection($recommendations),
+            'meta' => [
+                'current_page' => $recommendations->currentPage(),
+                'last_page' => $recommendations->lastPage(),
+                'total' => $recommendations->total(),
+            ],
+        ]);
+    }
 }

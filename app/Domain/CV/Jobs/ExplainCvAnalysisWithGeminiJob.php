@@ -117,16 +117,29 @@ class ExplainCvAnalysisWithGeminiJob implements ShouldQueue
         ];
     }
 
-    /**
-     * Persist AI explanation to database.
-     */
     private function persistExplanation(array $explanation): void
     {
-        CVAnalysis::where('CVID', $this->cv->CVID)->update([
-            'Strengths' => $explanation['strengths'] ?? null,
-            'PotentialGaps' => $explanation['potential_gaps'] ?? null,
-            'ImprovementRecommendations' => $explanation['improvement_recommendations'] ?? null,
-            'AIExplanation' => json_encode($explanation),
+        $analysis = CVAnalysis::where('CVID', $this->cv->CVID)->first();
+
+        if (! $analysis) {
+            return;
+        }
+
+        // Helper to extract text and wrap in array for JSON columns
+        $extract = function ($key) use ($explanation) {
+            $val = $explanation[$key] ?? null;
+            if (is_array($val)) {
+                $val = $val['en'] ?? $val['ar'] ?? array_values($val)[0] ?? null;
+            }
+
+            return $val ? [$val] : [];
+        };
+
+        $analysis->update([
+            'strengths' => $extract('strengths'),
+            'PotentialGaps' => $extract('potential_gaps'),
+            'ImprovementRecommendations' => $extract('improvement_recommendations'),
+            'AIExplanation' => $explanation,
             'AIModel' => config('gemini.model'),
             'ExplainedAt' => now(),
         ]);

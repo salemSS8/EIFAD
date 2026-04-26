@@ -4,8 +4,8 @@ namespace App\Domain\Company\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * CompanyProfile Model - Matches `companyprofile` table in database.
@@ -13,7 +13,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class CompanyProfile extends Model
 {
     protected $table = 'companyprofile';
+
     protected $primaryKey = 'CompanyID';
+
     public $timestamps = false;
 
     // Note: CompanyID references UserID (1:1 relationship)
@@ -31,6 +33,9 @@ class CompanyProfile extends Model
         'EmployeeCount',
         'FieldOfWork',
         'IsCompanyVerified',
+        'VerificationStatus',
+        'VerificationDocuments',
+        'VerifiedAt',
     ];
 
     protected function casts(): array
@@ -39,6 +44,8 @@ class CompanyProfile extends Model
             'IsCompanyVerified' => 'boolean',
             'EstablishedYear' => 'integer',
             'EmployeeCount' => 'integer',
+            'VerificationDocuments' => 'array',
+            'VerifiedAt' => 'datetime',
         ];
     }
 

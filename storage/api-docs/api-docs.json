@@ -546,23 +546,50 @@
                                                 "strengths": {
                                                     "type": "array",
                                                     "items": {
-                                                        "type": "string"
-                                                    },
-                                                    "nullable": true
+                                                        "properties": {
+                                                            "en": {
+                                                                "type": "string",
+                                                                "example": "1. Strong Laravel experience"
+                                                            },
+                                                            "ar": {
+                                                                "type": "string",
+                                                                "example": "1. خبرة قوية في لارافيل"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
                                                 },
-                                                "potential_gaps": {
+                                                "weaknesses": {
                                                     "type": "array",
                                                     "items": {
-                                                        "type": "string"
-                                                    },
-                                                    "nullable": true
+                                                        "properties": {
+                                                            "en": {
+                                                                "type": "string",
+                                                                "example": "1. Lack of Cloud experience"
+                                                            },
+                                                            "ar": {
+                                                                "type": "string",
+                                                                "example": "1. نقص الخبرة في السحابة"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
                                                 },
-                                                "improvement_recommendations": {
+                                                "gaps": {
                                                     "type": "array",
                                                     "items": {
-                                                        "type": "string"
-                                                    },
-                                                    "nullable": true
+                                                        "properties": {
+                                                            "en": {
+                                                                "type": "string",
+                                                                "example": "1. Missing Docker certification"
+                                                            },
+                                                            "ar": {
+                                                                "type": "string",
+                                                                "example": "1. شهادة دوكر مفقودة"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
                                                 },
                                                 "ai_explanation": {
                                                     "type": "string",
@@ -1082,6 +1109,27 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/market-trends/sync": {
+            "post": {
+                "tags": [
+                    "Admin",
+                    "Market"
+                ],
+                "summary": "Manual sync of market trends",
+                "description": "Triggers the market trends analysis process manually. Restricted to Admins.",
+                "operationId": "syncMarketTrends",
+                "responses": {
+                    "200": {
+                        "description": "Market trends sync initiated successfully"
                     }
                 },
                 "security": [
@@ -4216,6 +4264,50 @@
                 "responses": {
                     "200": {
                         "description": "List of matching jobs"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/jobs/suggested": {
+            "get": {
+                "tags": [
+                    "Jobs"
+                ],
+                "summary": "Get suggested jobs",
+                "description": "Returns a paginated list of suggested jobs based on the job seeker's skills (from their latest CV) and field of work. Requires an active CV with skills.",
+                "operationId": "getSuggestedJobs",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object"
+                                        },
+                                        "meta": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Only job seekers can access suggested jobs"
                     }
                 },
                 "security": [

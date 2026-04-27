@@ -248,7 +248,7 @@ class JobController extends Controller
         content: new OA\JsonContent(
             type: 'object',
             properties: [
-                new OA\Property(property: 'data', type: 'array', items: new OA\Items(ref: '#/components/schemas/JobAd')),
+                new OA\Property(property: 'data', type: 'array', items: new OA\Items(type: 'object')),
                 new OA\Property(property: 'links', type: 'object'),
                 new OA\Property(property: 'meta', type: 'object'),
             ]

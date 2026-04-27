@@ -724,12 +724,364 @@
                     "AI Analytics",
                     "Market"
                 ],
-                "summary": "Get market skill trends",
-                "description": "Returns the most in-demand skills in the market based on AI analysis.",
+                "summary": "Get market skill and job trends",
+                "description": "Returns the most in-demand skills and trending jobs based on active job ads.",
                 "operationId": "getMarketTrends",
                 "responses": {
                     "200": {
-                        "description": "List of trending skills"
+                        "description": "Market trends data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "top_skills": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "skill_id": {
+                                                                "type": "integer",
+                                                                "example": 5
+                                                            },
+                                                            "skill_name": {
+                                                                "type": "string",
+                                                                "example": "Laravel"
+                                                            },
+                                                            "demand_count": {
+                                                                "type": "integer",
+                                                                "example": 120
+                                                            },
+                                                            "popularity_percentage": {
+                                                                "type": "number",
+                                                                "format": "float",
+                                                                "example": 85.5
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "trending_jobs": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "JobTitle": {
+                                                                "type": "string",
+                                                                "example": "Backend Developer"
+                                                            },
+                                                            "AverageSalary": {
+                                                                "type": "number",
+                                                                "format": "float",
+                                                                "example": 5500
+                                                            },
+                                                            "PostCount": {
+                                                                "type": "integer",
+                                                                "example": 45
+                                                            },
+                                                            "SnapshotDate": {
+                                                                "type": "string",
+                                                                "format": "date",
+                                                                "example": "2024-01-10"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "snapshot_date": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "2024-01-10"
+                                                },
+                                                "total_active_jobs": {
+                                                    "type": "integer",
+                                                    "example": 500
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/career-roadmap": {
+            "get": {
+                "tags": [
+                    "AI Analytics"
+                ],
+                "summary": "Get active career roadmap",
+                "description": "Returns the user's most recent active career roadmap from the database.",
+                "operationId": "getCareerRoadmap",
+                "responses": {
+                    "200": {
+                        "description": "Active career roadmap",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "user_id": {
+                                                    "type": "integer",
+                                                    "example": 155
+                                                },
+                                                "title": {
+                                                    "type": "string",
+                                                    "example": "Senior Backend Developer Roadmap"
+                                                },
+                                                "target_role": {
+                                                    "type": "string",
+                                                    "example": "Senior Backend Developer"
+                                                },
+                                                "current_level": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "target_level": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "milestones": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    },
+                                                    "nullable": true
+                                                },
+                                                "total_estimated_time": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "generated_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "nullable": true
+                                                },
+                                                "is_active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No active roadmap found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No active career roadmap found. Generate one first."
+                                        },
+                                        "data": {
+                                            "type": "string",
+                                            "example": null,
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "AI Analytics"
+                ],
+                "summary": "Generate a career roadmap",
+                "description": "Uses AI to generate a step-by-step career roadmap based on the user's CV and a target role. The AI call is synchronous — the response may take several seconds.",
+                "operationId": "generateCareerRoadmap",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "target_role",
+                                    "cv_id"
+                                ],
+                                "properties": {
+                                    "target_role": {
+                                        "type": "string",
+                                        "example": "Senior Backend Developer"
+                                    },
+                                    "cv_id": {
+                                        "type": "integer",
+                                        "example": 5
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Career roadmap generated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Career roadmap generated successfully."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "user_id": {
+                                                    "type": "integer",
+                                                    "example": 155
+                                                },
+                                                "title": {
+                                                    "type": "string",
+                                                    "example": "Senior Backend Developer Roadmap"
+                                                },
+                                                "target_role": {
+                                                    "type": "string",
+                                                    "example": "Senior Backend Developer"
+                                                },
+                                                "current_level": {
+                                                    "type": "string",
+                                                    "example": "Junior Developer",
+                                                    "nullable": true
+                                                },
+                                                "target_level": {
+                                                    "type": "string",
+                                                    "example": "Senior Backend Developer",
+                                                    "nullable": true
+                                                },
+                                                "milestones": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "title": {
+                                                                "type": "string",
+                                                                "example": "Phase 1: Foundations"
+                                                            },
+                                                            "duration": {
+                                                                "type": "string",
+                                                                "example": "3 months"
+                                                            },
+                                                            "skills_to_learn": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                },
+                                                                "example": "[\"Design Patterns\", \"Testing\"]"
+                                                            },
+                                                            "actions": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                },
+                                                                "example": "[\"Read Clean Code\", \"Write unit tests\"]"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    },
+                                                    "nullable": true
+                                                },
+                                                "total_estimated_time": {
+                                                    "type": "string",
+                                                    "example": "12 months",
+                                                    "nullable": true
+                                                },
+                                                "generated_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "nullable": true
+                                                },
+                                                "is_active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized — only job seekers can generate a roadmap",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthorized: Only job seekers can generate a career roadmap."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The target role field is required."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [

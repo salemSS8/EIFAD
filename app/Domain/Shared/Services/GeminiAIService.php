@@ -234,19 +234,25 @@ PRE-CALCULATED DATA:
 {$contextJson}
 
 INSTRUCTIONS:
-1. Identify the language of the CV (Arabic or English).
-2. Provide the explanation in the SAME language as the CV.
-3. If the CV is mixed, use English.
-4. DO NOT provide multiple versions or nested language objects.
-5. Provide simple, direct textual descriptions.
-6. NO numeric scoring.
-7. NO hiring decisions.
+1. Provide the analysis in BOTH Arabic and English.
+2. Structure the response into three categories: "strengths", "weaknesses", and "gaps".
+3. Each category must be an ARRAY of objects, where each object contains an "en" (English) and "ar" (Arabic) version of the point.
+4. ALL points in ALL categories must be NUMBERED (1., 2., 3., etc.).
+5. NO numeric scoring or hiring decisions.
+6. Return ONLY a valid JSON object.
 
-Return ONLY a JSON object with this exact structure:
+EXPECTED JSON STRUCTURE:
 {
-    "strengths": "List the top 4 strengths in your resume compared to the market demands in your field. If there aren't 4 strengths, you can list fewer or even 0. Number the strengths 1-2-3-4 or fewer. The strengths should focus on the following: What skills does your resume have that are in high demand in your field? These skills should be based on your resume analysis. Do you have previous experience in your field? Are there any projects that could contribute to your employment? Are there any volunteer activities relevant to your field? Do you have any required foreign languages? Do you have any professional or internationally recognized certifications in your field? You can also mention strengths that are relevant to your field."
-    "potential_gaps":  "List the top 3 skill gaps between your resume and the job requirements in your field. What is your current level in these skills? What is the job market's target level? The gap statement should be phrased as follows: You have a weakness in [skill type], and the job market needs this skill and expects you to be [skill type]. Able to (and mention the expected outputs and capabilities of someone with this skill). These are the required skills according to the resume analysis date.",
-    "improvement_recommendations": "Mention the top 4 recommendations you want him to improve and number them 1-2-3-4. If you don't have any recommendations, that's fine, and if you have fewer, that's also fine. The recommendations should revolve around the following: What skills are in high demand in the market and in his field that he doesn't possess? These are the required skills according to the resume analysis date. Also, does he have a deficiency in filling out any important sections of his resume, or is it insufficient and unconvincing? Does he lack links to his projects or any way to view them? Does he have a significant lack of professional certifications in high demand in his field? Is he lacking in foreign languages ​​without which he wouldn't have found work? Is he lacking in volunteer work or other improvements needed in the job market?"
+    "strengths": [
+        {"en": "1. [English Strength 1]", "ar": "1. [Arabic Strength 1]"},
+        {"en": "2. [English Strength 2]", "ar": "2. [Arabic Strength 2]"}
+    ],
+    "weaknesses": [
+        {"en": "1. [English Weakness 1]", "ar": "1. [Arabic Weakness 1]"}
+    ],
+    "gaps": [
+        {"en": "1. [English Gap 1]", "ar": "1. [Arabic Gap 1]"}
+    ]
 }
 PROMPT;
     }

@@ -45,7 +45,8 @@ class CVAnalysis extends Model
         'ScoredAt',
 
         // AI Explanations (Gemini - TEXT ONLY)
-        'Strengths',
+        'strengths',
+        'Weaknesses',
         'PotentialGaps',
         'ImprovementRecommendations',
         'AIExplanation',
@@ -54,7 +55,6 @@ class CVAnalysis extends Model
 
         // Legacy
         'overall_score',
-        'strengths',
         'areas_for_improvement',
     ];
 
@@ -68,10 +68,10 @@ class CVAnalysis extends Model
             'certifications' => 'array',
             'languages' => 'array',
             'strengths' => 'array',
-            'areas_for_improvement' => 'array',
-            'ScoreBreakdown' => 'array',
+            'Weaknesses' => 'array',
             'PotentialGaps' => 'array',
             'ImprovementRecommendations' => 'array',
+            'ScoreBreakdown' => 'array',
             'AIExplanation' => 'array',
             'analyzed_at' => 'datetime',
             'ScoredAt' => 'datetime',

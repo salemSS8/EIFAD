@@ -149,7 +149,13 @@ class AiAnalyticsTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonPath('data.scores.overall', 85)
-            ->assertJsonPath('data.scores.skills', 90);
+            ->assertJsonStructure([
+                'data' => [
+                    'strengths',
+                    'weaknesses',
+                    'gaps',
+                ]
+            ]);
     }
 
     public function test_cv_analysis_returns_404_when_no_analysis(): void
@@ -340,5 +346,18 @@ class AiAnalyticsTest extends TestCase
             'AverageSalary' => 1500.00,
             'PostCount' => 1,
         ]);
+    }
+
+    public function test_admin_can_sync_market_trends_via_api(): void
+    {
+        $admin = User::factory()->create();
+        $adminRole = Role::where('RoleName', 'Admin')->first() ?: Role::create(['RoleName' => 'Admin']);
+        $admin->roles()->attach($adminRole);
+
+        $response = $this->actingAs($admin)
+            ->postJson('/api/admin/market-trends/sync');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('message', 'Market trends sync completed successfully.');
     }
 }

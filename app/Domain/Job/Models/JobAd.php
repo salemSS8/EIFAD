@@ -5,12 +5,16 @@ namespace App\Domain\Job\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 
 /**
  * JobAd Model - Matches `jobad` table in database.
  */
 class JobAd extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'jobad';
     protected $primaryKey = 'JobAdID';
     public $timestamps = false;

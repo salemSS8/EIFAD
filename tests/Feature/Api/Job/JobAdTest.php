@@ -112,4 +112,67 @@ class JobAdTest extends TestCase
             'Status' => 'Closed',
         ]);
     }
+
+    public function test_employer_can_soft_delete_job()
+    {
+        $user = User::factory()->create();
+        $user->roles()->attach(Role::where('RoleName', 'Employer')->first());
+        DB::table('companyprofile')->insert(['CompanyID' => $user->UserID]);
+
+        $jobId = DB::table('jobad')->insertGetId([
+            'CompanyID' => $user->UserID,
+            'Title' => 'Temporary Job',
+            'Status' => 'Active',
+        ]);
+
+        $response = $this->actingAs($user)->deleteJson("/api/employer/jobs/{$jobId}");
+
+        $response->assertStatus(200)
+            ->assertJson(['message' => 'Job deleted successfully']);
+
+        // Assert it is still in the database (soft deleted)
+        $this->assertDatabaseHas('jobad', [
+            'JobAdID' => $jobId,
+        ]);
+        
+        // Assert deleted_at is not null
+        $job = DB::table('jobad')->where('JobAdID', $jobId)->first();
+        $this->assertNotNull($job->deleted_at);
+    }
+
+    public function test_job_seeker_can_get_suggested_jobs()
+    {
+        $user = User::factory()->create();
+        $user->roles()->attach(Role::where('RoleName', 'JobSeeker')->first());
+        DB::table('jobseekerprofile')->insert(['JobSeekerID' => $user->UserID]);
+
+        $cvId = DB::table('cv')->insertGetId([
+            'JobSeekerID' => $user->UserID,
+            'Title' => 'My CV',
+            'CreatedAt' => now(),
+        ]);
+
+        $skillId = DB::table('skill')->insertGetId(['SkillName' => 'Laravel']);
+        DB::table('cvskill')->insert(['CVID' => $cvId, 'SkillID' => $skillId, 'SkillLevel' => 'Expert']);
+
+        // Create a matching job
+        $employer = User::factory()->create();
+        DB::table('companyprofile')->insert([
+            'CompanyID' => $employer->UserID,
+            'CompanyName' => 'Test Company'
+        ]);
+        
+        $jobId = DB::table('jobad')->insertGetId([
+            'CompanyID' => $employer->UserID,
+            'Title' => 'Laravel Dev',
+            'Status' => 'Active',
+            'PostedAt' => now(),
+        ]);
+        DB::table('jobskill')->insert(['JobAdID' => $jobId, 'SkillID' => $skillId]);
+
+        $response = $this->actingAs($user)->getJson('/api/jobs/suggested');
+
+        $response->assertStatus(200)
+            ->assertJsonFragment(['Title' => 'Laravel Dev']);
+    }
 }

@@ -125,21 +125,12 @@ class ExplainCvAnalysisWithGeminiJob implements ShouldQueue
             return;
         }
 
-        // Helper to extract text and wrap in array for JSON columns
-        $extract = function ($key) use ($explanation) {
-            $val = $explanation[$key] ?? null;
-            if (is_array($val)) {
-                $val = $val['en'] ?? $val['ar'] ?? array_values($val)[0] ?? null;
-            }
-
-            return $val ? [$val] : [];
-        };
-
         $analysis->update([
-            'strengths' => $extract('strengths'),
-            'PotentialGaps' => $extract('potential_gaps'),
-            'ImprovementRecommendations' => $extract('improvement_recommendations'),
-            'AIExplanation' => $explanation,
+            'strengths' => $explanation['strengths'] ?? [],
+            'Weaknesses' => $explanation['weaknesses'] ?? [],
+            'PotentialGaps' => $explanation['gaps'] ?? [],
+            'ImprovementRecommendations' => $explanation['weaknesses'] ?? [], // Fallback for legacy
+            'AIExplanation' => json_encode($explanation),
             'AIModel' => config('gemini.model'),
             'ExplainedAt' => now(),
         ]);

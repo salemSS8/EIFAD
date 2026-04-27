@@ -103,9 +103,36 @@ class AiAnalyticsController extends Controller
                         ),
                         new OA\Property(property: 'score_breakdown', type: 'object', nullable: true),
                         new OA\Property(property: 'scoring_method', type: 'string', example: 'rule_based'),
-                        new OA\Property(property: 'strengths', type: 'array', items: new OA\Items(type: 'string'), nullable: true),
-                        new OA\Property(property: 'potential_gaps', type: 'array', items: new OA\Items(type: 'string'), nullable: true),
-                        new OA\Property(property: 'improvement_recommendations', type: 'array', items: new OA\Items(type: 'string'), nullable: true),
+                        new OA\Property(
+                            property: 'strengths',
+                            type: 'array',
+                            items: new OA\Items(
+                                properties: [
+                                    new OA\Property(property: 'en', type: 'string', example: '1. Strong Laravel experience'),
+                                    new OA\Property(property: 'ar', type: 'string', example: '1. خبرة قوية في لارافيل'),
+                                ]
+                            )
+                        ),
+                        new OA\Property(
+                            property: 'weaknesses',
+                            type: 'array',
+                            items: new OA\Items(
+                                properties: [
+                                    new OA\Property(property: 'en', type: 'string', example: '1. Lack of Cloud experience'),
+                                    new OA\Property(property: 'ar', type: 'string', example: '1. نقص الخبرة في السحابة'),
+                                ]
+                            )
+                        ),
+                        new OA\Property(
+                            property: 'gaps',
+                            type: 'array',
+                            items: new OA\Items(
+                                properties: [
+                                    new OA\Property(property: 'en', type: 'string', example: '1. Missing Docker certification'),
+                                    new OA\Property(property: 'ar', type: 'string', example: '1. شهادة دوكر مفقودة'),
+                                ]
+                            )
+                        ),
                         new OA\Property(property: 'ai_explanation', type: 'string', nullable: true),
                         new OA\Property(property: 'ai_model', type: 'string', nullable: true, example: 'gemini-1.5-flash'),
                         new OA\Property(property: 'analyzed_at', type: 'string', format: 'date-time', nullable: true),
@@ -720,5 +747,34 @@ class AiAnalyticsController extends Controller
         return response()->json([
             'data' => new RoadmapResource($roadmap),
         ]);
+    }
+
+    /**
+     * Trigger a manual sync of market trends (Admin only).
+     */
+    #[OA\Post(
+        path: '/admin/market-trends/sync',
+        operationId: 'syncMarketTrends',
+        tags: ['Admin', 'Market'],
+        summary: 'Manual sync of market trends',
+        description: 'Triggers the market trends analysis process manually. Restricted to Admins.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Response(response: 200, description: 'Market trends sync initiated successfully')]
+    public function syncMarketTrends(Request $request): JsonResponse
+    {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('market:sync-trends');
+
+            return response()->json([
+                'message' => 'Market trends sync completed successfully.',
+                'output' => \Illuminate\Support\Facades\Artisan::output(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to sync market trends.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

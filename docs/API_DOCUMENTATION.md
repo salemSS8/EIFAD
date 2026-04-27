@@ -2022,12 +2022,35 @@ Authorization: Bearer {token}
                     "SkillName": "JavaScript",
                     "category": {
                         "CategoryID": 2,
-                        "CategoryName": "Programming Languages"
-                    }
-                }
-            }
         ]
     }
+}
+```
+
+---
+
+### Get Suggested Jobs
+
+#### `GET /api/jobs/suggested`
+
+🔒 **Requires Authentication (Job Seeker)**
+
+الحصول على وظائف مقترحة بناءً على مهارات الباحث عن عمل ومجال تخصصه.
+
+**Response (200):**
+
+```json
+{
+    "data": [
+        {
+            "JobAdID": 10,
+            "Title": "Senior Laravel Developer",
+            "company": {
+                "CompanyName": "Future Tech"
+            }
+        }
+    ],
+    "meta": { "total": 25 }
 }
 ```
 
@@ -2113,16 +2136,24 @@ Authorization: Bearer {token}
 ```json
 {
     "data": {
-        "id": 1,
         "scores": {
             "overall": 85,
             "skills": 90,
             "experience": 80,
             "education": 85
         },
-        "strengths": ["Professional layout", "Consistent career path"],
-        "potential_gaps": ["Missing certifications"],
-        "improvement_recommendations": ["Add more keywords", "Quantify achievements"]
+        "strengths": [
+            {"en": "1. Strong Laravel experience", "ar": "1. خبرة قوية في لارافيل"},
+            {"en": "2. High demand skills", "ar": "2. مهارات عالية الطلب"}
+        ],
+        "weaknesses": [
+            {"en": "1. Lack of Cloud experience", "ar": "1. نقص الخبرة في السحابة"}
+        ],
+        "gaps": [
+            {"en": "1. Missing Docker certification", "ar": "1. شهادة دوكر مفقودة"}
+        ],
+        "ai_explanation": "Summary text...",
+        "analyzed_at": "2024-01-10T12:00:00Z"
     }
 }
 ```
@@ -2298,6 +2329,30 @@ Authorization: Bearer {token}
 {
     "message": "تم حظر المستخدم بنجاح",
     "data": {
+        "UserID": 1,
+        "IsBlocked": true
+    }
+}
+```
+
+---
+
+### Sync Market Trends (Admin)
+
+#### `POST /api/admin/market-trends/sync`
+
+🔒 **Requires Authentication (Admin)**
+
+تحديث بيانات اتجاهات السوق يدوياً من خلال تحليل الوظائف الحالية.
+
+**Response (200):**
+
+```json
+{
+    "message": "Market trends sync completed successfully.",
+    "output": "Command output logs..."
+}
+```
         "IsBlocked": true,
         "BlockedAt": "2024-01-10",
         "BlockReason": "..."

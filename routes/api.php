@@ -170,6 +170,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Job Matching
     Route::prefix('jobs')->group(function () {
         Route::get('/matching', [JobController::class, 'matching']);
+        Route::get('/suggested', [JobController::class, 'suggested']);
         Route::get('/{jobId}/match-score', [AiAnalyticsController::class, 'preApplyMatchScore']);
     });
 
@@ -279,6 +280,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/{id}/documents/{index}', [\App\Http\Controllers\Api\Admin\CompanyVerificationController::class, 'getDocument']);
             Route::get('/{id}/documents/{index}/serve', [\App\Http\Controllers\Api\Admin\CompanyVerificationController::class, 'serveDocument'])->name('admin.company.document.serve');
         });
+
+        // Market Trends Management
+        Route::post('/market-trends/sync', [AiAnalyticsController::class, 'syncMarketTrends']);
     });
 
     // =========================================

@@ -231,6 +231,64 @@ class JobController extends Controller
         return response()->json($matches);
     }
 
+    /**
+     * Get suggested jobs for the current user based on their profile/skills.
+     */
+    #[OA\Get(
+        path: '/jobs/suggested',
+        operationId: 'getSuggestedJobs',
+        tags: ['Jobs'],
+        summary: 'Get suggested jobs',
+        description: 'Returns a paginated list of suggested jobs based on the job seeker\'s skills (from their latest CV) and field of work. Requires an active CV with skills.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Successful operation',
+        content: new OA\JsonContent(
+            type: 'object',
+            properties: [
+                new OA\Property(property: 'data', type: 'array', items: new OA\Items(ref: '#/components/schemas/JobAd')),
+                new OA\Property(property: 'links', type: 'object'),
+                new OA\Property(property: 'meta', type: 'object'),
+            ]
+        )
+    )]
+    #[OA\Response(response: 403, description: 'Only job seekers can access suggested jobs')]
+    public function suggested(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $jobSeekerProfile = $user->jobSeekerProfile;
+
+        if (! $jobSeekerProfile) {
+            return response()->json(['message' => 'Only job seekers can access suggested jobs'], 403);
+        }
+
+        // Fetch user's latest CV to get skills
+        $latestCv = \App\Domain\CV\Models\CV::with('skills.skill')
+            ->where('JobSeekerID', $jobSeekerProfile->JobSeekerID)
+            ->orderByDesc('CreatedAt')
+            ->first();
+
+        $query = JobAd::with(['company'])
+            ->where('Status', 'Active');
+
+        if ($latestCv && $latestCv->skills->isNotEmpty()) {
+            $skillIds = $latestCv->skills->pluck('SkillID')->toArray();
+            
+            // Suggest jobs that have at least one of the user's skills
+            $query->whereHas('skills', function ($q) use ($skillIds) {
+                $q->whereIn('SkillID', $skillIds);
+            });
+        }
+
+        // If no matches by skills, or to provide more variety, sort by latest
+        $jobs = $query->orderByDesc('PostedAt')
+            ->paginate(15);
+
+        return response()->json($jobs);
+    }
+
     // ==========================================
     // Employer Job Management
     // ==========================================

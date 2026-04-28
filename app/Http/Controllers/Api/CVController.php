@@ -122,7 +122,7 @@ class CVController extends Controller
 
         $jobSeekerProfile = $this->getJobSeekerProfile($request);
 
-        $cv = CV::create([
+        $cv = CV::updateOrCreate([
             'JobSeekerID' => $jobSeekerProfile->JobSeekerID,
             'Title' => $request->input('title'),
             'PersonalSummary' => $request->input('personal_summary'),

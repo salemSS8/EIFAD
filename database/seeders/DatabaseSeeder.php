@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        
         $this->command->info('🌱 Starting database seeding...');
 
         // Phase 1: Base tables (no dependencies)

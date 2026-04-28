@@ -3,6 +3,8 @@
 namespace App\Domain\Shared\Services;
 
 use App\Domain\Shared\Contracts\AIServiceInterface;
+use App\Domain\Shared\Traits\HasAiPrompts;
+use App\Domain\Shared\Traits\ParsesAiResponses;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -26,6 +28,7 @@ use Illuminate\Support\Facades\Log;
  */
 class GeminiAIService implements AIServiceInterface
 {
+    use HasAiPrompts, ParsesAiResponses;
     private string $apiKey;
 
     private string $baseUrl;
@@ -71,6 +74,7 @@ class GeminiAIService implements AIServiceInterface
         // Store tracking info
         $result['_meta'] = [
             'model' => $this->model,
+            'provider' => 'gemini',
             'prompt_version' => self::PROMPT_VERSION,
             'input_hash' => $inputHash,
             'generated_at' => now()->toIso8601String(),
@@ -175,171 +179,6 @@ class GeminiAIService implements AIServiceInterface
     }
 
     // =========================================================================
-    // DEPRECATED METHODS (Kept for backward compatibility, marked for removal)
-    // =========================================================================
-
-    /**
-     * @deprecated Use ParseCvJob + ScoreCvRuleBasedJob + explainCvAnalysis instead
-     */
-    public function analyzeCV(string $cvContent): array
-    {
-        Log::warning('GeminiAIService::analyzeCV is deprecated. Use rule-based pipeline instead.');
-
-        return ['deprecated' => true, 'message' => 'Use ParseCvJob + ScoreCvRuleBasedJob + ExplainCvAnalysisWithGeminiJob'];
-    }
-
-    /**
-     * @deprecated Use ComputeMatchScoreJob + explainJobMatch instead
-     */
-    public function generateJobRecommendations(array $userProfile, array $availableJobs): array
-    {
-        Log::warning('GeminiAIService::generateJobRecommendations is deprecated. Use ComputeMatchScoreJob instead.');
-
-        return ['deprecated' => true, 'message' => 'Use ComputeMatchScoreJob + ExplainMatchResultJob'];
-    }
-
-    /**
-     * @deprecated Use ComputeCompatibilityJob + explainCompatibility instead
-     */
-    public function scoreCandidateForJob(array $candidateProfile, array $jobRequirements): array
-    {
-        Log::warning('GeminiAIService::scoreCandidateForJob is deprecated. Use ComputeCompatibilityJob instead.');
-
-        return ['deprecated' => true, 'message' => 'Use ComputeCompatibilityJob + ExplainCompatibilityJob'];
-    }
-
-    /**
-     * @deprecated Use ComputeSkillGapJob instead
-     */
-    public function suggestSkillGaps(array $currentSkills, array $targetRole): array
-    {
-        Log::warning('GeminiAIService::suggestSkillGaps is deprecated. Use ComputeSkillGapJob instead.');
-
-        return ['deprecated' => true, 'message' => 'Use ComputeSkillGapJob'];
-    }
-
-    // =========================================================================
-    // PROMPT BUILDERS (Explanation-Only - No Scoring)
-    // =========================================================================
-
-    private function buildCvExplanationPrompt(array $context): string
-    {
-        $contextJson = json_encode($context, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-
-        return <<<PROMPT
-You are an intelligent CV analysis assistant. The CV has been analyzed and scores calculated.
-Your task is to explain the results in clear, professional language.
-
-PRE-CALCULATED DATA:
-{$contextJson}
-
-INSTRUCTIONS:
-1. Provide the analysis in BOTH Arabic and English.
-2. Structure the response into three categories: "strengths", "weaknesses", and "gaps".
-3. Each category must be an ARRAY of objects, where each object contains an "en" (English) and "ar" (Arabic) version of the point.
-4. ALL points in ALL categories must be NUMBERED (1., 2., 3., etc.).
-5. NO numeric scoring or hiring decisions.
-6. Return ONLY a valid JSON object.
-
-EXPECTED JSON STRUCTURE:
-{
-    "strengths": [
-        {"en": "1. [English Strength 1]", "ar": "1. [Arabic Strength 1]"},
-        {"en": "2. [English Strength 2]", "ar": "2. [Arabic Strength 2]"}
-    ],
-    "weaknesses": [
-        {"en": "1. [English Weakness 1]", "ar": "1. [Arabic Weakness 1]"}
-    ],
-    "gaps": [
-        {"en": "1. [English Gap 1]", "ar": "1. [Arabic Gap 1]"}
-    ]
-}
-PROMPT;
-    }
-
-    private function buildCompatibilityExplanationPrompt(array $context): string
-    {
-        $contextJson = json_encode($context, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-
-        return <<<PROMPT
-أنت مساعد ذكي لتفسير نتائج التوافق بين المرشح والوظيفة.
-تم حساب درجات التوافق مسبقاً باستخدام خوارزميات قاعدية.
-
-⚠️ قواعد صارمة:
-- لا تعطي أي قرارات توظيف (مثل: توظيف، رفض، قوي، ضعيف)
-- لا تقم بإعطاء درجات جديدة
-- فقط اشرح لماذا مستوى التوافق هو كما هو
-
-البيانات المحسوبة:
-{$contextJson}
-
-أعطني تفسيراً بتنسيق JSON:
-{
-    "explanation": "شرح واضح لسبب كون التوافق بهذا المستوى",
-    "strengths": ["نقطة قوة 1", "نقطة قوة 2"],
-    "gaps": ["فجوة 1", "فجوة 2"]
-}
-PROMPT;
-    }
-
-    private function buildMatchExplanationPrompt(array $matchData): string
-    {
-        $dataJson = json_encode($matchData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-
-        return <<<PROMPT
-أنت مساعد ذكي لتفسير نتائج مطابقة السيرة الذاتية مع الوظائف.
-تم حساب درجات المطابقة مسبقاً.
-
-⚠️ قاعدة: لا تعطي درجات جديدة، فقط اشرح النتائج.
-
-البيانات:
-{$dataJson}
-
-أعطني تفسيراً بتنسيق JSON:
-{
-    "match_explanation": "لماذا هذه الوظيفة تتوافق مع المرشح",
-    "key_matching_points": ["نقطة تطابق 1", "نقطة تطابق 2"],
-    "improvement_areas": ["مجال تحسين 1"]
-}
-PROMPT;
-    }
-
-    private function buildCareerRoadmapPrompt(array $userProfile, string $targetRole): string
-    {
-        $profileJson = json_encode($userProfile, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-
-        return <<<PROMPT
-أنت مستشار مهني ذكي. ساعد المستخدم في إنشاء خارطة طريق للوصول إلى هدفه المهني.
-
-⚠️ قواعد:
-- لا تعطي درجات رقمية
-- لا تقدم ضمانات
-- قدم خطوات عملية واقعية
-
-ملف المستخدم:
-{$profileJson}
-
-الهدف المهني: {$targetRole}
-
-أعطني خارطة طريق بتنسيق JSON حصراً. لا تضف أي نص قبل أو بعد الـ JSON.
-يجب أن يكون الرد عبارة عن كائن JSON صالح فقط:
-{
-    "current_level": "وصف المستوى الحالي",
-    "target_level": "وصف المستوى المستهدف",
-    "milestones": [
-        {
-            "title": "المرحلة 1",
-            "duration": "الوقت المتوقع",
-            "skills_to_learn": ["مهارة 1", "مهارة 2"],
-            "actions": ["خطوة 1", "خطوة 2"]
-        }
-    ],
-    "total_estimated_time": "الوقت الإجمالي التقريبي"
-}
-PROMPT;
-    }
-
-    // =========================================================================
     // API CALL & RESPONSE HANDLING
     // =========================================================================
 
@@ -357,7 +196,7 @@ PROMPT;
         $url = "{$this->baseUrl}/models/{$this->model}:generateContent?key={$this->apiKey}";
 
         try {
-            $response = Http::timeout(60)->withoutVerifying()->post($url, [
+            $response = Http::connectTimeout(60)->timeout(180)->withoutVerifying()->post($url, [
                 'contents' => [
                     [
                         'parts' => [
@@ -400,6 +239,11 @@ PROMPT;
         }
     }
 
+
+    // =========================================================================
+    // PROMPT BUILDERS (Explanation-Only - No Scoring)
+    // =========================================================================
+
     private function parseExplanationResponse(string $response): array
     {
         return $this->parseJsonResponse($response);
@@ -408,42 +252,6 @@ PROMPT;
     private function parseCareerRoadmapResponse(string $response): array
     {
         return $this->parseJsonResponse($response);
-    }
-
-    private function parseJsonResponse(string $response): array
-    {
-        // Step 1: Strip markdown code fences
-        $cleaned = preg_replace('/```json\s*/', '', $response);
-        $cleaned = preg_replace('/```\s*/', '', $cleaned);
-        $cleaned = trim($cleaned);
-
-        // Step 2: Try parsing the cleaned response directly
-        $decoded = json_decode($cleaned, true);
-        if (json_last_error() === JSON_ERROR_NONE) {
-            return $decoded;
-        }
-
-        // Step 3: Gemini often prepends free text before JSON — extract the JSON object
-        $firstBrace = strpos($cleaned, '{');
-        $lastBrace = strrpos($cleaned, '}');
-
-        if ($firstBrace !== false && $lastBrace !== false && $lastBrace > $firstBrace) {
-            $jsonCandidate = substr($cleaned, $firstBrace, $lastBrace - $firstBrace + 1);
-            $decoded = json_decode($jsonCandidate, true);
-
-            if (json_last_error() === JSON_ERROR_NONE) {
-                return $decoded;
-            }
-        }
-
-        Log::warning('Failed to parse Gemini response as JSON', [
-            'response_prefix' => substr($cleaned, 0, 100),
-            'response_suffix' => substr($cleaned, -100),
-            'full_length' => strlen($cleaned),
-            'error' => json_last_error_msg(),
-        ]);
-
-        return ['raw_response' => $cleaned, 'parse_error' => true];
     }
 
     // =========================================================================
@@ -455,7 +263,7 @@ PROMPT;
      */
     private function generateInputHash(array $input): string
     {
-        return md5(json_encode($input) . self::PROMPT_VERSION);
+        return md5(json_encode($input).self::PROMPT_VERSION);
     }
 
     /**

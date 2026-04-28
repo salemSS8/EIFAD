@@ -433,6 +433,48 @@
                 ]
             }
         },
+        "/admin/market-trends/sync": {
+            "post": {
+                "tags": [
+                    "Admin",
+                    "Market Trends"
+                ],
+                "summary": "Trigger direct sync",
+                "description": "Initiates a synchronous aggregation of market trends data. Restricted to Admins.",
+                "operationId": "syncMarketTrendsAdmin",
+                "responses": {
+                    "200": {
+                        "description": "Sync completed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/market-trends/logs": {
+            "get": {
+                "tags": [
+                    "Admin",
+                    "Market Trends"
+                ],
+                "summary": "Get sync history",
+                "description": "Returns list of recent synchronization job logs. Restricted to Admins.",
+                "operationId": "getMarketTrendSyncLogs",
+                "responses": {
+                    "200": {
+                        "description": "Sync logs retrieved"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/applications/{application}/ai-match": {
             "get": {
                 "tags": [
@@ -745,106 +787,6 @@
                 ]
             }
         },
-        "/market-trends": {
-            "get": {
-                "tags": [
-                    "AI Analytics",
-                    "Market"
-                ],
-                "summary": "Get market skill and job trends",
-                "description": "Returns the most in-demand skills and trending jobs based on active job ads.",
-                "operationId": "getMarketTrends",
-                "responses": {
-                    "200": {
-                        "description": "Market trends data",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "properties": {
-                                                "top_skills": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "properties": {
-                                                            "skill_id": {
-                                                                "type": "integer",
-                                                                "example": 5
-                                                            },
-                                                            "skill_name": {
-                                                                "type": "string",
-                                                                "example": "Laravel"
-                                                            },
-                                                            "demand_count": {
-                                                                "type": "integer",
-                                                                "example": 120
-                                                            },
-                                                            "popularity_percentage": {
-                                                                "type": "number",
-                                                                "format": "float",
-                                                                "example": 85.5
-                                                            }
-                                                        },
-                                                        "type": "object"
-                                                    }
-                                                },
-                                                "trending_jobs": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "properties": {
-                                                            "JobTitle": {
-                                                                "type": "string",
-                                                                "example": "Backend Developer"
-                                                            },
-                                                            "AverageSalary": {
-                                                                "type": "number",
-                                                                "format": "float",
-                                                                "example": 5500
-                                                            },
-                                                            "PostCount": {
-                                                                "type": "integer",
-                                                                "example": 45
-                                                            },
-                                                            "SnapshotDate": {
-                                                                "type": "string",
-                                                                "format": "date",
-                                                                "example": "2024-01-10"
-                                                            }
-                                                        },
-                                                        "type": "object"
-                                                    }
-                                                }
-                                            },
-                                            "type": "object"
-                                        },
-                                        "meta": {
-                                            "properties": {
-                                                "snapshot_date": {
-                                                    "type": "string",
-                                                    "format": "date",
-                                                    "example": "2024-01-10"
-                                                },
-                                                "total_active_jobs": {
-                                                    "type": "integer",
-                                                    "example": 500
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
         "/career-roadmap": {
             "get": {
                 "tags": [
@@ -1109,27 +1051,6 @@
                                 }
                             }
                         }
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/admin/market-trends/sync": {
-            "post": {
-                "tags": [
-                    "Admin",
-                    "Market"
-                ],
-                "summary": "Manual sync of market trends",
-                "description": "Triggers the market trends analysis process manually. Restricted to Admins.",
-                "operationId": "syncMarketTrends",
-                "responses": {
-                    "200": {
-                        "description": "Market trends sync initiated successfully"
                     }
                 },
                 "security": [
@@ -4734,6 +4655,66 @@
                 ]
             }
         },
+        "/market-trends": {
+            "get": {
+                "tags": [
+                    "Market Trends"
+                ],
+                "summary": "Get market trends data",
+                "description": "Returns trending jobs and top 3 in-demand skills related to the seeker's field.",
+                "operationId": "getMarketTrendsData",
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "query",
+                        "description": "Time period (7d, 30d, 90d)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "30d"
+                        }
+                    },
+                    {
+                        "name": "industry_id",
+                        "in": "query",
+                        "description": "Filter by industry ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "city_name",
+                        "in": "query",
+                        "description": "Filter by city name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Market trends data"
+                    }
+                }
+            }
+        },
+        "/market-trends/filters": {
+            "get": {
+                "tags": [
+                    "Market Trends"
+                ],
+                "summary": "Get available filters",
+                "description": "Returns list of industries and cities available for filtering trends.",
+                "operationId": "getMarketTrendFilters",
+                "responses": {
+                    "200": {
+                        "description": "Available filters"
+                    }
+                }
+            }
+        },
         "/notifications": {
             "get": {
                 "tags": [
@@ -5379,12 +5360,12 @@
             "description": "Company Verification"
         },
         {
-            "name": "AI Analytics",
-            "description": "AI Analytics"
+            "name": "Market Trends",
+            "description": "Market Trends"
         },
         {
-            "name": "Market",
-            "description": "Market"
+            "name": "AI Analytics",
+            "description": "AI Analytics"
         },
         {
             "name": "Applications",

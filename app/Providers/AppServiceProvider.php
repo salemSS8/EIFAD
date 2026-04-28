@@ -11,7 +11,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(\App\Domain\Shared\Contracts\AIServiceInterface::class, function ($app) {
+            $pipeline = config('ai.pipeline', []);
+            $providers = [];
+
+            foreach ($pipeline as $providerClass) {
+                $providers[] = $app->make($providerClass);
+            }
+
+            return new \App\Domain\Shared\Services\AiServiceOrchestrator($providers);
+        });
     }
 
     /**

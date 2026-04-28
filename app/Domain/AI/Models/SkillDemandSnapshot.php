@@ -9,11 +9,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class SkillDemandSnapshot extends Model
 {
     protected $table = 'skilldemandsnapshot';
+
     protected $primaryKey = 'SnapshotID';
+
     public $timestamps = false;
 
     protected $fillable = [
         'SkillID',
+        'industry_id',
+        'city_name',
         'DemandCount',
         'SnapshotDate',
     ];

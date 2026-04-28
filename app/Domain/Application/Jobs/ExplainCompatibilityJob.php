@@ -4,7 +4,7 @@ namespace App\Domain\Application\Jobs;
 
 use App\Domain\Application\Models\JobApplication;
 use App\Domain\AI\Models\CVJobMatch;
-use App\Domain\Shared\Services\GeminiAIService;
+use App\Domain\Shared\Contracts\AIServiceInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -45,8 +45,9 @@ class ExplainCompatibilityJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(GeminiAIService $aiService): array
+    public function handle(AIServiceInterface $aiService): array
     {
+        set_time_limit(300);
         try {
             // Load related data
             $this->application->load([
@@ -122,11 +123,13 @@ class ExplainCompatibilityJob implements ShouldQueue
      */
     private function persistExplanation(CVJobMatch $match, array $explanation): void
     {
+        $data = $explanation['analysis'] ?? $explanation;
+
         $match->update([
-            'Explanation' => $explanation['explanation'] ?? null,
-            'Strengths' => json_encode($explanation['strengths'] ?? []),
-            'Gaps' => json_encode($explanation['gaps'] ?? []),
-            'AIModel' => config('gemini.model'),
+            'Explanation' => $data['explanation'] ?? $data['match_explanation'] ?? null,
+            'Strengths' => json_encode($data['strengths'] ?? $data['key_matching_points'] ?? []),
+            'Gaps' => json_encode($data['gaps'] ?? $data['improvement_areas'] ?? []),
+            'AIModel' => $explanation['_meta']['model'] ?? 'unknown',
             'ExplainedAt' => now(),
         ]);
     }

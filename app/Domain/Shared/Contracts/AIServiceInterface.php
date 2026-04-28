@@ -9,24 +9,19 @@ namespace App\Domain\Shared\Contracts;
 interface AIServiceInterface
 {
     /**
-     * Analyze a CV and extract structured data.
+     * Explain CV Analysis - TEXT ONLY.
      */
-    public function analyzeCV(string $cvContent): array;
+    public function explainCvAnalysis(array $context): array;
+    
+    /**
+     * Explain Compatibility - TEXT ONLY.
+     */
+    public function explainCompatibility(array $context): array;
 
     /**
-     * Generate job recommendations based on user profile.
+     * Explain Job Match - TEXT ONLY.
      */
-    public function generateJobRecommendations(array $userProfile, array $availableJobs): array;
-
-    /**
-     * Score a candidate for a specific job.
-     */
-    public function scoreCandidateForJob(array $candidateProfile, array $jobRequirements): array;
-
-    /**
-     * Suggest skill gaps and learning paths.
-     */
-    public function suggestSkillGaps(array $currentSkills, array $targetRole): array;
+    public function explainJobMatch(array $matchData): array;
 
     /**
      * Generate a career roadmap.

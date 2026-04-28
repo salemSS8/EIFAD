@@ -14,6 +14,8 @@ class JobDemandSnapshot extends Model
 
     protected $fillable = [
         'JobTitle',
+        'industry_id',
+        'city_name',
         'AverageSalary',
         'PostCount',
         'SnapshotDate',

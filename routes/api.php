@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\MarketTrendController as AdminMarketTrendController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AiAnalyticsController;
 use App\Http\Controllers\Api\ApplicationController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\CVController;
 use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\JobSeekerController;
+use App\Http\Controllers\Api\MarketTrendController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SkillController;
@@ -63,6 +65,12 @@ Route::get('/languages', [SkillController::class, 'languages']);
 
 // Job Seekers Search
 Route::get('/job-seekers', [JobSeekerController::class, 'index']);
+
+// Market Trends (Public)
+Route::prefix('market-trends')->group(function () {
+    Route::get('/', [MarketTrendController::class, 'index']);
+    Route::get('/filters', [MarketTrendController::class, 'filters']);
+});
 
 // =========================================
 // Protected Routes (Require Authentication)
@@ -164,8 +172,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // AI Analytics & Matching
     // =========================================
 
-    // Market Trends
-    Route::get('/market-trends', [AiAnalyticsController::class, 'marketTrends']);
+    // Market Trends (Legacy replaced by public routes)
+    // Route::get('/market-trends', [AiAnalyticsController::class, 'marketTrends']);
 
     // Job Matching
     Route::prefix('jobs')->group(function () {
@@ -282,7 +290,10 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         // Market Trends Management
-        Route::post('/market-trends/sync', [AiAnalyticsController::class, 'syncMarketTrends']);
+        Route::prefix('market-trends')->group(function () {
+            Route::post('/sync', [AdminMarketTrendController::class, 'sync']);
+            Route::get('/logs', [AdminMarketTrendController::class, 'logs']);
+        });
     });
 
     // =========================================

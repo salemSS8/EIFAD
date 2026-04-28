@@ -9,7 +9,6 @@ use App\Domain\Application\Models\JobApplication;
 use App\Domain\Course\Models\Roadmap;
 use App\Domain\CV\Models\CV;
 use App\Domain\CV\Models\CVAnalysis;
-use App\Domain\Shared\Services\GeminiAIService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AiMatchResource;
 use App\Http\Resources\CvAnalysisResource;
@@ -432,101 +431,6 @@ class AiAnalyticsController extends Controller
         ];
     }
 
-    /**
-     * Get market trends (top skills and trending jobs).
-     */
-    #[OA\Get(
-        path: '/market-trends',
-        operationId: 'getMarketTrends',
-        tags: ['AI Analytics', 'Market'],
-        summary: 'Get market skill and job trends',
-        description: 'Returns the most in-demand skills and trending jobs based on active job ads.',
-        security: [['bearerAuth' => []]]
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'Market trends data',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(
-                    property: 'data',
-                    type: 'object',
-                    properties: [
-                        new OA\Property(
-                            property: 'top_skills',
-                            type: 'array',
-                            items: new OA\Items(
-                                properties: [
-                                    new OA\Property(property: 'skill_id', type: 'integer', example: 5),
-                                    new OA\Property(property: 'skill_name', type: 'string', example: 'Laravel'),
-                                    new OA\Property(property: 'demand_count', type: 'integer', example: 120),
-                                    new OA\Property(property: 'popularity_percentage', type: 'number', format: 'float', example: 85.5),
-                                ]
-                            )
-                        ),
-                        new OA\Property(
-                            property: 'trending_jobs',
-                            type: 'array',
-                            items: new OA\Items(
-                                properties: [
-                                    new OA\Property(property: 'JobTitle', type: 'string', example: 'Backend Developer'),
-                                    new OA\Property(property: 'AverageSalary', type: 'number', format: 'float', example: 5500.00),
-                                    new OA\Property(property: 'PostCount', type: 'integer', example: 45),
-                                    new OA\Property(property: 'SnapshotDate', type: 'string', format: 'date', example: '2024-01-10'),
-                                ]
-                            )
-                        ),
-                    ]
-                ),
-                new OA\Property(
-                    property: 'meta',
-                    type: 'object',
-                    properties: [
-                        new OA\Property(property: 'snapshot_date', type: 'string', format: 'date', example: '2024-01-10'),
-                        new OA\Property(property: 'total_active_jobs', type: 'integer', example: 500),
-                    ]
-                ),
-            ]
-        )
-    )]
-    public function marketTrends(Request $request): JsonResponse
-    {
-        $latestSnapshotDate = SkillDemandSnapshot::max('SnapshotDate');
-        $totalActiveJobs = \App\Domain\Job\Models\JobAd::where('Status', 'Active')->count();
-        $totalActiveJobs = max(1, $totalActiveJobs); // Prevent division by zero
-
-        // Fetch Top Skills with Percentage Popularity
-        $skillTrends = SkillDemandSnapshot::with('skill')
-            ->where('SnapshotDate', $latestSnapshotDate)
-            ->orderByDesc('DemandCount')
-            ->take(15)
-            ->get()
-            ->map(function ($snapshot) use ($totalActiveJobs) {
-                return [
-                    'skill_id' => $snapshot->SkillID,
-                    'skill_name' => $snapshot->skill->SkillName ?? 'Unknown',
-                    'demand_count' => $snapshot->DemandCount,
-                    'popularity_percentage' => round(($snapshot->DemandCount / $totalActiveJobs) * 100, 1),
-                ];
-            });
-
-        // Fetch Trending Jobs with Salary Benchmarks
-        $jobTrends = JobDemandSnapshot::where('SnapshotDate', $latestSnapshotDate)
-            ->orderByDesc('PostCount')
-            ->take(10)
-            ->get();
-
-        return response()->json([
-            'data' => [
-                'top_skills' => $skillTrends,
-                'trending_jobs' => $jobTrends,
-            ],
-            'meta' => [
-                'snapshot_date' => $latestSnapshotDate,
-                'total_active_jobs' => $totalActiveJobs,
-            ],
-        ]);
-    }
 
     /**
      * Generate a career roadmap for the authenticated user.
@@ -656,7 +560,8 @@ class AiAnalyticsController extends Controller
             ])->toArray(),
         ];
 
-        $aiService = app(GeminiAIService::class);
+        set_time_limit(300);
+        $aiService = app(\App\Domain\Shared\Contracts\AIServiceInterface::class);
         $result = $aiService->generateCareerRoadmap($userProfile, $validated['target_role']);
 
         // Deactivate any previous active roadmap for this user
@@ -673,6 +578,7 @@ class AiAnalyticsController extends Controller
             'milestones' => $result['milestones'] ?? null,
             'total_estimated_time' => $result['total_estimated_time'] ?? null,
             'generated_at' => now(),
+            'ai_model' => $result['_meta']['model'] ?? 'unknown',
             'is_active' => true,
         ]);
 
@@ -749,32 +655,4 @@ class AiAnalyticsController extends Controller
         ]);
     }
 
-    /**
-     * Trigger a manual sync of market trends (Admin only).
-     */
-    #[OA\Post(
-        path: '/admin/market-trends/sync',
-        operationId: 'syncMarketTrends',
-        tags: ['Admin', 'Market'],
-        summary: 'Manual sync of market trends',
-        description: 'Triggers the market trends analysis process manually. Restricted to Admins.',
-        security: [['bearerAuth' => []]]
-    )]
-    #[OA\Response(response: 200, description: 'Market trends sync initiated successfully')]
-    public function syncMarketTrends(Request $request): JsonResponse
-    {
-        try {
-            \Illuminate\Support\Facades\Artisan::call('market:sync-trends');
-
-            return response()->json([
-                'message' => 'Market trends sync completed successfully.',
-                'output' => \Illuminate\Support\Facades\Artisan::output(),
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to sync market trends.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
 }

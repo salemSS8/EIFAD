@@ -4,7 +4,7 @@ namespace App\Domain\CV\Jobs;
 
 use App\Domain\CV\Models\CV;
 use App\Domain\CV\Models\CVAnalysis;
-use App\Domain\Shared\Services\GeminiAIService;
+use App\Domain\Shared\Contracts\AIServiceInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -52,8 +52,9 @@ class ExplainCvAnalysisWithGeminiJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(GeminiAIService $aiService): array
+    public function handle(AIServiceInterface $aiService): array
     {
+        set_time_limit(300);
         try {
             // Load CV with analysis (must be scored first)
             $this->cv->load(['skills.skill', 'education', 'experiences', 'analysis']);
@@ -119,19 +120,22 @@ class ExplainCvAnalysisWithGeminiJob implements ShouldQueue
 
     private function persistExplanation(array $explanation): void
     {
-        $analysis = CVAnalysis::where('CVID', $this->cv->CVID)->first();
+        $analysisRecord = CVAnalysis::where('CVID', $this->cv->CVID)->first();
 
-        if (! $analysis) {
+        if (! $analysisRecord) {
             return;
         }
 
-        $analysis->update([
-            'strengths' => $explanation['strengths'] ?? [],
-            'Weaknesses' => $explanation['weaknesses'] ?? [],
-            'PotentialGaps' => $explanation['gaps'] ?? [],
-            'ImprovementRecommendations' => $explanation['weaknesses'] ?? [], // Fallback for legacy
+        // Handle possible wrapping in 'analysis' key (common in some LLM outputs)
+        $data = $explanation['analysis'] ?? $explanation;
+
+        $analysisRecord->update([
+            'strengths' => $data['strengths'] ?? [],
+            'Weaknesses' => $data['weaknesses'] ?? [],
+            'PotentialGaps' => $data['gaps'] ?? [],
+            'ImprovementRecommendations' => $data['recommendations'] ?? $data['improvement_recommendations'] ?? $data['weaknesses'] ?? [],
             'AIExplanation' => json_encode($explanation),
-            'AIModel' => config('gemini.model'),
+            'AIModel' => $explanation['_meta']['model'] ?? 'unknown',
             'ExplainedAt' => now(),
         ]);
     }

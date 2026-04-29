@@ -4,12 +4,13 @@ namespace App\Domain\User\Models;
 
 use App\Domain\Company\Models\CompanyProfile;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * User Model - Matches `user` table in database.
@@ -27,7 +28,9 @@ class User extends Authenticatable
     }
 
     protected $table = 'user';
+
     protected $primaryKey = 'UserID';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -86,7 +89,7 @@ class User extends Authenticatable
      */
     public function hasRole(string $roleName): bool
     {
-        return $this->roles()->where('RoleName', $roleName)->exists();
+        return $this->roles()->where(DB::raw('LOWER(RoleName)'), strtolower($roleName))->exists();
     }
 
     /**

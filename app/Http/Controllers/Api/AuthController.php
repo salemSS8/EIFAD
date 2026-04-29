@@ -494,7 +494,7 @@ class AuthController extends Controller
                 'gender' => $user->Gender,
                 'date_of_birth' => $user->DateOfBirth,
                 'is_verified' => $user->IsVerified,
-                'role' => $role?->RoleName,
+                'role' => $role?->RoleName ?? 'Guest',
                 'job_seeker_profile' => $user->jobSeekerProfile,
                 'company_profile' => $user->companyProfile,
             ],

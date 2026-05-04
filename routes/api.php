@@ -99,6 +99,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/', [ProfileController::class, 'destroy']);
     });
 
+    // ------- Public User Profiles -------
+    Route::get('/users/{id}/profile', [ProfileController::class, 'showPublic'])->whereNumber('id');
+
     // ------- Notifications -------
     Route::prefix('notifications')->group(function () {
         Route::get('/settings', [NotificationController::class, 'getSettings']);

@@ -169,7 +169,7 @@ class ApplicationController extends Controller
         }
 
         if ($cvFile) {
-            $cvPath = $cvFile->storeAs('cvs', $profile->JobSeekerID . '_' . time() . '_' . $cvFile->getClientOriginalName(), 'public');
+            $cvPath = $cvFile->storeAs('cvs', $profile->JobSeekerID.'_'.time().'_'.$cvFile->getClientOriginalName(), 'public');
             // If user chose to upload a PDF file, do not calculate the match score.
             $matchScore = null;
         }
@@ -351,6 +351,7 @@ class ApplicationController extends Controller
         security: [['bearerAuth' => []]]
     )]
     #[OA\Parameter(name: 'jobId', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Parameter(name: 'status', in: 'query', description: 'Filter by application status (Pending, Reviewed, Shortlisted, Interviewing, Offered, Hired, Rejected)', required: false, schema: new OA\Schema(type: 'string'))]
     #[OA\Response(response: 200, description: 'List of applications for the job')]
     public function jobApplications(Request $request, int $jobId): JsonResponse
     {
@@ -366,13 +367,18 @@ class ApplicationController extends Controller
             ->where('CompanyID', $company->CompanyID)
             ->firstOrFail();
 
-        $applications = JobApplication::with([
+        $query = JobApplication::with([
             'jobSeeker.user:UserID,FullName,Email',
             'cv.skills.skill',
             'cv.experiences',
         ])
-            ->where('JobAdID', $jobId)
-            ->orderByDesc('MatchScore')
+            ->where('JobAdID', $jobId);
+
+        if ($request->filled('status')) {
+            $query->where('Status', $request->input('status'));
+        }
+
+        $applications = $query->orderByDesc('MatchScore')
             ->orderByDesc('AppliedAt')
             ->paginate(15);
 

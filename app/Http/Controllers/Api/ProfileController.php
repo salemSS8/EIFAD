@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Domain\Company\Models\CompanyProfile;
 use App\Domain\User\Models\JobSeekerProfile;
+use App\Domain\User\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -218,13 +219,17 @@ class ProfileController extends Controller
         // Update User info if present
         if ($request->has('full_name') || $request->has('phone') || $request->has('email')) {
             $updates = [];
-            if ($request->has('full_name')) $updates['FullName'] = $request->input('full_name');
-            if ($request->has('phone')) $updates['Phone'] = $request->input('phone');
+            if ($request->has('full_name')) {
+                $updates['FullName'] = $request->input('full_name');
+            }
+            if ($request->has('phone')) {
+                $updates['Phone'] = $request->input('phone');
+            }
             if ($request->has('email') && $request->input('email') !== $user->Email) {
-                $request->validate(['email' => 'email|unique:user,Email,' . $user->UserID . ',UserID']);
+                $request->validate(['email' => 'email|unique:user,Email,'.$user->UserID.',UserID']);
                 $updates['Email'] = $request->input('email');
             }
-            if (!empty($updates)) {
+            if (! empty($updates)) {
                 $user->update($updates);
             }
         }
@@ -414,5 +419,91 @@ class ProfileController extends Controller
         return response()->json([
             'message' => 'نوع الحساب غير معروف',
         ], 400);
+    }
+
+    /**
+     * Get a public user profile by ID.
+     */
+    #[OA\Get(
+        path: '/users/{id}/profile',
+        operationId: 'getPublicUserProfile',
+        tags: ['Profile'],
+        summary: 'Get public user profile',
+        description: 'Returns the public profile of a user by their ID. Shows job seeker details (CV, skills, experience) or company details (specializations, jobs count).',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, description: 'User ID', schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Public user profile')]
+    #[OA\Response(response: 404, description: 'User not found')]
+    public function showPublic(int $id): JsonResponse
+    {
+        $user = User::with('roles')->where('UserID', $id)->firstOrFail();
+        $role = $user->roles->first();
+
+        if ($role?->RoleName === 'JobSeeker') {
+            $profile = $user->jobSeekerProfile;
+
+            $latestCv = \App\Domain\CV\Models\CV::with([
+                'skills.skill',
+                'education',
+                'experiences',
+                'languages.language',
+                'certifications',
+            ])
+                ->where('JobSeekerID', $user->UserID)
+                ->orderByDesc('CreatedAt')
+                ->first();
+
+            return response()->json([
+                'type' => 'job_seeker',
+                'data' => [
+                    'UserID' => $user->UserID,
+                    'FullName' => $user->FullName,
+                    'Email' => $user->Email,
+                    'Phone' => $user->Phone,
+                    'Gender' => $user->Gender,
+                    'Avatar' => $user->Avatar,
+                    'PersonalPhoto' => $profile?->PersonalPhoto,
+                    'Location' => $profile?->Location,
+                    'ProfileSummary' => $profile?->ProfileSummary,
+                    'cv' => $latestCv,
+                ],
+            ]);
+        }
+
+        if ($role?->RoleName === 'Employer') {
+            $profile = $user->companyProfile;
+
+            if (! $profile) {
+                return response()->json(['message' => 'Company profile not found'], 404);
+            }
+
+            $profile->load('specializations');
+            $activeJobsCount = $profile->jobAds()->where('Status', 'Active')->count();
+
+            return response()->json([
+                'type' => 'company',
+                'data' => [
+                    'UserID' => $user->UserID,
+                    'FullName' => $user->FullName,
+                    'Email' => $user->Email,
+                    'Phone' => $user->Phone,
+                    'CompanyName' => $profile->CompanyName,
+                    'OrganizationName' => $profile->OrganizationName,
+                    'Address' => $profile->Address,
+                    'Description' => $profile->Description,
+                    'LogoPath' => $profile->LogoPath,
+                    'WebsiteURL' => $profile->WebsiteURL,
+                    'EstablishedYear' => $profile->EstablishedYear,
+                    'EmployeeCount' => $profile->EmployeeCount,
+                    'FieldOfWork' => $profile->FieldOfWork,
+                    'IsCompanyVerified' => $profile->IsCompanyVerified,
+                    'specializations' => $profile->specializations,
+                    'active_jobs_count' => $activeJobsCount,
+                ],
+            ]);
+        }
+
+        return response()->json(['message' => 'Profile not found'], 404);
     }
 }

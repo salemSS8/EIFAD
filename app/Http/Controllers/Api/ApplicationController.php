@@ -351,7 +351,8 @@ class ApplicationController extends Controller
         security: [['bearerAuth' => []]]
     )]
     #[OA\Parameter(name: 'jobId', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
-    #[OA\Parameter(name: 'status', in: 'query', description: 'Filter by application status (Pending, Reviewed, Shortlisted, Interviewing, Offered, Hired, Rejected)', required: false, schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'status', in: 'query', description: 'Filter by application status (Pending, Reviewed, Shortlisted, Interviewing, Offered, Hired, Rejected, ai_filtered)', required: false, schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'min_score', in: 'query', description: 'Minimum match score (0-100)', required: false, schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(response: 200, description: 'List of applications for the job')]
     public function jobApplications(Request $request, int $jobId): JsonResponse
     {
@@ -374,8 +375,16 @@ class ApplicationController extends Controller
         ])
             ->where('JobAdID', $jobId);
 
-        if ($request->filled('status')) {
+        // Handle Special "AI Filtered" status from UI (Score >= 70%)
+        if ($request->input('status') === 'ai_filtered') {
+            $query->where('MatchScore', '>=', 70);
+        } elseif ($request->filled('status')) {
             $query->where('Status', $request->input('status'));
+        }
+
+        // Generic min_score filter
+        if ($request->filled('min_score')) {
+            $query->where('MatchScore', '>=', $request->integer('min_score'));
         }
 
         $applications = $query->orderByDesc('MatchScore')

@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Domain\Skill\Models\Skill;
 use App\Domain\Skill\Models\SkillCategory;
+use Illuminate\Database\Seeder;
 
 class SkillSeeder extends Seeder
 {
@@ -85,9 +85,6 @@ class SkillSeeder extends Seeder
             ],
         ];
 
-        Skill::unguard();
-        $skillId = 1;
-
         foreach ($skillsByCategory as $categoryName => $skills) {
             $category = SkillCategory::where('CategoryName', $categoryName)->first();
 
@@ -96,14 +93,12 @@ class SkillSeeder extends Seeder
                     Skill::firstOrCreate(
                         ['SkillName' => $skillName],
                         [
-                            'SkillID' => $skillId++,
                             'SkillName' => $skillName,
-                            'CategoryID' => $category->CategoryID
+                            'CategoryID' => $category->CategoryID,
                         ]
                     );
                 }
             }
         }
-        Skill::reguard();
     }
 }

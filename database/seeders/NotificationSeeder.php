@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Domain\User\Models\User;
 use App\Domain\Communication\Models\Notification;
+use App\Domain\User\Models\User;
+use Illuminate\Database\Seeder;
 
 class NotificationSeeder extends Seeder
 {
@@ -20,17 +20,13 @@ class NotificationSeeder extends Seeder
             ['Type' => 'reminder', 'Content' => 'لا تنس تحديث سيرتك الذاتية!'],
         ];
 
-        Notification::unguard();
-        $notifId = 1;
-
         foreach ($users as $user) {
             // Create 1-3 notifications per user
             $count = rand(1, 3);
             for ($i = 0; $i < $count; $i++) {
                 $template = $notificationTemplates[array_rand($notificationTemplates)];
-                Notification::create( // Changed firstOrCreate to create to ensure unique ID
+                Notification::create(
                     [
-                        'NotificationID' => $notifId++,
                         'UserID' => $user->UserID,
                         'Type' => $template['Type'],
                         'Content' => $template['Content'],
@@ -40,6 +36,5 @@ class NotificationSeeder extends Seeder
                 );
             }
         }
-        Notification::reguard();
     }
 }

@@ -13,7 +13,7 @@ class CompanyVerificationController extends Controller
      * Upload verification documents for a company.
      */
     #[OA\Post(
-        path: '/company/verify/documents',
+        path: '/employer/verify/documents',
         operationId: 'uploadVerificationDocuments',
         tags: ['Company Verification'],
         summary: 'Upload verification documents',
@@ -78,13 +78,14 @@ class CompanyVerificationController extends Controller
     }
 
     /**
-     * Get verification status for the authenticated company.
+     * Get verification status and list of uploaded documents.
      */
     #[OA\Get(
-        path: '/company/verify/status',
+        path: '/employer/verify/status',
         operationId: 'getVerificationStatus',
         tags: ['Company Verification'],
-        summary: 'Get verification status',
+        summary: 'Get verification status and document list',
+        description: 'Returns the current verification status and a list of uploaded documents with access indices.',
         security: [['bearerAuth' => []]]
     )]
     #[OA\Response(response: 200, description: 'Verification status details')]
@@ -96,13 +97,58 @@ class CompanyVerificationController extends Controller
             return response()->json(['message' => 'Company profile not found'], 404);
         }
 
+        $documents = collect($company->VerificationDocuments ?? [])->map(function ($doc, $index) {
+            return [
+                'index' => $index,
+                'name' => $doc['name'],
+                'uploaded_at' => $doc['uploaded_at'],
+                'url' => route('employer.verify.documents.serve', ['index' => $index]),
+            ];
+        });
+
         return response()->json([
             'data' => [
                 'is_verified' => $company->IsCompanyVerified,
                 'status' => $company->VerificationStatus,
                 'verified_at' => $company->VerifiedAt,
-                'documents' => collect($company->VerificationDocuments)->map(fn ($doc) => ['name' => $doc['name'], 'uploaded_at' => $doc['uploaded_at']]),
+                'documents' => $documents,
             ],
         ]);
+    }
+
+    /**
+     * Serve a specific verification document (Employer only).
+     */
+    #[OA\Get(
+        path: '/employer/verify/documents/{index}',
+        operationId: 'serveVerificationDocument',
+        tags: ['Company Verification'],
+        summary: 'Download a verification document',
+        description: 'Streams the uploaded verification file directly to the browser.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Parameter(name: 'index', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'File stream')]
+    public function serveDocument(Request $request, int $index)
+    {
+        $company = $request->user()->companyProfile;
+
+        if (! $company) {
+            abort(404, 'Company profile not found');
+        }
+
+        $documents = $company->VerificationDocuments ?? [];
+
+        if (! isset($documents[$index])) {
+            abort(404, 'Document not found');
+        }
+
+        $path = $documents[$index]['path'];
+
+        if (! \Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
+            abort(404, 'File not found on storage');
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->response($path);
     }
 }

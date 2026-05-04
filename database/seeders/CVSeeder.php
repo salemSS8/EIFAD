@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Domain\User\Models\User;
-use App\Domain\User\Models\JobSeekerProfile;
 use App\Domain\CV\Models\CV;
+use App\Domain\User\Models\JobSeekerProfile;
+use App\Domain\User\Models\User;
+use Illuminate\Database\Seeder;
 
 class CVSeeder extends Seeder
 {
@@ -39,9 +39,6 @@ class CVSeeder extends Seeder
             ],
         ];
 
-        CV::unguard();
-        $cvId = 1;
-
         foreach ($cvs as $cv) {
             $user = User::where('Email', $cv['email'])->first();
             if ($user) {
@@ -50,7 +47,6 @@ class CVSeeder extends Seeder
                     CV::firstOrCreate(
                         ['JobSeekerID' => $profile->JobSeekerID, 'Title' => $cv['Title']],
                         [
-                            'CVID' => $cvId++,
                             'JobSeekerID' => $profile->JobSeekerID,
                             'Title' => $cv['Title'],
                             'PersonalSummary' => $cv['PersonalSummary'],
@@ -61,6 +57,5 @@ class CVSeeder extends Seeder
                 }
             }
         }
-        CV::reguard();
     }
 }

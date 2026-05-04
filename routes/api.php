@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AiAnalyticsController;
 use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\CompanyVerificationController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\CVController;
@@ -217,6 +218,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
             // Candidate Recommendations
             Route::get('/{id}/recommendations', [JobController::class, 'recommendCandidates']);
+            Route::post('/{id}/ai-rank', [JobController::class, 'aiRankCandidates']);
         });
 
         // Application Management
@@ -226,6 +228,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('verify')->group(function () {
             Route::get('/status', [CompanyVerificationController::class, 'status']);
             Route::post('/documents', [CompanyVerificationController::class, 'upload']);
+            Route::get('/documents/{index}', [CompanyVerificationController::class, 'serveDocument'])->name('employer.verify.documents.serve');
         });
     });
 
@@ -300,77 +303,14 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // =========================================
-    // Messaging (Basic)
+    // Messaging & Chat
     // =========================================
 
     Route::prefix('conversations')->group(function () {
-        Route::get('/', function (\Illuminate\Http\Request $request) {
-            $userId = $request->user()->UserID;
-
-            return response()->json(
-                \App\Domain\Communication\Models\Conversation::whereHas('participants', function ($q) use ($userId) {
-                    $q->where('UserID', $userId);
-                })
-                    ->with(['participants.user:UserID,FullName', 'messages' => function ($q) {
-                        $q->latest('SentAt')->limit(1);
-                    }])
-                    ->paginate(20)
-            );
-        });
-
-        Route::get('/{id}/messages', function (\Illuminate\Http\Request $request, int $id) {
-            $userId = $request->user()->UserID;
-
-            // Verify user is participant
-            $isParticipant = \App\Domain\Communication\Models\ConversationParticipant::where('ConversationID', $id)
-                ->where('UserID', $userId)
-                ->exists();
-
-            if (! $isParticipant) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
-
-            return response()->json(
-                \App\Domain\Communication\Models\Message::with('sender:UserID,FullName')
-                    ->where('ConversationID', $id)
-                    ->where('IsDeleted', false)
-                    ->orderByDesc('SentAt')
-                    ->paginate(50)
-            );
-        });
-
-        Route::post('/{id}/messages', function (\Illuminate\Http\Request $request, int $id) {
-            $request->validate(['content' => 'required|string|max:5000']);
-
-            $userId = $request->user()->UserID;
-
-            // Verify user is participant
-            $isParticipant = \App\Domain\Communication\Models\ConversationParticipant::where('ConversationID', $id)
-                ->where('UserID', $userId)
-                ->exists();
-
-            if (! $isParticipant) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
-
-            $message = \App\Domain\Communication\Models\Message::create([
-                'ConversationID' => $id,
-                'SenderID' => $userId,
-                'Content' => $request->input('content'),
-                'SentAt' => now(),
-                'IsDeleted' => false,
-            ]);
-
-            // Need to reload relationships if needed, maybe just the sender
-            $message->load('sender:UserID,FullName');
-
-            broadcast(new \App\Events\MessageSent($message))->toOthers();
-
-            return response()->json([
-                'message' => 'Message sent',
-                'data' => $message,
-            ], 201);
-        });
+        Route::get('/', [ChatController::class, 'index']);
+        Route::post('/', [ChatController::class, 'startConversation']);
+        Route::get('/{id}/messages', [ChatController::class, 'messages']);
+        Route::post('/{id}/messages', [ChatController::class, 'sendMessage']);
     });
 
 });

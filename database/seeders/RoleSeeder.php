@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Domain\User\Models\Role;
+use Illuminate\Database\Seeder;
 
 class RoleSeeder extends Seeder
 {
@@ -15,10 +15,8 @@ class RoleSeeder extends Seeder
             ['RoleID' => 3, 'RoleName' => 'JobSeeker'],
         ];
 
-        Role::unguard();
         foreach ($roles as $role) {
-            Role::firstOrCreate(['RoleName' => $role['RoleName']], $role);
+            Role::firstOrCreate(['RoleName' => $role['RoleName']]);
         }
-        Role::reguard();
     }
 }

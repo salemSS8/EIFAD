@@ -1266,6 +1266,24 @@
                         "schema": {
                             "type": "integer"
                         }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter by application status (Pending, Reviewed, Shortlisted, Interviewing, Offered, Hired, Rejected, ai_filtered)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "min_score",
+                        "in": "query",
+                        "description": "Minimum match score (0-100)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
                     }
                 ],
                 "responses": {
@@ -3238,6 +3256,134 @@
                 ]
             }
         },
+        "/conversations": {
+            "get": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "List all conversations",
+                "description": "Returns a paginated list of conversations the authenticated user is participating in.",
+                "operationId": "getConversations",
+                "responses": {
+                    "200": {
+                        "description": "List of conversations"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Start a new conversation",
+                "description": "Creates a new private conversation with another user.",
+                "operationId": "startConversation",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "user_id": {
+                                        "description": "The ID of the user to chat with",
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Conversation started"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/conversations/{id}/messages": {
+            "get": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Get messages in a conversation",
+                "description": "Get messages for a specific conversation.",
+                "operationId": "getConversationMessages",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of messages"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Send a message",
+                "description": "Sends a message and broadcasts it via Laravel Reverb on channel `private-conversation.{id}`.",
+                "operationId": "sendMessage",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "content": {
+                                        "type": "string",
+                                        "maxLength": 5000
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Message sent"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/companies": {
             "get": {
                 "tags": [
@@ -3407,7 +3553,7 @@
                 ]
             }
         },
-        "/company/verify/documents": {
+        "/employer/verify/documents": {
             "post": {
                 "tags": [
                     "Company Verification"
@@ -3450,17 +3596,47 @@
                 ]
             }
         },
-        "/company/verify/status": {
+        "/employer/verify/status": {
             "get": {
                 "tags": [
                     "Company Verification"
                 ],
-                "summary": "Get verification status",
-                "description": "Get verification status for the authenticated company.",
+                "summary": "Get verification status and document list",
+                "description": "Returns the current verification status and a list of uploaded documents with access indices.",
                 "operationId": "getVerificationStatus",
                 "responses": {
                     "200": {
                         "description": "Verification status details"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/employer/verify/documents/{index}": {
+            "get": {
+                "tags": [
+                    "Company Verification"
+                ],
+                "summary": "Download a verification document",
+                "description": "Streams the uploaded verification file directly to the browser.",
+                "operationId": "serveVerificationDocument",
+                "parameters": [
+                    {
+                        "name": "index",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File stream"
                     }
                 },
                 "security": [
@@ -4606,6 +4782,39 @@
                 ]
             }
         },
+        "/employer/jobs/{id}/ai-rank": {
+            "post": {
+                "tags": [
+                    "Employer",
+                    "Jobs",
+                    "AI Analytics"
+                ],
+                "summary": "Trigger AI ranking for applicants",
+                "description": "Triggers a fresh AI analysis and scoring for all candidates who have applied to this job.",
+                "operationId": "triggerAiRanking",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Job Ad ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ranking triggered"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/job-seekers": {
             "get": {
                 "tags": [
@@ -5197,6 +5406,40 @@
                 ]
             }
         },
+        "/users/{id}/profile": {
+            "get": {
+                "tags": [
+                    "Profile"
+                ],
+                "summary": "Get public user profile",
+                "description": "Returns the public profile of a user by their ID. Shows job seeker details (CV, skills, experience) or company details (specializations, jobs count).",
+                "operationId": "getPublicUserProfile",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Public user profile"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/skills": {
             "get": {
                 "tags": [
@@ -5406,6 +5649,10 @@
         {
             "name": "Certifications",
             "description": "Certifications"
+        },
+        {
+            "name": "Chat",
+            "description": "Chat"
         },
         {
             "name": "Companies",

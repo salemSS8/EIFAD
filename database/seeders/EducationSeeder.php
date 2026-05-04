@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Domain\CV\Models\CV;
 use App\Domain\CV\Models\Education;
+use Illuminate\Database\Seeder;
 
 class EducationSeeder extends Seeder
 {
@@ -20,15 +20,11 @@ class EducationSeeder extends Seeder
             ['Institution' => 'جامعة العلوم والتكنولوجيا', 'DegreeName' => 'بكالوريوس', 'Major' => 'علوم الحاسوب', 'GraduationYear' => 2019],
         ];
 
-        // Create explicit IDs since auto-increment is off
-        Education::unguard();
-        $eduId = 1;
-
         foreach ($cvs as $index => $cv) {
             if (isset($educations[$index])) {
                 Education::firstOrCreate(
                     ['CVID' => $cv->CVID, 'Institution' => $educations[$index]['Institution']],
-                    array_merge(['EducationID' => $eduId++, 'CVID' => $cv->CVID], $educations[$index])
+                    array_merge(['CVID' => $cv->CVID], $educations[$index])
                 );
             }
         }
@@ -39,7 +35,6 @@ class EducationSeeder extends Seeder
             Education::firstOrCreate(
                 ['CVID' => $firstCV->CVID, 'DegreeName' => 'ماجستير'],
                 [
-                    'EducationID' => $eduId++,
                     'CVID' => $firstCV->CVID,
                     'Institution' => 'جامعة الملك سعود',
                     'DegreeName' => 'ماجستير',
@@ -48,6 +43,5 @@ class EducationSeeder extends Seeder
                 ]
             );
         }
-        Education::reguard();
     }
 }

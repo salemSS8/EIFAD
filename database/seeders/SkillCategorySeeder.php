@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Domain\Skill\Models\SkillCategory;
+use Illuminate\Database\Seeder;
 
 class SkillCategorySeeder extends Seeder
 {
@@ -22,11 +22,8 @@ class SkillCategorySeeder extends Seeder
             ['CategoryID' => 10, 'CategoryName' => 'الصحة والطب'],
         ];
 
-        SkillCategory::unguard();
-
         foreach ($categories as $category) {
-            SkillCategory::firstOrCreate(['CategoryName' => $category['CategoryName']], $category);
+            SkillCategory::firstOrCreate(['CategoryName' => $category['CategoryName']]);
         }
-        SkillCategory::reguard();
     }
 }

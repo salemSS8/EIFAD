@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Domain\User\Models\JobSeekerProfile;
+use App\Domain\Application\Models\JobApplication;
 use App\Domain\CV\Models\CV;
 use App\Domain\Job\Models\JobAd;
-use App\Domain\Application\Models\JobApplication;
+use App\Domain\User\Models\JobSeekerProfile;
+use Illuminate\Database\Seeder;
 
 class JobApplicationSeeder extends Seeder
 {
@@ -18,12 +18,11 @@ class JobApplicationSeeder extends Seeder
 
         $statuses = ['Pending', 'Reviewed', 'Interview', 'Accepted', 'Rejected'];
 
-        JobApplication::unguard();
-        $appId = 1;
-
         foreach ($jobSeekers as $seeker) {
             $cv = CV::where('JobSeekerID', $seeker->JobSeekerID)->first();
-            if (!$cv) continue;
+            if (! $cv) {
+                continue;
+            }
 
             // Each job seeker applies to 2-4 random jobs
             $randomJobs = $jobs->random(min(rand(2, 4), $jobs->count()));
@@ -32,7 +31,6 @@ class JobApplicationSeeder extends Seeder
                 JobApplication::firstOrCreate(
                     ['JobAdID' => $job->JobAdID, 'JobSeekerID' => $seeker->JobSeekerID],
                     [
-                        'ApplicationID' => $appId++,
                         'JobAdID' => $job->JobAdID,
                         'JobSeekerID' => $seeker->JobSeekerID,
                         'CVID' => $cv->CVID,
@@ -44,6 +42,5 @@ class JobApplicationSeeder extends Seeder
                 );
             }
         }
-        JobApplication::reguard();
     }
 }

@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Domain\User\Models\User;
 use App\Domain\User\Models\Role;
+use App\Domain\User\Models\User;
 use App\Domain\User\Models\UserRole;
+use Illuminate\Database\Seeder;
 
 class UserRoleSeeder extends Seeder
 {
@@ -15,15 +15,12 @@ class UserRoleSeeder extends Seeder
         $employerRole = Role::where('RoleName', 'Employer')->first();
         $jobSeekerRole = Role::where('RoleName', 'JobSeeker')->first();
 
-        UserRole::unguard();
-        $userRoleId = 1;
-
         // Assign Admin role to first user
         $admin = User::where('Email', 'admin@example.com')->first();
         if ($admin && $adminRole) {
             UserRole::firstOrCreate(
                 ['UserID' => $admin->UserID, 'RoleID' => $adminRole->RoleID],
-                ['UserRoleID' => $userRoleId++, 'AssignedAt' => now()]
+                ['AssignedAt' => now()]
             );
         }
 
@@ -34,7 +31,7 @@ class UserRoleSeeder extends Seeder
             if ($user && $employerRole) {
                 UserRole::firstOrCreate(
                     ['UserID' => $user->UserID, 'RoleID' => $employerRole->RoleID],
-                    ['UserRoleID' => $userRoleId++, 'AssignedAt' => now()]
+                    ['AssignedAt' => now()]
                 );
             }
         }
@@ -46,17 +43,16 @@ class UserRoleSeeder extends Seeder
             'omar.salem@email.com',
             'noura.khaled@email.com',
             'yasser.abdulrahman@email.com',
-            'huda.mohammed@email.com'
+            'huda.mohammed@email.com',
         ];
         foreach ($jobSeekers as $email) {
             $user = User::where('Email', $email)->first();
             if ($user && $jobSeekerRole) {
                 UserRole::firstOrCreate(
                     ['UserID' => $user->UserID, 'RoleID' => $jobSeekerRole->RoleID],
-                    ['UserRoleID' => $userRoleId++, 'AssignedAt' => now()]
+                    ['AssignedAt' => now()]
                 );
             }
         }
-        UserRole::reguard();
     }
 }

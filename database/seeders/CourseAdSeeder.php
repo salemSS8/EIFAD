@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Domain\Company\Models\CompanyProfile;
 use App\Domain\Course\Models\CourseAd;
+use Illuminate\Database\Seeder;
 
 class CourseAdSeeder extends Seeder
 {
@@ -13,7 +13,9 @@ class CourseAdSeeder extends Seeder
         // Only education company offers courses
         $eduCompany = CompanyProfile::where('CompanyName', 'أكاديمية المستقبل للتدريب')->first();
 
-        if (!$eduCompany) return;
+        if (! $eduCompany) {
+            return;
+        }
 
         $courses = [
             [
@@ -68,15 +70,11 @@ class CourseAdSeeder extends Seeder
             ],
         ];
 
-        CourseAd::unguard();
-        $courseAdId = 1;
-
         foreach ($courses as $course) {
             CourseAd::firstOrCreate(
                 ['CompanyID' => $eduCompany->CompanyID, 'CourseTitle' => $course['CourseTitle']],
-                array_merge(['CourseAdID' => $courseAdId++, 'CompanyID' => $eduCompany->CompanyID, 'CreatedAt' => now()], $course)
+                array_merge(['CompanyID' => $eduCompany->CompanyID, 'CreatedAt' => now()], $course)
             );
         }
-        CourseAd::reguard();
     }
 }

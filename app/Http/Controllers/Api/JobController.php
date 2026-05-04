@@ -275,7 +275,7 @@ class JobController extends Controller
 
         if ($latestCv && $latestCv->skills->isNotEmpty()) {
             $skillIds = $latestCv->skills->pluck('SkillID')->toArray();
-            
+
             // Suggest jobs that have at least one of the user's skills
             $query->whereHas('skills', function ($q) use ($skillIds) {
                 $q->whereIn('SkillID', $skillIds);
@@ -641,6 +641,46 @@ class JobController extends Controller
                 'last_page' => $recommendations->lastPage(),
                 'total' => $recommendations->total(),
             ],
+        ]);
+    }
+
+    /**
+     * Trigger AI Ranking for all applicants of a job.
+     * (Corresponds to "Rank with AI" button in the UI)
+     */
+    #[OA\Post(
+        path: '/employer/jobs/{id}/ai-rank',
+        operationId: 'triggerAiRanking',
+        tags: ['Employer', 'Jobs', 'AI Analytics'],
+        summary: 'Trigger AI ranking for applicants',
+        description: 'Triggers a fresh AI analysis and scoring for all candidates who have applied to this job.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, description: 'Job Ad ID', schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Ranking triggered')]
+    public function aiRankCandidates(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+        $company = $user->companyProfile;
+
+        if (! $company) {
+            return response()->json(['message' => 'Company profile not found'], 404);
+        }
+
+        $job = JobAd::with('applications')->where('JobAdID', $id)
+            ->where('CompanyID', $company->CompanyID)
+            ->firstOrFail();
+
+        $applications = $job->applications;
+
+        foreach ($applications as $app) {
+            // Dispatch evaluation job for each applicant
+            \App\Domain\Application\Jobs\EvaluateCandidateJob::dispatch($app);
+        }
+
+        return response()->json([
+            'message' => 'AI Ranking triggered for '.count($applications).' applicants. Please refresh the AI tab in a moment.',
+            'count' => count($applications),
         ]);
     }
 }

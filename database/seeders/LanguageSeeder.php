@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Domain\Skill\Models\Language;
+use Illuminate\Database\Seeder;
 
 class LanguageSeeder extends Seeder
 {
@@ -20,13 +20,10 @@ class LanguageSeeder extends Seeder
             ['LanguageID' => 8, 'LanguageName' => 'اليابانية'], // Japanese
         ];
 
-        Language::unguard();
         foreach ($languages as $language) {
             Language::firstOrCreate(
-                ['LanguageName' => $language['LanguageName']],
-                ['LanguageID' => $language['LanguageID']]
+                ['LanguageName' => $language['LanguageName']]
             );
         }
-        Language::reguard();
     }
 }

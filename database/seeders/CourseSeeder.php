@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Domain\Course\Models\Course;
+use Illuminate\Database\Seeder;
 
 class CourseSeeder extends Seeder
 {
@@ -24,10 +24,8 @@ class CourseSeeder extends Seeder
             ['CourseID' => 12, 'CourseName' => 'الموارد البشرية'],
         ];
 
-        Course::unguard();
         foreach ($courses as $course) {
-            Course::firstOrCreate(['CourseName' => $course['CourseName']], $course);
+            Course::firstOrCreate(['CourseName' => $course['CourseName']]);
         }
-        Course::reguard();
     }
 }

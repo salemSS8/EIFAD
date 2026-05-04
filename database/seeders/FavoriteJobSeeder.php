@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Domain\User\Models\JobSeekerProfile;
-use App\Domain\Job\Models\JobAd;
 use App\Domain\Job\Models\FavoriteJob;
+use App\Domain\Job\Models\JobAd;
+use App\Domain\User\Models\JobSeekerProfile;
+use Illuminate\Database\Seeder;
 
 class FavoriteJobSeeder extends Seeder
 {
@@ -13,9 +13,6 @@ class FavoriteJobSeeder extends Seeder
     {
         $jobSeekers = JobSeekerProfile::all();
         $jobs = JobAd::all();
-
-        FavoriteJob::unguard();
-        $favId = 1;
 
         foreach ($jobSeekers as $seeker) {
             // Each job seeker favorites 2-5 random jobs
@@ -25,7 +22,6 @@ class FavoriteJobSeeder extends Seeder
                 FavoriteJob::firstOrCreate(
                     ['JobSeekerID' => $seeker->JobSeekerID, 'JobAdID' => $job->JobAdID],
                     [
-                        'FavoriteID' => $favId++,
                         'JobSeekerID' => $seeker->JobSeekerID,
                         'JobAdID' => $job->JobAdID,
                         'SavedAt' => now()->subDays(rand(1, 30)),
@@ -33,6 +29,5 @@ class FavoriteJobSeeder extends Seeder
                 );
             }
         }
-        FavoriteJob::reguard();
     }
 }

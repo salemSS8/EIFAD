@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Domain\Company\Models\CompanySpecialization;
+use Illuminate\Database\Seeder;
 
 class CompanySpecializationSeeder extends Seeder
 {
@@ -22,10 +22,8 @@ class CompanySpecializationSeeder extends Seeder
             ['SpecID' => 10, 'SpecName' => 'النفط والغاز'],
         ];
 
-        CompanySpecialization::unguard();
         foreach ($specializations as $spec) {
-            CompanySpecialization::firstOrCreate(['SpecName' => $spec['SpecName']], $spec);
+            CompanySpecialization::firstOrCreate(['SpecName' => $spec['SpecName']]);
         }
-        CompanySpecialization::reguard();
     }
 }

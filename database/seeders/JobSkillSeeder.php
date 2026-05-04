@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Domain\Job\Models\JobAd;
 use App\Domain\Job\Models\JobSkill;
 use App\Domain\Skill\Models\Skill;
+use Illuminate\Database\Seeder;
 
 class JobSkillSeeder extends Seeder
 {
@@ -25,9 +25,6 @@ class JobSkillSeeder extends Seeder
 
         $levels = ['مبتدئ', 'متوسط', 'متقدم'];
 
-        JobSkill::unguard();
-        $jobSkillId = 1;
-
         foreach ($jobSkillMappings as $jobTitle => $skills) {
             $job = JobAd::where('Title', $jobTitle)->first();
             if ($job) {
@@ -37,7 +34,6 @@ class JobSkillSeeder extends Seeder
                         JobSkill::firstOrCreate(
                             ['JobAdID' => $job->JobAdID, 'SkillID' => $skill->SkillID],
                             [
-                                'JobSkillID' => $jobSkillId++,
                                 'JobAdID' => $job->JobAdID,
                                 'SkillID' => $skill->SkillID,
                                 'RequiredLevel' => $levels[min($index, 2)],
@@ -49,6 +45,5 @@ class JobSkillSeeder extends Seeder
                 }
             }
         }
-        JobSkill::reguard();
     }
 }

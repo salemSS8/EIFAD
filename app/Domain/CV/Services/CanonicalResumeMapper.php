@@ -7,7 +7,7 @@ use App\Domain\CV\Models\CV;
 
 /**
  * Canonical Resume Mapper - Transforms data to Canonical Model.
- * 
+ *
  * This mapper ensures all CV data is normalized before
  * being used by scoring, matching, or AI explanation jobs.
  */
@@ -45,17 +45,17 @@ class CanonicalResumeMapper
         $data = $affindaData['data'] ?? $affindaData;
 
         return new CanonicalResumeDTO(
-            fullName: $data['name']['raw'] ?? $data['name'] ?? null,
-            email: $this->extractFirst($data['emails'] ?? []),
-            phone: $this->extractFirst($data['phoneNumbers'] ?? []),
-            location: $data['location']['formatted'] ?? null,
-            linkedIn: $this->extractLinkedIn($data['websites'] ?? []),
-            professionalSummary: $data['summary'] ?? $data['objective'] ?? null,
-            skills: $this->mapAffindaSkills($data['skills'] ?? []),
+            fullName: $this->getString($data['candidateName'] ?? $data['name'] ?? null),
+            email: $this->extractFirst($data['email'] ?? $data['emails'] ?? []),
+            phone: $this->extractFirst($data['phoneNumber'] ?? $data['phoneNumbers'] ?? []),
+            location: $data['location']['parsed']['formatted'] ?? $data['location']['formatted'] ?? null,
+            linkedIn: $this->extractLinkedIn($data['website'] ?? $data['websites'] ?? []),
+            professionalSummary: $this->getString($data['summary'] ?? $data['objective'] ?? null),
+            skills: $this->mapAffindaSkills($data['skill'] ?? $data['skills'] ?? []),
             experiences: $this->mapAffindaExperiences($data['workExperience'] ?? []),
             education: $this->mapAffindaEducation($data['education'] ?? []),
             certifications: $this->mapAffindaCertifications($data['certifications'] ?? []),
-            languages: $this->mapAffindaLanguages($data['languages'] ?? []),
+            languages: $this->mapAffindaLanguages($data['language'] ?? $data['languages'] ?? []),
             sourceType: 'affinda',
             extractedAt: now()->toIso8601String(),
         );
@@ -64,7 +64,7 @@ class CanonicalResumeMapper
     /**
      * Map regex-parsed data to Canonical DTO.
      */
-    public function fromRegexParsedData(array $parsedData, string $rawContent = null): CanonicalResumeDTO
+    public function fromRegexParsedData(array $parsedData, ?string $rawContent = null): CanonicalResumeDTO
     {
         return CanonicalResumeDTO::fromArray([
             'personal_info' => $parsedData['personal_info'] ?? [],
@@ -84,7 +84,7 @@ class CanonicalResumeMapper
 
     private function mapSkills(CV $cv): array
     {
-        return $cv->skills->map(fn($cvSkill) => [
+        return $cv->skills->map(fn ($cvSkill) => [
             'name' => $cvSkill->skill->SkillName ?? null,
             'level' => $cvSkill->SkillLevel ?? null,
             'years' => null,
@@ -93,7 +93,7 @@ class CanonicalResumeMapper
 
     private function mapExperiences(CV $cv): array
     {
-        return $cv->experiences->map(fn($exp) => [
+        return $cv->experiences->map(fn ($exp) => [
             'job_title' => $exp->JobTitle,
             'company' => $exp->CompanyName,
             'start_date' => $exp->StartDate?->format('Y-m-d'),
@@ -106,7 +106,7 @@ class CanonicalResumeMapper
 
     private function mapEducation(CV $cv): array
     {
-        return $cv->education->map(fn($edu) => [
+        return $cv->education->map(fn ($edu) => [
             'degree' => $edu->DegreeName,
             'institution' => $edu->Institution,
             'major' => $edu->Major,
@@ -117,7 +117,7 @@ class CanonicalResumeMapper
 
     private function mapCertifications(CV $cv): array
     {
-        return $cv->courses->map(fn($course) => [
+        return $cv->courses->map(fn ($course) => [
             'name' => $course->course->CourseName ?? null,
             'issuer' => null,
             'date' => null,
@@ -126,7 +126,7 @@ class CanonicalResumeMapper
 
     private function mapLanguages(CV $cv): array
     {
-        return $cv->languages->map(fn($cvLang) => [
+        return $cv->languages->map(fn ($cvLang) => [
             'name' => $cvLang->language->LanguageName ?? null,
             'level' => $cvLang->LanguageLevel ?? null,
         ])->toArray();
@@ -138,42 +138,54 @@ class CanonicalResumeMapper
 
     private function mapAffindaSkills(array $skills): array
     {
-        return array_map(fn($skill) => [
-            'name' => $skill['name'] ?? $skill,
-            'level' => $skill['lastUsed'] ?? null,
-            'years' => $skill['numberOfMonths'] ? round($skill['numberOfMonths'] / 12, 1) : null,
-        ], $skills);
+        return array_map(function ($skill) {
+            $parsed = $skill['parsed'] ?? $skill;
+
+            return [
+                'name' => $parsed['name'] ?? $skill['raw'] ?? $skill,
+                'level' => $parsed['lastUsed'] ?? null,
+                'years' => ($parsed['numberOfMonths'] ?? null) ? round($parsed['numberOfMonths'] / 12, 1) : null,
+            ];
+        }, $skills);
     }
 
     private function mapAffindaExperiences(array $experiences): array
     {
-        return array_map(fn($exp) => [
-            'job_title' => $exp['jobTitle'] ?? null,
-            'company' => $exp['organization'] ?? null,
-            'start_date' => $exp['dates']['startDate'] ?? null,
-            'end_date' => $exp['dates']['endDate'] ?? null,
-            'is_current' => $exp['dates']['isCurrent'] ?? false,
-            'description' => $exp['jobDescription'] ?? null,
-            'location' => $exp['location']['formatted'] ?? null,
-        ], $experiences);
+        return array_map(function ($exp) {
+            $p = $exp['parsed'] ?? $exp;
+
+            return [
+                'job_title' => $this->getString($p['workExperienceJobTitle'] ?? $p['jobTitle'] ?? null),
+                'company' => $this->getString($p['workExperienceOrganization'] ?? $p['organization'] ?? null),
+                'start_date' => $p['workExperienceDates']['parsed']['start']['date'] ?? $p['dates']['startDate'] ?? null,
+                'end_date' => $p['workExperienceDates']['parsed']['end']['date'] ?? $p['dates']['endDate'] ?? null,
+                'is_current' => $p['workExperienceDates']['parsed']['end']['isCurrent'] ?? $p['dates']['isCurrent'] ?? false,
+                'description' => $this->getString($p['workExperienceDescription'] ?? $p['jobDescription'] ?? null),
+                'location' => $p['workExperienceLocation']['parsed']['formatted'] ?? $p['location']['formatted'] ?? null,
+            ];
+        }, $experiences);
     }
 
     private function mapAffindaEducation(array $education): array
     {
-        return array_map(fn($edu) => [
-            'degree' => $edu['accreditation']['education'] ?? null,
-            'institution' => $edu['organization'] ?? null,
-            'major' => $edu['accreditation']['inputStr'] ?? null,
-            'graduation_year' => isset($edu['dates']['completionDate'])
-                ? date('Y', strtotime($edu['dates']['completionDate']))
-                : null,
-            'gpa' => $edu['grade']['value'] ?? null,
-        ], $education);
+        return array_map(function ($edu) {
+            $p = $edu['parsed'] ?? $edu;
+
+            return [
+                'degree' => $this->getString($p['educationLevel'] ?? $p['accreditation']['education'] ?? null),
+                'institution' => $this->getString($p['educationOrganization'] ?? $p['organization'] ?? null),
+                'major' => $this->extractFirst($p['educationMajor'] ?? []) ?? $this->getString($p['accreditation']['inputStr'] ?? null),
+                'graduation_year' => $p['educationDates']['parsed']['end']['year'] ?? (isset($p['dates']['completionDate'])
+                    ? date('Y', strtotime($p['dates']['completionDate']))
+                    : null),
+                'gpa' => $p['educationGrade']['value'] ?? $p['grade']['value'] ?? null,
+            ];
+        }, $education);
     }
 
     private function mapAffindaCertifications(array $certifications): array
     {
-        return array_map(fn($cert) => [
+        return array_map(fn ($cert) => [
             'name' => $cert['name'] ?? null,
             'issuer' => null,
             'date' => null,
@@ -182,10 +194,14 @@ class CanonicalResumeMapper
 
     private function mapAffindaLanguages(array $languages): array
     {
-        return array_map(fn($lang) => [
-            'name' => $lang['name'] ?? $lang,
-            'level' => null,
-        ], $languages);
+        return array_map(function ($lang) {
+            $p = $lang['parsed'] ?? $lang;
+
+            return [
+                'name' => $this->getString($p['languageName'] ?? $p['name'] ?? $lang),
+                'level' => $this->getString($p['languageProficiency'] ?? null),
+            ];
+        }, $languages);
     }
 
     // =========================================================================
@@ -194,16 +210,37 @@ class CanonicalResumeMapper
 
     private function extractFirst(array $items): ?string
     {
-        return $items[0] ?? null;
+        $first = $items[0] ?? null;
+
+        return $this->getString($first);
     }
 
     private function extractLinkedIn(array $websites): ?string
     {
         foreach ($websites as $website) {
-            if (str_contains(strtolower($website), 'linkedin')) {
-                return $website;
+            $url = is_array($website) ? ($website['parsed']['url'] ?? $website['raw'] ?? '') : $website;
+            if (str_contains(strtolower($url), 'linkedin')) {
+                return $url;
             }
         }
+
+        return null;
+    }
+
+    private function getString(mixed $field): ?string
+    {
+        if ($field === null) {
+            return null;
+        }
+
+        if (is_string($field)) {
+            return $field;
+        }
+
+        if (is_array($field)) {
+            return $field['parsed'] ?? $field['raw'] ?? null;
+        }
+
         return null;
     }
 }

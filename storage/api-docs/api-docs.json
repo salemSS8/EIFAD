@@ -2059,8 +2059,19 @@
                     "CVs"
                 ],
                 "summary": "Get my CVs",
-                "description": "Returns a list of CVs created by the authenticated job seeker.",
+                "description": "Returns a list of CVs created by the authenticated job seeker. Use ?latest=true to get only the main/latest one.",
                 "operationId": "getCVs",
+                "parameters": [
+                    {
+                        "name": "latest",
+                        "in": "query",
+                        "description": "If true, returns only the main CV or the most recently created one in an array.",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "List of CVs"

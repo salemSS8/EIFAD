@@ -43,17 +43,31 @@ class CVController extends Controller
         operationId: 'getCVs',
         tags: ['CVs'],
         summary: 'Get my CVs',
-        description: 'Returns a list of CVs created by the authenticated job seeker.',
+        description: 'Returns a list of CVs created by the authenticated job seeker. Use ?latest=true to get only the main/latest one.',
         security: [['bearerAuth' => []]]
+    )]
+    #[OA\Parameter(
+        name: 'latest',
+        in: 'query',
+        description: 'If true, returns only the main CV or the most recently created one in an array.',
+        required: false,
+        schema: new OA\Schema(type: 'boolean')
     )]
     #[OA\Response(response: 200, description: 'List of CVs')]
     public function index(Request $request): JsonResponse
     {
         $jobSeekerProfile = $this->getJobSeekerProfile($request);
 
-        $cvs = CV::where('JobSeekerID', $jobSeekerProfile->JobSeekerID)
-            ->orderByDesc('CreatedAt')
-            ->get();
+        $query = CV::where('JobSeekerID', $jobSeekerProfile->JobSeekerID)
+            ->orderByDesc('IsMain')
+            ->orderByDesc('CreatedAt');
+
+        if ($request->boolean('latest')) {
+            $cv = $query->first();
+            return response()->json(['data' => $cv ? [$cv] : []]);
+        }
+
+        $cvs = $query->get();
 
         return response()->json(['data' => $cvs]);
     }

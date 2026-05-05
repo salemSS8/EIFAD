@@ -16,8 +16,11 @@ class CompanyVerificationController extends Controller
         path: '/employer/verify/documents',
         operationId: 'uploadVerificationDocuments',
         tags: ['Company Verification'],
-        summary: 'Upload verification documents',
-        description: 'Allows a company to upload verification files (PDF/Images) to a private storage.',
+        summary: 'Upload verification documents (Fixed Indices)',
+        description: 'Allows a company to upload verification files to specific fixed slots: Index 0, 1, or 2.
+        - Index 0: Commercial Register (السجل التجاري)
+        - Index 1: Tax Card (شهادة الضريبة)
+        - Index 2: Additional/ID (رخصة الشركة)',
         security: [['bearerAuth' => []]]
     )]
     #[OA\RequestBody(
@@ -28,10 +31,22 @@ class CompanyVerificationController extends Controller
                 required: ['documents'],
                 properties: [
                     new OA\Property(
-                        property: 'documents',
-                        type: 'array',
-                        items: new OA\Items(type: 'string', format: 'binary'),
-                        description: 'Verification files (PDF, JPG, PNG)'
+                        property: 'documents[0]',
+                        type: 'string',
+                        format: 'binary',
+                        description: 'Commercial Register (Index 0)'
+                    ),
+                    new OA\Property(
+                        property: 'documents[1]',
+                        type: 'string',
+                        format: 'binary',
+                        description: 'Tax Card (Index 1)'
+                    ),
+                    new OA\Property(
+                        property: 'documents[2]',
+                        type: 'string',
+                        format: 'binary',
+                        description: 'Additional/ID (Index 2)'
                     ),
                 ]
             )
@@ -41,8 +56,10 @@ class CompanyVerificationController extends Controller
     public function upload(Request $request): JsonResponse
     {
         $request->validate([
-            'documents' => 'required|array|min:1',
-            'documents.*' => 'required|file|mimes:pdf,jpg,png,jpeg|max:10240', // 10MB limit
+            'documents' => 'required|array',
+            'documents.0' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
+            'documents.1' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
+            'documents.2' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
         ]);
 
         $user = $request->user();
@@ -52,27 +69,47 @@ class CompanyVerificationController extends Controller
             return response()->json(['message' => 'Company profile not found'], 404);
         }
 
-        $uploadedPaths = $company->VerificationDocuments ?? [];
-
-        foreach ($request->file('documents') as $file) {
-            $path = $file->store('company_verifications/'.$company->CompanyID, 'local');
-            $uploadedPaths[] = [
-                'name' => $file->getClientOriginalName(),
-                'path' => $path,
-                'uploaded_at' => now()->toDateTimeString(),
-            ];
+        $documents = $company->VerificationDocuments ?? [];
+        
+        // Ensure it is an associative array (or object in JSON)
+        if (!is_array($documents)) {
+            $documents = [];
         }
 
-        $company->update([
-            'VerificationDocuments' => $uploadedPaths,
-            'VerificationStatus' => 'Pending',
-        ]);
+        $files = $request->file('documents');
+        $uploadedAny = false;
+
+        foreach ([0, 1, 2] as $index) {
+            if (isset($files[$index])) {
+                // Delete old file if exists
+                if (isset($documents[$index]['path'])) {
+                    \Illuminate\Support\Facades\Storage::disk('local')->delete($documents[$index]['path']);
+                }
+
+                $file = $files[$index];
+                $path = $file->store('company_verifications/'.$company->CompanyID, 'local');
+                
+                $documents[$index] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $path,
+                    'uploaded_at' => now()->toDateTimeString(),
+                ];
+                $uploadedAny = true;
+            }
+        }
+
+        if ($uploadedAny) {
+            $company->update([
+                'VerificationDocuments' => $documents,
+                'VerificationStatus' => 'Pending',
+            ]);
+        }
 
         return response()->json([
-            'message' => 'Documents uploaded successfully. Your verification is now pending.',
+            'message' => 'Documents uploaded successfully.',
             'data' => [
                 'status' => $company->VerificationStatus,
-                'documents_count' => count($uploadedPaths),
+                'documents' => $this->formatDocuments($company->VerificationDocuments),
             ],
         ]);
     }
@@ -85,7 +122,7 @@ class CompanyVerificationController extends Controller
         operationId: 'getVerificationStatus',
         tags: ['Company Verification'],
         summary: 'Get verification status and document list',
-        description: 'Returns the current verification status and a list of uploaded documents with access indices.',
+        description: 'Returns the current verification status and a list of uploaded documents with fixed indices (0, 1, 2).',
         security: [['bearerAuth' => []]]
     )]
     #[OA\Response(response: 200, description: 'Verification status details')]
@@ -97,23 +134,35 @@ class CompanyVerificationController extends Controller
             return response()->json(['message' => 'Company profile not found'], 404);
         }
 
-        $documents = collect($company->VerificationDocuments ?? [])->map(function ($doc, $index) {
-            return [
-                'index' => $index,
-                'name' => $doc['name'],
-                'uploaded_at' => $doc['uploaded_at'],
-                'url' => route('employer.verify.documents.serve', ['index' => $index]),
-            ];
-        });
-
         return response()->json([
             'data' => [
                 'is_verified' => $company->IsCompanyVerified,
                 'status' => $company->VerificationStatus,
                 'verified_at' => $company->VerifiedAt,
-                'documents' => $documents,
+                'documents' => $this->formatDocuments($company->VerificationDocuments),
             ],
         ]);
+    }
+
+    /**
+     * Helper to format documents with fixed indices.
+     */
+    private function formatDocuments(?array $documents): array
+    {
+        $result = [];
+        foreach ([0, 1, 2] as $index) {
+            if (isset($documents[$index])) {
+                $result[$index] = [
+                    'index' => $index,
+                    'name' => $documents[$index]['name'],
+                    'uploaded_at' => $documents[$index]['uploaded_at'],
+                    'url' => route('employer.verify.documents.serve', ['index' => $index]),
+                ];
+            } else {
+                $result[$index] = null;
+            }
+        }
+        return $result;
     }
 
     /**

@@ -3578,8 +3578,8 @@
                 "tags": [
                     "Company Verification"
                 ],
-                "summary": "Upload verification documents",
-                "description": "Allows a company to upload verification files (PDF/Images) to a private storage.",
+                "summary": "Upload verification documents (Fixed Indices)",
+                "description": "Allows a company to upload verification files to specific fixed slots: Index 0, 1, or 2.\n        - Index 0: Commercial Register (سجل تجاري)\n        - Index 1: Tax Card (بطاقة ضريبية)\n        - Index 2: Additional/ID (هوية أو مستند إضافي)",
                 "operationId": "uploadVerificationDocuments",
                 "requestBody": {
                     "required": true,
@@ -3590,13 +3590,20 @@
                                     "documents"
                                 ],
                                 "properties": {
-                                    "documents": {
-                                        "description": "Verification files (PDF, JPG, PNG)",
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string",
-                                            "format": "binary"
-                                        }
+                                    "documents[0]": {
+                                        "description": "Commercial Register (Index 0)",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "documents[1]": {
+                                        "description": "Tax Card (Index 1)",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "documents[2]": {
+                                        "description": "Additional/ID (Index 2)",
+                                        "type": "string",
+                                        "format": "binary"
                                     }
                                 },
                                 "type": "object"
@@ -3622,7 +3629,7 @@
                     "Company Verification"
                 ],
                 "summary": "Get verification status and document list",
-                "description": "Returns the current verification status and a list of uploaded documents with access indices.",
+                "description": "Returns the current verification status and a list of uploaded documents with fixed indices (0, 1, 2).",
                 "operationId": "getVerificationStatus",
                 "responses": {
                     "200": {

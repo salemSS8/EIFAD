@@ -16,11 +16,14 @@ class JobApplication extends Model
 
     public $timestamps = false;
 
+    protected $hidden = [
+        'CV',
+    ];
+
     protected $fillable = [
         'JobAdID',
         'JobSeekerID',
         'CVID',
-        'CV',
         'JobSeekerName',
         'JobSeekerEmail',
         'JobSeekerPhone',
@@ -61,7 +64,7 @@ class JobApplication extends Model
     /**
      * Get the CV used in this application.
      */
-    public function cv(): BelongsTo
+    public function cvDetails(): BelongsTo
     {
         return $this->belongsTo(\App\Domain\CV\Models\CV::class, 'CVID', 'CVID');
     }

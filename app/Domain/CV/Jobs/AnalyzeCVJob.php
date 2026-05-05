@@ -56,21 +56,10 @@ class AnalyzeCVJob implements ShouldQueue
                 return;
             }
 
-            // If user already has other CVs, skip Affinda parsing and just re-score
-            if ($user->jobSeekerProfile->cvs()->where('CVID', '!=', $this->cv->CVID)->exists()) {
-                Log::info('AnalyzeCVJob: User already has CVs, skipping parse — scoring only', [
-                    'cv_id' => $this->cv->CVID,
-                ]);
+            // Check if parsing is needed
+            $needsParsing = $this->cv->FilePath && ! $this->cv->ParsedAt;
 
-                $scoreJob = new ScoreCvRuleBasedJob($this->cv->fresh());
-                $rubric = app(\App\Domain\CV\Services\CvScoringRubric::class);
-                $scoreResult = $scoreJob->handle($rubric);
-
-                Log::info('AnalyzeCVJob: Rule-based scoring completed', [
-                    'cv_id' => $this->cv->CVID,
-                    'total_score' => $scoreResult['total_score'] ?? 'N/A',
-                ]);
-            } else {
+            if ($needsParsing) {
                 // Step 1: Parse CV (Extract structured data - NO AI)
                 $parseJob = new ParseCvJob($this->cv);
                 $affindaParser = app(\App\Domain\CV\Services\AffindaResumeParser::class);
@@ -84,17 +73,23 @@ class AnalyzeCVJob implements ShouldQueue
                     ]);
                     // Continue anyway, scoring can work with existing data
                 }
-
-                // Step 2: Score CV (Rule-based scoring - NO AI)
-                $scoreJob = new ScoreCvRuleBasedJob($this->cv->fresh());
-                $rubric = app(\App\Domain\CV\Services\CvScoringRubric::class);
-                $scoreResult = $scoreJob->handle($rubric);
-
-                Log::info('AnalyzeCVJob: Rule-based scoring completed', [
+            } else {
+                Log::info('AnalyzeCVJob: Skipping parse (no file or already parsed)', [
                     'cv_id' => $this->cv->CVID,
-                    'total_score' => $scoreResult['total_score'] ?? 'N/A',
+                    'has_file' => (bool) $this->cv->FilePath,
+                    'already_parsed' => (bool) $this->cv->ParsedAt,
                 ]);
             }
+
+            // Step 2: Score CV (Rule-based scoring - NO AI)
+            $scoreJob = new ScoreCvRuleBasedJob($this->cv->fresh());
+            $rubric = app(\App\Domain\CV\Services\CvScoringRubric::class);
+            $scoreResult = $scoreJob->handle($rubric);
+
+            Log::info('AnalyzeCVJob: Rule-based scoring completed', [
+                'cv_id' => $this->cv->CVID,
+                'total_score' => $scoreResult['total_score'] ?? 'N/A',
+            ]);
 
             // Step 3: Explain with AI (Optional - TEXT ONLY)
             if (! $this->skipExplanation) {

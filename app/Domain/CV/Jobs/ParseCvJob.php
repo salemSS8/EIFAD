@@ -396,10 +396,35 @@ class ParseCvJob implements ShouldQueue
             ]);
         }
 
+        // Persist Education
+        foreach ($resume->education as $eduData) {
+            Education::create([
+                'CVID' => $cvId,
+                'Institution' => $eduData['institution'] ?? null,
+                'DegreeName' => $eduData['degree'] ?? null,
+                'Major' => $eduData['major'] ?? null,
+                'GraduationYear' => $eduData['graduation_year'] ?? null,
+            ]);
+        }
+
+        // Persist Experience
+        foreach ($resume->experiences as $expData) {
+            Experience::create([
+                'CVID' => $cvId,
+                'JobTitle' => $expData['job_title'] ?? null,
+                'CompanyName' => $expData['company'] ?? null,
+                'StartDate' => $expData['start_date'] ?? null,
+                'EndDate' => $expData['end_date'] ?? null,
+                'Responsibilities' => $expData['description'] ?? null,
+            ]);
+        }
+
         Log::info('ParseCvJob: Canonical data persisted', [
             'cv_id' => $cvId,
             'skills_count' => count($resume->skills),
             'languages_count' => count($resume->languages),
+            'education_count' => count($resume->education),
+            'experience_count' => count($resume->experiences),
         ]);
     }
 }

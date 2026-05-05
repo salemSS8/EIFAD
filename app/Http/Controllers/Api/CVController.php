@@ -109,6 +109,8 @@ class CVController extends Controller
             properties: [
                 new OA\Property(property: 'title', type: 'string', example: 'Full Stack Developer CV'),
                 new OA\Property(property: 'personal_summary', type: 'string'),
+                new OA\Property(property: 'file', type: 'string', format: 'binary', description: 'Optional CV file to parse'),
+                new OA\Property(property: 'is_main', type: 'boolean', example: true),
             ]
         )
     )]
@@ -118,14 +120,38 @@ class CVController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'personal_summary' => 'nullable|string',
+            'file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'is_main' => 'nullable|boolean',
         ]);
 
         $jobSeekerProfile = $this->getJobSeekerProfile($request);
+        $isMain = $request->boolean('is_main', false);
+
+        // If this is the first CV, it should be main by default
+        if ($jobSeekerProfile->cvs()->count() === 0) {
+            $isMain = true;
+        }
+
+        // Handle file upload
+        $filePath = null;
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $filePath = $file->store('resumes', 'local');
+        }
+
+        if ($isMain) {
+            // Unset other main CVs
+            CV::where('JobSeekerID', $jobSeekerProfile->JobSeekerID)
+                ->where('IsMain', true)
+                ->update(['IsMain' => false]);
+        }
 
         $cv = CV::create([
             'JobSeekerID' => $jobSeekerProfile->JobSeekerID,
             'Title' => $request->input('title'),
             'PersonalSummary' => $request->input('personal_summary'),
+            'FilePath' => $filePath,
+            'IsMain' => $isMain,
             'CreatedAt' => now(),
             'UpdatedAt' => now(),
         ]);
@@ -135,7 +161,12 @@ class CVController extends Controller
 
         return response()->json([
             'message' => 'CV created successfully',
-            'data' => $cv,
+            'data' => $cv->fresh([
+                'skills.skill',
+                'languages.language',
+                'education',
+                'experiences',
+            ]),
         ], 201);
     }
 

@@ -22,6 +22,11 @@ class CV extends Model
         'JobSeekerID',
         'Title',
         'PersonalSummary',
+        'FilePath',
+        'IsMain',
+        'ParsedContent',
+        'ParsingMethod',
+        'ParsedAt',
         'CreatedAt',
         'UpdatedAt',
     ];

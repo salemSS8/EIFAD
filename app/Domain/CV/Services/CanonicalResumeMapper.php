@@ -238,7 +238,15 @@ class CanonicalResumeMapper
         }
 
         if (is_array($field)) {
-            return $field['parsed'] ?? $field['raw'] ?? null;
+            // Try parsed first if it's a string
+            if (isset($field['parsed']) && is_string($field['parsed'])) {
+                return $field['parsed'];
+            }
+
+            // Fallback to raw if it's a string
+            if (isset($field['raw']) && is_string($field['raw'])) {
+                return $field['raw'];
+            }
         }
 
         return null;

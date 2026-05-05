@@ -28,18 +28,10 @@ class CompanyVerificationController extends Controller
         content: new OA\MediaType(
             mediaType: 'multipart/form-data',
             schema: new OA\Schema(
-                required: ['documents'],
                 properties: [
-                    new OA\Property(
-                        property: 'documents',
-                        description: 'Object containing files indexed by 0, 1, or 2.',
-                        type: 'object',
-                        properties: [
-                            new OA\Property(property: '0', type: 'string', format: 'binary', description: 'Commercial Register'),
-                            new OA\Property(property: '1', type: 'string', format: 'binary', description: 'Tax Card'),
-                            new OA\Property(property: '2', type: 'string', format: 'binary', description: 'Additional/ID'),
-                        ]
-                    ),
+                    new OA\Property(property: 'document_0', type: 'string', format: 'binary', description: 'Commercial Register (Index 0)'),
+                    new OA\Property(property: 'document_1', type: 'string', format: 'binary', description: 'Tax Card (Index 1)'),
+                    new OA\Property(property: 'document_2', type: 'string', format: 'binary', description: 'Additional/ID (Index 2)'),
                 ]
             )
         )
@@ -48,10 +40,13 @@ class CompanyVerificationController extends Controller
     public function upload(Request $request): JsonResponse
     {
         $request->validate([
-            'documents' => 'required|array',
+            'documents' => 'nullable|array',
             'documents.0' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
             'documents.1' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
             'documents.2' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
+            'document_0' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
+            'document_1' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
+            'document_2' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
         ]);
 
         $user = $request->user();
@@ -62,23 +57,20 @@ class CompanyVerificationController extends Controller
         }
 
         $documents = $company->VerificationDocuments ?? [];
-        
-        // Ensure it is an associative array (or object in JSON)
-        if (!is_array($documents)) {
-            $documents = [];
-        }
+        if (!is_array($documents)) { $documents = []; }
 
-        $files = $request->file('documents');
         $uploadedAny = false;
 
         foreach ([0, 1, 2] as $index) {
-            if (isset($files[$index])) {
+            // Check both documents[index] and document_index for compatibility
+            $file = $request->file("documents.$index") ?? $request->file("document_$index");
+
+            if ($file) {
                 // Delete old file if exists
                 if (isset($documents[$index]['path'])) {
                     \Illuminate\Support\Facades\Storage::disk('local')->delete($documents[$index]['path']);
                 }
 
-                $file = $files[$index];
                 $path = $file->store('company_verifications/'.$company->CompanyID, 'local');
                 
                 $documents[$index] = [

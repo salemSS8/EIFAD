@@ -3586,30 +3586,21 @@
                     "content": {
                         "multipart/form-data": {
                             "schema": {
-                                "required": [
-                                    "documents"
-                                ],
                                 "properties": {
-                                    "documents": {
-                                        "description": "Object containing files indexed by 0, 1, or 2.",
-                                        "properties": {
-                                            "0": {
-                                                "description": "Commercial Register",
-                                                "type": "string",
-                                                "format": "binary"
-                                            },
-                                            "1": {
-                                                "description": "Tax Card",
-                                                "type": "string",
-                                                "format": "binary"
-                                            },
-                                            "2": {
-                                                "description": "Additional/ID",
-                                                "type": "string",
-                                                "format": "binary"
-                                            }
-                                        },
-                                        "type": "object"
+                                    "document_0": {
+                                        "description": "Commercial Register (Index 0)",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "document_1": {
+                                        "description": "Tax Card (Index 1)",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "document_2": {
+                                        "description": "Additional/ID (Index 2)",
+                                        "type": "string",
+                                        "format": "binary"
                                     }
                                 },
                                 "type": "object"

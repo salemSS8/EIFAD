@@ -2082,7 +2082,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "multipart/form-data": {
                             "schema": {
                                 "required": [
                                     "title"
@@ -2094,6 +2094,15 @@
                                     },
                                     "personal_summary": {
                                         "type": "string"
+                                    },
+                                    "file": {
+                                        "description": "Optional CV file to parse",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "is_main": {
+                                        "type": "boolean",
+                                        "example": true
                                     }
                                 },
                                 "type": "object"
@@ -5158,6 +5167,44 @@
                                                 }
                                             },
                                             "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string",
+                                                    "example": "admin"
+                                                },
+                                                "data": {
+                                                    "properties": {
+                                                        "AdminID": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "FullName": {
+                                                            "type": "string",
+                                                            "example": "Admin User"
+                                                        },
+                                                        "Email": {
+                                                            "type": "string",
+                                                            "example": "admin@example.com"
+                                                        },
+                                                        "EmployeeID": {
+                                                            "type": "string",
+                                                            "example": "ADM-001"
+                                                        },
+                                                        "Department": {
+                                                            "type": "string",
+                                                            "example": "IT"
+                                                        },
+                                                        "Position": {
+                                                            "type": "string",
+                                                            "example": "System Administrator"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     ]
                                 }
@@ -5248,6 +5295,33 @@
                                                 "type": "integer"
                                             },
                                             "field_of_work": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    },
+                                    {
+                                        "description": "Admin Profile",
+                                        "properties": {
+                                            "full_name": {
+                                                "type": "string"
+                                            },
+                                            "email": {
+                                                "type": "string"
+                                            },
+                                            "phone": {
+                                                "type": "string"
+                                            },
+                                            "employee_id": {
+                                                "type": "string"
+                                            },
+                                            "department": {
+                                                "type": "string"
+                                            },
+                                            "position": {
+                                                "type": "string"
+                                            },
+                                            "internal_notes": {
                                                 "type": "string"
                                             }
                                         },
@@ -5346,6 +5420,33 @@
                                                 "type": "integer"
                                             },
                                             "field_of_work": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    },
+                                    {
+                                        "description": "Admin Profile",
+                                        "properties": {
+                                            "full_name": {
+                                                "type": "string"
+                                            },
+                                            "email": {
+                                                "type": "string"
+                                            },
+                                            "phone": {
+                                                "type": "string"
+                                            },
+                                            "employee_id": {
+                                                "type": "string"
+                                            },
+                                            "department": {
+                                                "type": "string"
+                                            },
+                                            "position": {
+                                                "type": "string"
+                                            },
+                                            "internal_notes": {
                                                 "type": "string"
                                             }
                                         },

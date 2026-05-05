@@ -104,14 +104,17 @@ class CVController extends Controller
     )]
     #[OA\RequestBody(
         required: true,
-        content: new OA\JsonContent(
-            required: ['title'],
-            properties: [
-                new OA\Property(property: 'title', type: 'string', example: 'Full Stack Developer CV'),
-                new OA\Property(property: 'personal_summary', type: 'string'),
-                new OA\Property(property: 'file', type: 'string', format: 'binary', description: 'Optional CV file to parse'),
-                new OA\Property(property: 'is_main', type: 'boolean', example: true),
-            ]
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(
+                required: ['title'],
+                properties: [
+                    new OA\Property(property: 'title', type: 'string', example: 'Full Stack Developer CV'),
+                    new OA\Property(property: 'personal_summary', type: 'string'),
+                    new OA\Property(property: 'file', type: 'string', format: 'binary', description: 'Optional CV file to parse'),
+                    new OA\Property(property: 'is_main', type: 'boolean', example: true),
+                ]
+            )
         )
     )]
     #[OA\Response(response: 201, description: 'CV created successfully')]

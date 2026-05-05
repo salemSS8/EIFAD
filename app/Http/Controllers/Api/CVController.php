@@ -124,11 +124,11 @@ class CVController extends Controller
             'title' => 'required|string|max:255',
             'personal_summary' => 'nullable|string',
             'file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
-            'is_main' => 'nullable|boolean',
+            'is_main' => 'nullable',
         ]);
 
         $jobSeekerProfile = $this->getJobSeekerProfile($request);
-        $isMain = $request->boolean('is_main', false);
+        $isMain = filter_var($request->input('is_main', false), FILTER_VALIDATE_BOOLEAN);
 
         // If this is the first CV, it should be main by default
         if ($jobSeekerProfile->cvs()->count() === 0) {

@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Domain\User\Models\User;
 use App\Domain\User\Models\Role;
+use App\Domain\User\Models\User;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-
 /**
  * Admin Controller - Manages users for system administrators.
  * User Story: Add & Update & Block User for Manager
@@ -28,7 +27,7 @@ class AdminController extends Controller
      */
     private function ensureIsAdmin(Request $request)
     {
-        if (!$request->user()->roles()->where('RoleName', 'Admin')->exists()) {
+        if (! $request->user()->roles()->where('RoleName', 'Admin')->exists()) {
             abort(403, 'Unauthorized access');
         }
     }
@@ -37,17 +36,17 @@ class AdminController extends Controller
      * Get all users with pagination and filters.
      */
     #[OA\Get(
-        path: "/admin/users",
-        operationId: "getUsers",
-        tags: ["Admin"],
-        summary: "Get all users",
-        description: "Returns a paginated list of users with optional filtering.",
-        security: [["bearerAuth" => []]]
+        path: '/admin/users',
+        operationId: 'getUsers',
+        tags: ['Admin'],
+        summary: 'Get all users',
+        description: 'Returns a paginated list of users with optional filtering.',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "search", in: "query", description: "Search by name or email", required: false, schema: new OA\Schema(type: "string"))]
-    #[OA\Parameter(name: "role", in: "query", description: "Filter by role (JobSeeker, Employer, Admin)", required: false, schema: new OA\Schema(type: "string"))]
-    #[OA\Parameter(name: "status", in: "query", description: "Filter by status (active, blocked, unverified)", required: false, schema: new OA\Schema(type: "string"))]
-    #[OA\Response(response: 200, description: "List of users")]
+    #[OA\Parameter(name: 'search', in: 'query', description: 'Search by name or email', required: false, schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'role', in: 'query', description: 'Filter by role (JobSeeker, Employer, Admin)', required: false, schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'status', in: 'query', description: 'Filter by status (active, blocked, unverified)', required: false, schema: new OA\Schema(type: 'string'))]
+    #[OA\Response(response: 200, description: 'List of users')]
     public function index(Request $request): JsonResponse
     {
         $this->ensureIsAdmin($request);
@@ -89,14 +88,14 @@ class AdminController extends Controller
      * Get a specific user details.
      */
     #[OA\Get(
-        path: "/admin/users/{id}",
-        operationId: "getUserDetails",
-        tags: ["Admin"],
-        summary: "Get user details",
-        security: [["bearerAuth" => []]]
+        path: '/admin/users/{id}',
+        operationId: 'getUserDetails',
+        tags: ['Admin'],
+        summary: 'Get user details',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
-    #[OA\Response(response: 200, description: "User details")]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'User details')]
     public function show(Request $request, int $id): JsonResponse
     {
         $this->ensureIsAdmin($request);
@@ -111,26 +110,26 @@ class AdminController extends Controller
      * Create a new user (by admin).
      */
     #[OA\Post(
-        path: "/admin/users",
-        operationId: "createUser",
-        tags: ["Admin"],
-        summary: "Create a new user",
-        security: [["bearerAuth" => []]]
+        path: '/admin/users',
+        operationId: 'createUser',
+        tags: ['Admin'],
+        summary: 'Create a new user',
+        security: [['bearerAuth' => []]]
     )]
     #[OA\RequestBody(
         required: true,
         content: new OA\JsonContent(
-            required: ["full_name", "email", "password", "role"],
+            required: ['full_name', 'email', 'password', 'role'],
             properties: [
-                new OA\Property(property: "full_name", type: "string"),
-                new OA\Property(property: "email", type: "string"),
-                new OA\Property(property: "password", type: "string"),
-                new OA\Property(property: "role", type: "string", enum: ["JobSeeker", "Employer", "Admin"]),
-                new OA\Property(property: "phone", type: "string"),
+                new OA\Property(property: 'full_name', type: 'string'),
+                new OA\Property(property: 'email', type: 'string'),
+                new OA\Property(property: 'password', type: 'string'),
+                new OA\Property(property: 'role', type: 'string', enum: ['JobSeeker', 'Employer', 'Admin']),
+                new OA\Property(property: 'phone', type: 'string'),
             ]
         )
     )]
-    #[OA\Response(response: 201, description: "User created successfully")]
+    #[OA\Response(response: 201, description: 'User created successfully')]
     public function store(Request $request): JsonResponse
     {
         $this->ensureIsAdmin($request);
@@ -180,6 +179,12 @@ class AdminController extends Controller
                 DB::table('companyprofile')->insert([
                     'CompanyID' => $user->UserID,
                 ]);
+            } elseif ($roleName === 'Admin') {
+                DB::table('adminprofile')->insert([
+                    'AdminID' => $user->UserID,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
             }
 
             return response()->json([
@@ -193,25 +198,25 @@ class AdminController extends Controller
      * Update user information.
      */
     #[OA\Put(
-        path: "/admin/users/{id}",
-        operationId: "updateUser",
-        tags: ["Admin"],
-        summary: "Update user details",
-        security: [["bearerAuth" => []]]
+        path: '/admin/users/{id}',
+        operationId: 'updateUser',
+        tags: ['Admin'],
+        summary: 'Update user details',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
     #[OA\RequestBody(
         required: true,
         content: new OA\JsonContent(
             properties: [
-                new OA\Property(property: "full_name", type: "string"),
-                new OA\Property(property: "email", type: "string"),
-                new OA\Property(property: "phone", type: "string"),
-                new OA\Property(property: "is_verified", type: "boolean"),
+                new OA\Property(property: 'full_name', type: 'string'),
+                new OA\Property(property: 'email', type: 'string'),
+                new OA\Property(property: 'phone', type: 'string'),
+                new OA\Property(property: 'is_verified', type: 'boolean'),
             ]
         )
     )]
-    #[OA\Response(response: 200, description: "User updated successfully")]
+    #[OA\Response(response: 200, description: 'User updated successfully')]
     public function update(Request $request, int $id): JsonResponse
     {
         $this->ensureIsAdmin($request);
@@ -219,7 +224,7 @@ class AdminController extends Controller
 
         $request->validate([
             'full_name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:user,Email,' . $id . ',UserID',
+            'email' => 'sometimes|email|unique:user,Email,'.$id.',UserID',
             'phone' => 'nullable|string|max:20',
             'is_verified' => 'sometimes|boolean',
         ]);
@@ -255,23 +260,23 @@ class AdminController extends Controller
      * Block a user.
      */
     #[OA\Post(
-        path: "/admin/users/{id}/block",
-        operationId: "blockUser",
-        tags: ["Admin"],
-        summary: "Block a user",
-        security: [["bearerAuth" => []]]
+        path: '/admin/users/{id}/block',
+        operationId: 'blockUser',
+        tags: ['Admin'],
+        summary: 'Block a user',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
     #[OA\RequestBody(
         required: true,
         content: new OA\JsonContent(
-            required: ["reason"],
+            required: ['reason'],
             properties: [
-                new OA\Property(property: "reason", type: "string"),
+                new OA\Property(property: 'reason', type: 'string'),
             ]
         )
     )]
-    #[OA\Response(response: 200, description: "User blocked successfully")]
+    #[OA\Response(response: 200, description: 'User blocked successfully')]
     public function block(Request $request, int $id): JsonResponse
     {
         $this->ensureIsAdmin($request);
@@ -309,20 +314,20 @@ class AdminController extends Controller
      * Unblock a user.
      */
     #[OA\Post(
-        path: "/admin/users/{id}/unblock",
-        operationId: "unblockUser",
-        tags: ["Admin"],
-        summary: "Unblock a user",
-        security: [["bearerAuth" => []]]
+        path: '/admin/users/{id}/unblock',
+        operationId: 'unblockUser',
+        tags: ['Admin'],
+        summary: 'Unblock a user',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))]
-    #[OA\Response(response: 200, description: "User unblocked successfully")]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'User unblocked successfully')]
     public function unblock(Request $request, int $id): JsonResponse
     {
         $this->ensureIsAdmin($request);
         $user = User::where('UserID', $id)->firstOrFail();
 
-        if (!$user->IsBlocked) {
+        if (! $user->IsBlocked) {
             return response()->json([
                 'message' => 'المستخدم غير محظور',
             ], 422);
@@ -344,20 +349,20 @@ class AdminController extends Controller
      * Get user statistics.
      */
     #[OA\Get(
-        path: "/admin/users/statistics",
-        operationId: "getStatistics",
-        tags: ["Admin"],
-        summary: "Get system statistics",
-        security: [["bearerAuth" => []]]
+        path: '/admin/users/statistics',
+        operationId: 'getStatistics',
+        tags: ['Admin'],
+        summary: 'Get system statistics',
+        security: [['bearerAuth' => []]]
     )]
-    #[OA\Response(response: 200, description: "System statistics")]
+    #[OA\Response(response: 200, description: 'System statistics')]
     public function statistics(Request $request): JsonResponse
     {
         $this->ensureIsAdmin($request);
         $stats = [
             'total_users' => User::count(),
-            'job_seekers' => User::whereHas('roles', fn($q) => $q->where('RoleName', 'JobSeeker'))->count(),
-            'employers' => User::whereHas('roles', fn($q) => $q->where('RoleName', 'Employer'))->count(),
+            'job_seekers' => User::whereHas('roles', fn ($q) => $q->where('RoleName', 'JobSeeker'))->count(),
+            'employers' => User::whereHas('roles', fn ($q) => $q->where('RoleName', 'Employer'))->count(),
             'verified_users' => User::where('IsVerified', true)->count(),
             'blocked_users' => User::where('IsBlocked', true)->count(),
             'new_users_today' => User::whereDate('CreatedAt', today())->count(),

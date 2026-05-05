@@ -58,6 +58,20 @@ class ProfileController extends Controller
                         ], type: 'object'),
                     ]
                 ),
+                // مبرمج النوكست سيشوف هذا الجزء لو كان النوع أدمن
+                new OA\Schema(
+                    properties: [
+                        new OA\Property(property: 'type', type: 'string', example: 'admin'),
+                        new OA\Property(property: 'data', properties: [
+                            new OA\Property(property: 'AdminID', type: 'integer', example: 1),
+                            new OA\Property(property: 'FullName', type: 'string', example: 'Admin User'),
+                            new OA\Property(property: 'Email', type: 'string', example: 'admin@example.com'),
+                            new OA\Property(property: 'EmployeeID', type: 'string', example: 'ADM-001'),
+                            new OA\Property(property: 'Department', type: 'string', example: 'IT'),
+                            new OA\Property(property: 'Position', type: 'string', example: 'System Administrator'),
+                        ], type: 'object'),
+                    ]
+                ),
             ]
         )
     )]
@@ -89,6 +103,24 @@ class ProfileController extends Controller
             return response()->json([
                 'type' => 'company',
                 'data' => $profile?->load('specializations'),
+            ]);
+        }
+
+        if ($role?->RoleName === 'Admin') {
+            $profile = $user->adminprofile;
+
+            return response()->json([
+                'type' => 'admin',
+                'data' => [
+                    'AdminID' => $user->UserID,
+                    'FullName' => $user->FullName,
+                    'Email' => $user->Email,
+                    'Phone' => $user->Phone,
+                    'EmployeeID' => $profile?->EmployeeID,
+                    'Department' => $profile?->Department,
+                    'Position' => $profile?->Position,
+                    'InternalNotes' => $profile?->InternalNotes,
+                ],
             ]);
         }
 
@@ -160,6 +192,19 @@ class ProfileController extends Controller
             ]);
         }
 
+        if ($role?->RoleName === 'Admin') {
+            return response()->json([
+                'type' => 'admin',
+                'data' => [
+                    'total_users' => \App\Domain\User\Models\User::count(),
+                    'job_seekers' => \App\Domain\User\Models\User::whereHas('roles', fn ($q) => $q->where('RoleName', 'JobSeeker'))->count(),
+                    'employers' => \App\Domain\User\Models\User::whereHas('roles', fn ($q) => $q->where('RoleName', 'Employer'))->count(),
+                    'active_jobs' => \App\Domain\Job\Models\JobAd::where('Status', 'Active')->count(),
+                    'total_applications' => \App\Domain\Application\Models\JobApplication::count(),
+                ],
+            ]);
+        }
+
         return response()->json(['message' => 'Profile not found'], 404);
     }
 
@@ -207,6 +252,18 @@ class ProfileController extends Controller
                         new OA\Property(property: 'field_of_work', type: 'string'),
                     ]
                 ),
+                new OA\Schema(
+                    description: 'Admin Profile',
+                    properties: [
+                        new OA\Property(property: 'full_name', type: 'string'),
+                        new OA\Property(property: 'email', type: 'string'),
+                        new OA\Property(property: 'phone', type: 'string'),
+                        new OA\Property(property: 'employee_id', type: 'string'),
+                        new OA\Property(property: 'department', type: 'string'),
+                        new OA\Property(property: 'position', type: 'string'),
+                        new OA\Property(property: 'internal_notes', type: 'string'),
+                    ]
+                ),
             ]
         )
     )]
@@ -240,6 +297,10 @@ class ProfileController extends Controller
 
         if ($role?->RoleName === 'Employer') {
             return $this->updateCompanyProfile($request, $user);
+        }
+
+        if ($role?->RoleName === 'Admin') {
+            return $this->updateAdminProfile($request, $user);
         }
 
         return response()->json(['message' => 'Unknown role'], 400);
@@ -287,6 +348,18 @@ class ProfileController extends Controller
                         new OA\Property(property: 'established_year', type: 'integer'),
                         new OA\Property(property: 'employee_count', type: 'integer'),
                         new OA\Property(property: 'field_of_work', type: 'string'),
+                    ]
+                ),
+                new OA\Schema(
+                    description: 'Admin Profile',
+                    properties: [
+                        new OA\Property(property: 'full_name', type: 'string'),
+                        new OA\Property(property: 'email', type: 'string'),
+                        new OA\Property(property: 'phone', type: 'string'),
+                        new OA\Property(property: 'employee_id', type: 'string'),
+                        new OA\Property(property: 'department', type: 'string'),
+                        new OA\Property(property: 'position', type: 'string'),
+                        new OA\Property(property: 'internal_notes', type: 'string'),
                     ]
                 ),
             ]
@@ -363,6 +436,34 @@ class ProfileController extends Controller
     }
 
     /**
+     * Update admin profile.
+     */
+    private function updateAdminProfile(Request $request, $user): JsonResponse
+    {
+        $request->validate([
+            'employee_id' => 'nullable|string|max:255',
+            'department' => 'nullable|string|max:255',
+            'position' => 'nullable|string|max:255',
+            'internal_notes' => 'nullable|string',
+        ]);
+
+        $profile = \App\Domain\User\Models\AdminProfile::updateOrCreate(
+            ['AdminID' => $user->UserID],
+            [
+                'EmployeeID' => $request->input('employee_id'),
+                'Department' => $request->input('department'),
+                'Position' => $request->input('position'),
+                'InternalNotes' => $request->input('internal_notes'),
+            ]
+        );
+
+        return response()->json([
+            'message' => 'Admin profile updated successfully',
+            'data' => $profile,
+        ]);
+    }
+
+    /**
      * Delete current user's profile.
      * User Story: Create & Update & Delete Profile
      */
@@ -413,6 +514,17 @@ class ProfileController extends Controller
 
             return response()->json([
                 'message' => 'تم حذف ملف الشركة بنجاح',
+            ]);
+        }
+
+        if ($role?->RoleName === 'Admin') {
+            $profile = $user->adminprofile;
+            if ($profile) {
+                $profile->delete();
+            }
+
+            return response()->json([
+                'message' => 'تم حذف ملف الأدمن بنجاح',
             ]);
         }
 

@@ -133,6 +133,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get user's admin profile.
+     */
+    public function adminprofile(): HasOne
+    {
+        return $this->hasOne(AdminProfile::class, 'AdminID', 'UserID');
+    }
+
+    /**
      * Get user's notifications.
      */
     public function notifications(): HasMany

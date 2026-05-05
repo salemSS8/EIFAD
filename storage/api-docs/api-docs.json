@@ -3579,7 +3579,7 @@
                     "Company Verification"
                 ],
                 "summary": "Upload verification documents (Fixed Indices)",
-                "description": "Allows a company to upload verification files to specific fixed slots: Index 0, 1, or 2.\n        - Index 0: Commercial Register (سجل تجاري)\n        - Index 1: Tax Card (بطاقة ضريبية)\n        - Index 2: Additional/ID (هوية أو مستند إضافي)",
+                "description": "Allows a company to upload verification files to specific fixed slots: Index 0, 1, or 2.\n        - Index 0: Commercial Register (السجل التجاري)\n        - Index 1: Tax Card (شهادة الضريبة)\n        - Index 2: Additional/ID (رخصة الشركة)",
                 "operationId": "uploadVerificationDocuments",
                 "requestBody": {
                     "required": true,
@@ -3590,20 +3590,26 @@
                                     "documents"
                                 ],
                                 "properties": {
-                                    "documents[0]": {
-                                        "description": "Commercial Register (Index 0)",
-                                        "type": "string",
-                                        "format": "binary"
-                                    },
-                                    "documents[1]": {
-                                        "description": "Tax Card (Index 1)",
-                                        "type": "string",
-                                        "format": "binary"
-                                    },
-                                    "documents[2]": {
-                                        "description": "Additional/ID (Index 2)",
-                                        "type": "string",
-                                        "format": "binary"
+                                    "documents": {
+                                        "description": "Object containing files indexed by 0, 1, or 2.",
+                                        "properties": {
+                                            "0": {
+                                                "description": "Commercial Register",
+                                                "type": "string",
+                                                "format": "binary"
+                                            },
+                                            "1": {
+                                                "description": "Tax Card",
+                                                "type": "string",
+                                                "format": "binary"
+                                            },
+                                            "2": {
+                                                "description": "Additional/ID",
+                                                "type": "string",
+                                                "format": "binary"
+                                            }
+                                        },
+                                        "type": "object"
                                     }
                                 },
                                 "type": "object"

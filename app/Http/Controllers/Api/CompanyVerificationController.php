@@ -31,22 +31,14 @@ class CompanyVerificationController extends Controller
                 required: ['documents'],
                 properties: [
                     new OA\Property(
-                        property: 'documents[0]',
-                        type: 'string',
-                        format: 'binary',
-                        description: 'Commercial Register (Index 0)'
-                    ),
-                    new OA\Property(
-                        property: 'documents[1]',
-                        type: 'string',
-                        format: 'binary',
-                        description: 'Tax Card (Index 1)'
-                    ),
-                    new OA\Property(
-                        property: 'documents[2]',
-                        type: 'string',
-                        format: 'binary',
-                        description: 'Additional/ID (Index 2)'
+                        property: 'documents',
+                        description: 'Object containing files indexed by 0, 1, or 2.',
+                        type: 'object',
+                        properties: [
+                            new OA\Property(property: '0', type: 'string', format: 'binary', description: 'Commercial Register'),
+                            new OA\Property(property: '1', type: 'string', format: 'binary', description: 'Tax Card'),
+                            new OA\Property(property: '2', type: 'string', format: 'binary', description: 'Additional/ID'),
+                        ]
                     ),
                 ]
             )

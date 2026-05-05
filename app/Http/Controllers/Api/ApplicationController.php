@@ -370,8 +370,7 @@ class ApplicationController extends Controller
 
         $query = JobApplication::with([
             'jobSeeker.user:UserID,FullName,Email',
-            'cv.skills.skill',
-            'cv.experiences',
+            'cv',
         ])
             ->where('JobAdID', $jobId);
 

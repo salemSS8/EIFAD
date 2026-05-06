@@ -39,7 +39,7 @@ class ApplicationController extends Controller
 
         $applications = JobApplication::with(['jobAd.company:CompanyID,CompanyName,LogoPath', 'cv:CVID,Title'])
             ->where('JobSeekerID', $profile->JobSeekerID)
-            ->where('Status', '!=', 'withdrawn')
+            ->where('Status', '!=', 'Withdrawn')
             ->orderByDesc('AppliedAt')
             ->paginate(15);
 
@@ -89,8 +89,8 @@ class ApplicationController extends Controller
                 required: ['job_id'],
                 properties: [
                     new OA\Property(property: 'job_id', type: 'integer', description: 'ID of the job to apply for'),
-                    new OA\Property(property: 'cv_id', type: 'integer', description: 'ID of an existing internal CV (required if cv file is not provided)'),
-                    new OA\Property(property: 'cv', type: 'string', format: 'binary', description: 'PDF resume file (required if cv_id is not provided)'),
+                    new OA\Property(property: 'cv_id', type: 'integer', nullable: true, description: 'ID of an existing internal CV (required if cv file is not provided)'),
+                    new OA\Property(property: 'cv', type: 'string', format: 'binary', nullable: true, description: 'PDF resume file (required if cv_id is not provided)'),
                     new OA\Property(property: 'JobSeekerName', type: 'string', description: 'Override full name for this application'),
                     new OA\Property(property: 'JobSeekerEmail', type: 'string', format: 'email', description: 'Override email for this application'),
                     new OA\Property(property: 'JobSeekerPhone', type: 'string', description: 'Override phone for this application'),
@@ -106,8 +106,8 @@ class ApplicationController extends Controller
     {
         $request->validate([
             'job_id' => 'required|exists:jobad,JobAdID',
-            'cv_id' => 'required_without:cv|exists:cv,CVID',
-            'cv' => 'required_without:cv_id|file|mimes:pdf|max:5120',
+            'cv_id' => 'required_without:cv|nullable|exists:cv,CVID',
+            'cv' => 'required_without:cv_id|nullable|file|mimes:pdf|max:5120',
             'JobSeekerName' => 'nullable|string|max:255',
             'JobSeekerEmail' => 'nullable|string|email|max:255',
             'JobSeekerPhone' => 'nullable|string|max:20',
@@ -140,9 +140,10 @@ class ApplicationController extends Controller
             return response()->json(['message' => 'The application deadline for this job has passed'], 422);
         }
 
-        // Check for duplicate application
+        // Check for duplicate application (ignore withdrawn ones)
         $existingApplication = JobApplication::where('JobSeekerID', $profile->JobSeekerID)
             ->where('JobAdID', $request->input('job_id'))
+            ->where('Status', '!=', 'Withdrawn')
             ->exists();
 
         if ($existingApplication) {
@@ -184,7 +185,7 @@ class ApplicationController extends Controller
             'JobSeekerPhone' => $request->input('JobSeekerPhone') ?? $user->Phone,
             'JobSeekerAddress' => $request->input('JobSeekerAddress') ?? $user->Address,
             'AppliedAt' => now(),
-            'Status' => __('application.Pending'),
+            'Status' => 'Pending',
             'MatchScore' => $matchScore,
             'AboutMe' => $request->input('AboutMe'),
             'Notes' => $request->input('notes'),
@@ -199,7 +200,11 @@ class ApplicationController extends Controller
             'CreatedAt' => now(),
         ]);
 
-        broadcast(new \App\Events\NotificationReceived($notification))->toOthers();
+        try {
+            broadcast(new \App\Events\NotificationReceived($notification))->toOthers();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Broadcast failed: '.$e->getMessage());
+        }
 
         // Dispatch AI Applicant Screener
         \App\Jobs\ProcessApplicationScreener::dispatch($application);
@@ -370,12 +375,13 @@ class ApplicationController extends Controller
 
         $query = JobApplication::with([
             'jobSeeker.user:UserID,FullName,Email',
-            'cvDetails.skills.skill',
-            'cvDetails.languages.language',
-            'cvDetails.education',
-            'cvDetails.experiences',
+            'cv.skills.skill',
+            'cv.languages.language',
+            'cv.education',
+            'cv.experiences',
         ])
-            ->where('JobAdID', $jobId);
+            ->where('JobAdID', $jobId)
+            ->where('Status', '!=', 'Withdrawn');
 
         // Handle Special "AI Filtered" status from UI (Score >= 70%)
         if ($request->input('status') === 'ai_filtered') {

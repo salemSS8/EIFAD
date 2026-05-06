@@ -62,8 +62,6 @@ class ProcessApplicationScreener implements ShouldQueue
                 ]);
             });
         } catch (\Exception $e) {
-            // الآن إذا حدث خطأ سنراه فوراً في الـ Terminal بدلاً من الصمت!
-            dump('AI Error: '.$e->getMessage());
             Log::error("Failed to process applicant screener for application {$this->application->ApplicationID}: ".$e->getMessage());
         }
     }

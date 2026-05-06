@@ -1101,12 +1101,14 @@
                                     },
                                     "cv_id": {
                                         "description": "ID of an existing internal CV (required if cv file is not provided)",
-                                        "type": "integer"
+                                        "type": "integer",
+                                        "nullable": true
                                     },
                                     "cv": {
                                         "description": "PDF resume file (required if cv_id is not provided)",
                                         "type": "string",
-                                        "format": "binary"
+                                        "format": "binary",
+                                        "nullable": true
                                     },
                                     "JobSeekerName": {
                                         "description": "Override full name for this application",

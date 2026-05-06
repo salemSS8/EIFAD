@@ -17,13 +17,14 @@ class JobApplication extends Model
     public $timestamps = false;
 
     protected $hidden = [
-        'CV',
+        // 'CV',
     ];
 
     protected $fillable = [
         'JobAdID',
         'JobSeekerID',
         'CVID',
+        'CV',
         'JobSeekerName',
         'JobSeekerEmail',
         'JobSeekerPhone',
@@ -35,6 +36,10 @@ class JobApplication extends Model
         'Notes',
     ];
 
+    protected $appends = [
+        'cv_url',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -42,8 +47,6 @@ class JobApplication extends Model
             'MatchScore' => 'integer',
         ];
     }
-
-    
 
     /**
      * Get the job ad being applied for.
@@ -64,7 +67,7 @@ class JobApplication extends Model
     /**
      * Get the CV used in this application.
      */
-    public function cvDetails(): BelongsTo
+    public function cv(): BelongsTo
     {
         return $this->belongsTo(\App\Domain\CV\Models\CV::class, 'CVID', 'CVID');
     }
@@ -75,5 +78,17 @@ class JobApplication extends Model
     public function cvJobMatches(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(\App\Domain\AI\Models\CVJobMatch::class, 'CVID', 'CVID');
+    }
+
+    /**
+     * Get the full URL for the uploaded CV file.
+     */
+    public function getCvUrlAttribute(): ?string
+    {
+        if ($this->CV) {
+            return asset('storage/'.$this->CV);
+        }
+
+        return null;
     }
 }

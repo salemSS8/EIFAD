@@ -57,13 +57,21 @@ class ParseCvJob implements ShouldQueue
 
             // Step 1: Try Affinda Parser (PRIMARY - as per documentation)
             if ($affindaParser->isAvailable() && $filePath && file_exists($filePath)) {
-                Log::info('ParseCvJob: Attempting Affinda parsing', ['cv_id' => $this->cv->CVID]);
+                try {
+                    Log::info('ParseCvJob: Attempting Affinda parsing', ['cv_id' => $this->cv->CVID]);
 
-                $canonicalResume = $affindaParser->parseFile($filePath);
+                    $canonicalResume = $affindaParser->parseFile($filePath);
 
-                if ($canonicalResume) {
-                    $sourceType = 'affinda';
-                    Log::info('ParseCvJob: Affinda parsing successful', ['cv_id' => $this->cv->CVID]);
+                    if ($canonicalResume) {
+                        $sourceType = 'affinda';
+                        Log::info('ParseCvJob: Affinda parsing successful', ['cv_id' => $this->cv->CVID]);
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('ParseCvJob: Affinda parsing failed (exception), will fallback', [
+                        'cv_id' => $this->cv->CVID,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // $canonicalResume remains null, triggering Step 2 fallback
                 }
             }
 

@@ -240,9 +240,8 @@ class AuthController extends Controller
                     'email' => $user->Email,
                     'name' => $user->FullName,
                     'role' => $request->input('role'),
-                    'token' => $token,
                 ],
-            ], 201);
+            ], 201)->withCookie(cookie('auth_token', $token, 10080, '/', null, null, true, false, 'Lax'));
         });
     }
 
@@ -326,9 +325,8 @@ class AuthController extends Controller
                 'email' => $user->Email,
                 'name' => $user->FullName,
                 'role' => $role?->RoleName,
-                'token' => $token,
             ],
-        ]);
+        ])->withCookie(cookie('auth_token', $token, 10080, '/', null, null, true, false, 'Lax'));
     }
 
     /**
@@ -434,14 +432,15 @@ class AuthController extends Controller
             $result = $action->execute($socialUser, $provider, $requestedRole);
 
             $queryParams = http_build_query([
-                'token' => $result->sanctumToken,
                 'user_id' => $result->userId,
                 'name' => $result->name,
                 'email' => $result->email,
                 'role' => $result->role,
+                'social_login' => 'true',
             ]);
 
-            return redirect()->away($frontendUrl.'?'.$queryParams);
+            return redirect()->away($frontendUrl.'?'.$queryParams)
+                ->withCookie(cookie('auth_token', $result->sanctumToken, 10080, '/', null, null, true, false, 'Lax'));
         } catch (\Exception $e) {
             return redirect()->away($frontendUrl.'?error='.urlencode('Authentication failed: '.$e->getMessage()));
         }
@@ -464,7 +463,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Logged out successfully',
-        ]);
+        ])->withoutCookie('auth_token');
     }
 
     /**

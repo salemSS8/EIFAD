@@ -240,11 +240,11 @@ class AuthController extends Controller
                     'email' => $user->Email,
                     'name' => $user->FullName,
                     'role' => $request->input('role'),
+                    'token' => $token,
                 ],
-            ], 201)->withCookie(cookie('auth_token', $token, 10080, '/', null, null, true, false, 'Lax'));
+            ], 201);
         });
     }
-
     /**
      * Login with email and password.
      */
@@ -291,20 +291,20 @@ class AuthController extends Controller
 
         $user = User::where('Email', $request->input('email'))->first();
 
-        if (! $user) {
+        if (!$user) {
             return response()->json([
                 'message' => 'البريد الإلكتروني غير مسجل في النظام',
             ], 404);
         }
 
-        if (! Hash::check($request->input('password'), $user->PasswordHash)) {
+        if (!Hash::check($request->input('password'), $user->PasswordHash)) {
             return response()->json([
                 'message' => 'كلمة المرور غير صحيحة',
             ], 401);
         }
 
         // Check if account is verified (User Story: Login - معيار القبول #2)
-        if (! $user->IsVerified) {
+        if (!$user->IsVerified) {
             return response()->json([
                 // 'message' => 'الحساب غير مفعّل، يرجى التحقق من بريدك الإلكتروني لتفعيل الحساب',
                 'requires_verification' => true,
@@ -325,8 +325,9 @@ class AuthController extends Controller
                 'email' => $user->Email,
                 'name' => $user->FullName,
                 'role' => $role?->RoleName,
+                'token' => $token,
             ],
-        ])->withCookie(cookie('auth_token', $token, 10080, '/', null, null, true, false, 'Lax'));
+        ]);
     }
 
     /**
@@ -412,7 +413,7 @@ class AuthController extends Controller
         if ($request->has('error')) {
             $errorMessage = $request->input('error_description', $request->input('error'));
 
-            return redirect()->away($frontendUrl.'?error='.urlencode('Social login failed: '.$errorMessage));
+            return redirect()->away($frontendUrl . '?error=' . urlencode('Social login failed: ' . $errorMessage));
         }
 
         try {
@@ -439,10 +440,10 @@ class AuthController extends Controller
                 'social_login' => 'true',
             ]);
 
-            return redirect()->away($frontendUrl.'?'.$queryParams)
+            return redirect()->away($frontendUrl . '?' . $queryParams)
                 ->withCookie(cookie('auth_token', $result->sanctumToken, 10080, '/', null, null, true, false, 'Lax'));
         } catch (\Exception $e) {
-            return redirect()->away($frontendUrl.'?error='.urlencode('Authentication failed: '.$e->getMessage()));
+            return redirect()->away($frontendUrl . '?error=' . urlencode('Authentication failed: ' . $e->getMessage()));
         }
     }
 
@@ -644,7 +645,7 @@ class AuthController extends Controller
 
         $user = User::where('Email', $request->input('email'))->first();
 
-        if (! $user) {
+        if (!$user) {
             return response()->json([
                 'message' => 'البريد الإلكتروني غير مسجل في النظام',
             ], 422);
@@ -666,7 +667,7 @@ class AuthController extends Controller
         try {
             Mail::to($user->Email)->send(new ResetPasswordCodeMail($token));
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Mail sending failed: '.$e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Mail sending failed: ' . $e->getMessage());
             // Continue even if mail fails in dev, or handle error
         }
 
@@ -713,7 +714,7 @@ class AuthController extends Controller
             ->where('email', $request->input('email'))
             ->first();
 
-        if (! $record) {
+        if (!$record) {
             return response()->json([
                 'message' => 'رمز إعادة التعيين غير صالح',
             ], 422);
@@ -729,7 +730,7 @@ class AuthController extends Controller
         }
 
         // Verify token
-        if (! Hash::check($request->input('token'), $record->token)) {
+        if (!Hash::check($request->input('token'), $record->token)) {
             return response()->json([
                 'message' => 'رمز إعادة التعيين غير صحيح',
             ], 422);
@@ -790,7 +791,7 @@ class AuthController extends Controller
             ->where('email', $request->input('email'))
             ->first();
 
-        if (! $record) {
+        if (!$record) {
             return response()->json([
                 'message' => 'رمز إعادة التعيين غير صالح',
             ], 422);
@@ -806,7 +807,7 @@ class AuthController extends Controller
         }
 
         // Verify token
-        if (! Hash::check($request->input('token'), $record->token)) {
+        if (!Hash::check($request->input('token'), $record->token)) {
             return response()->json([
                 'message' => 'رمز إعادة التعيين غير صحيح',
             ], 422);
@@ -855,7 +856,7 @@ class AuthController extends Controller
 
         $user = User::where('Email', $request->input('email'))->first();
 
-        if (! $user) {
+        if (!$user) {
             return response()->json([
                 'message' => 'البريد الإلكتروني غير مسجل في النظام',
             ], 422);
@@ -883,7 +884,7 @@ class AuthController extends Controller
         try {
             Mail::to($user->Email)->send(new VerificationCodeMail($token));
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Mail sending failed: '.$e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Mail sending failed: ' . $e->getMessage());
         }
 
         return response()->json([
@@ -925,7 +926,7 @@ class AuthController extends Controller
 
         $user = User::where('Email', $request->input('email'))->first();
 
-        if (! $user) {
+        if (!$user) {
             return response()->json([
                 'message' => 'البريد الإلكتروني غير مسجل في النظام',
             ], 422);
@@ -941,7 +942,7 @@ class AuthController extends Controller
             ->where('email', $request->input('email'))
             ->first();
 
-        if (! $record) {
+        if (!$record) {
             return response()->json([
                 'message' => 'رمز التحقق غير صالح',
             ], 422);
@@ -957,7 +958,7 @@ class AuthController extends Controller
         }
 
         // Verify token
-        if (! Hash::check($request->input('token'), $record->token)) {
+        if (!Hash::check($request->input('token'), $record->token)) {
             return response()->json([
                 'message' => 'رمز التحقق غير صحيح',
             ], 422);

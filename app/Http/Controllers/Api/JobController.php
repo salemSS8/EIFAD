@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\CV\Models\CV;
 use App\Domain\Job\Models\FavoriteJob;
 use App\Domain\Job\Models\JobAd;
 use App\Domain\Job\Models\JobSkill;
@@ -45,9 +46,16 @@ class JobController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only([
-            'search', 'location', 'work_type', 'workplace_type',
-            'salary_min', 'salary_max', 'company_id', 'skill_ids',
-            'industry', 'sort',
+            'search',
+            'location',
+            'work_type',
+            'workplace_type',
+            'salary_min',
+            'salary_max',
+            'company_id',
+            'skill_ids',
+            'industry',
+            'sort',
         ]);
 
         $perPage = min($request->integer('per_page', 15), 50);
@@ -260,30 +268,34 @@ class JobController extends Controller
         $user = $request->user();
         $jobSeekerProfile = $user->jobSeekerProfile;
 
-        if (! $jobSeekerProfile) {
+        if (!$jobSeekerProfile) {
             return response()->json(['message' => 'Only job seekers can access suggested jobs'], 403);
         }
 
-        // Fetch user's latest CV to get skills
-        $latestCv = \App\Domain\CV\Models\CV::with('skills.skill')
+        // 1. جلب أحدث سيرة ذاتية
+        $latestCv = CV::with('skills')
             ->where('JobSeekerID', $jobSeekerProfile->JobSeekerID)
             ->orderByDesc('CreatedAt')
             ->first();
 
-        $query = JobAd::with(['company'])
-            ->where('Status', 'Active');
-
-        if ($latestCv && $latestCv->skills->isNotEmpty()) {
-            $skillIds = $latestCv->skills->pluck('SkillID')->toArray();
-
-            // Suggest jobs that have at least one of the user's skills
-            $query->whereHas('skills', function ($q) use ($skillIds) {
-                $q->whereIn('SkillID', $skillIds);
-            });
+        // 2. التحقق من الشرطين (عدم وجود سيرة أو سيرة بدون مهارات)
+        if (!$latestCv || $latestCv->skills->isEmpty()) {
+            // إرجاع استجابة فارغة (قائمة مهارات فارغة)
+            return response()->json([
+                'data' => [],
+                'message' => 'Please update your CV and add skills to get suggestions.'
+            ]);
         }
 
-        // If no matches by skills, or to provide more variety, sort by latest
-        $jobs = $query->orderByDesc('PostedAt')
+        // 3. إذا وصل الكود هنا، فهذا يعني أن لديه سيرة ومهارات بالتأكيد
+        $skillIds = $latestCv->skills->pluck('SkillID')->toArray();
+
+        $jobs = JobAd::with(['company'])
+            ->where('Status', 'Active')
+            ->whereHas('skills', function ($q) use ($skillIds) {
+                $q->whereIn('SkillID', $skillIds);
+            })
+            ->orderByDesc('PostedAt')
             ->paginate(15);
 
         return response()->json($jobs);
@@ -679,7 +691,7 @@ class JobController extends Controller
         }
 
         return response()->json([
-            'message' => 'AI Ranking triggered for '.count($applications).' applicants. Please refresh the AI tab in a moment.',
+            'message' => 'AI Ranking triggered for ' . count($applications) . ' applicants. Please refresh the AI tab in a moment.',
             'count' => count($applications),
         ]);
     }

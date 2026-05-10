@@ -25,12 +25,12 @@ class MarketTrendController extends Controller
         security: [['bearerAuth' => []]]
     )]
     #[OA\Response(response: 200, description: 'Sync completed')]
-    public function sync(Request $request, \App\Domain\AI\Services\SyncMarketTrendsService $service)
+    public function sync(Request $request)
     {
-        $service->aggregate(auth()->id());
+        SyncMarketTrendsJob::dispatch(auth()->id());
 
         return response()->json([
-            'message' => 'Market trends synchronization completed successfully.',
+            'message' => 'Market trends synchronization has been queued and will complete in the background.',
         ]);
     }
 

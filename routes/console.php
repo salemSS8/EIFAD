@@ -9,3 +9,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('queue:work --stop-when-empty')->everySecond();
+
+Schedule::job(new \App\Jobs\SyncMarketTrendsJob())->dailyAt('00:00');

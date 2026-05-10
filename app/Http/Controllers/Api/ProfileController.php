@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Domain\Company\Models\CompanyProfile;
 use App\Domain\User\Models\JobSeekerProfile;
+use App\Domain\User\Models\ProfileViewDevice;
 use App\Domain\User\Models\User;
+use App\Domain\User\Services\ProfileViewService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -151,8 +153,8 @@ class ProfileController extends Controller
             $rejectedCount = \App\Domain\Application\Models\JobApplication::where('JobSeekerID', $user->UserID)
                 ->where('Status', 'Rejected')->count();
 
-            // 1. Profile Views (mocked but deterministic based on ID so it does not jump)
-            $profileViews = ($user->UserID * 13) % 200 + 45;
+            // 1. Profile Views (Real unique device tracking)
+            $profileViews = ProfileViewDevice::where('viewed_user_id', $user->UserID)->count();
 
             // 2. Connections Count (Number of conversations/people contacted)
             $connectionsCount = \App\Domain\Communication\Models\ConversationParticipant::where('UserID', $user->UserID)->count();
@@ -187,7 +189,7 @@ class ProfileController extends Controller
                 'data' => [
                     'total_jobs_posted' => $jobsCount,
                     'total_applications_received' => $applicationsReceived,
-                    'profile_views' => rand(50, 1000),
+                    'profile_views' => ProfileViewDevice::where('viewed_user_id', $user->UserID)->count(),
                 ],
             ]);
         }
@@ -547,8 +549,9 @@ class ProfileController extends Controller
     #[OA\Parameter(name: 'id', in: 'path', required: true, description: 'User ID', schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(response: 200, description: 'Public user profile')]
     #[OA\Response(response: 404, description: 'User not found')]
-    public function showPublic(int $id): JsonResponse
+    public function showPublic(Request $request, int $id, ProfileViewService $viewService): JsonResponse
     {
+        $viewService->trackDeviceView($id, $request);
         $user = User::with('roles')->where('UserID', $id)->firstOrFail();
         $role = $user->roles->first();
 

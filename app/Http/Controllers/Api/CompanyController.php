@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Company\Actions\SearchCompaniesAction;
 use App\Domain\Company\Models\CompanyProfile;
 use App\Domain\Company\Models\FollowCompany;
 use App\Http\Controllers\Controller;
@@ -33,7 +34,7 @@ class CompanyController extends Controller
     {
         $filters = $request->only(['name', 'location', 'field']);
 
-        $companies = (new \App\Domain\Company\Actions\SearchCompaniesAction)->execute($filters);
+        $companies = (new SearchCompaniesAction)->execute($filters);
 
         return response()->json($companies);
     }

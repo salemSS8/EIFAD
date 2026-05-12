@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\CertificateVerificationController as AdminCertificateController;
 use App\Http\Controllers\Api\Admin\MarketTrendController as AdminMarketTrendController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AiAnalyticsController;
@@ -289,16 +290,25 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Company Verification Management
         Route::prefix('companies')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\Admin\CompanyVerificationController::class, 'index']);
-            Route::put('/{id}/verify', [\App\Http\Controllers\Api\Admin\CompanyVerificationController::class, 'verify']);
-            Route::get('/{id}/documents/{index}', [\App\Http\Controllers\Api\Admin\CompanyVerificationController::class, 'getDocument']);
-            Route::get('/{id}/documents/{index}/serve', [\App\Http\Controllers\Api\Admin\CompanyVerificationController::class, 'serveDocument'])->name('admin.company.document.serve');
+            Route::get('/', [CompanyVerificationController::class, 'index']);
+            Route::put('/{id}/verify', [CompanyVerificationController::class, 'verify']);
+            Route::get('/{id}/documents/{index}', [CompanyVerificationController::class, 'getDocument']);
+            Route::get('/{id}/documents/{index}/serve', [CompanyVerificationController::class, 'serveDocument'])->name('admin.company.document.serve');
         });
 
         // Market Trends Management
         Route::prefix('market-trends')->group(function () {
             Route::post('/sync', [AdminMarketTrendController::class, 'sync']);
             Route::get('/logs', [AdminMarketTrendController::class, 'logs']);
+        });
+
+        // Certificate Verification Management
+        Route::prefix('certificates')->group(function () {
+            Route::get('/', [AdminCertificateController::class, 'index']);
+            Route::get('/{id}', [AdminCertificateController::class, 'show']);
+            Route::put('/{id}/verify', [AdminCertificateController::class, 'verify']);
+            Route::put('/{id}/reject', [AdminCertificateController::class, 'reject']);
+            Route::post('/{id}/reanalyze', [AdminCertificateController::class, 'reanalyze']);
         });
     });
 

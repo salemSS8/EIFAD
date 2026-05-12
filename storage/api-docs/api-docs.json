@@ -47,6 +47,15 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "name": "verification_status",
+                        "in": "query",
+                        "description": "Filter by verification status (verified, pending, rejected)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
@@ -282,12 +291,296 @@
                 "tags": [
                     "Admin"
                 ],
-                "summary": "Get system statistics",
-                "description": "Get user statistics.",
+                "summary": "Get admin dashboard statistics",
+                "description": "Returns total job seekers, companies, active job ads, applications with monthly growth percentages, plus pending verifications, certificate reviews, and AI alert counts.",
                 "operationId": "getStatistics",
                 "responses": {
                     "200": {
-                        "description": "System statistics"
+                        "description": "Dashboard statistics",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "total_job_seekers": {
+                                                    "properties": {
+                                                        "count": {
+                                                            "type": "integer",
+                                                            "example": 12458
+                                                        },
+                                                        "growth_percentage": {
+                                                            "type": "number",
+                                                            "example": 12
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "total_companies": {
+                                                    "properties": {
+                                                        "count": {
+                                                            "type": "integer",
+                                                            "example": 3247
+                                                        },
+                                                        "growth_percentage": {
+                                                            "type": "number",
+                                                            "example": 8
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "active_job_ads": {
+                                                    "properties": {
+                                                        "count": {
+                                                            "type": "integer",
+                                                            "example": 1892
+                                                        },
+                                                        "growth_percentage": {
+                                                            "type": "number",
+                                                            "example": 15
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "total_applications": {
+                                                    "properties": {
+                                                        "count": {
+                                                            "type": "integer",
+                                                            "example": 28456
+                                                        },
+                                                        "growth_percentage": {
+                                                            "type": "number",
+                                                            "example": 23
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "pending_company_verifications": {
+                                                    "type": "integer",
+                                                    "example": 24
+                                                },
+                                                "pending_certificate_reviews": {
+                                                    "type": "integer",
+                                                    "example": 18
+                                                },
+                                                "ai_alerts_count": {
+                                                    "type": "integer",
+                                                    "example": 7
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/certificates": {
+            "get": {
+                "tags": [
+                    "Admin",
+                    "Certificate Verification"
+                ],
+                "summary": "List all certificates for admin review",
+                "description": "Returns a paginated list of all certificates (pending, ai_reviewed, verified, rejected). Use ?status= to filter.",
+                "operationId": "adminListCertificates",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter by status (pending, ai_reviewed, verified, rejected)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by certificate name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of certificates"
+                    },
+                    "403": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/certificates/{id}": {
+            "get": {
+                "tags": [
+                    "Admin",
+                    "Certificate Verification"
+                ],
+                "summary": "Get certificate details with AI results",
+                "description": "Show certificate details with AI analysis results.",
+                "operationId": "adminShowCertificate",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Certificate details"
+                    },
+                    "404": {
+                        "description": "Certificate not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/certificates/{id}/verify": {
+            "put": {
+                "tags": [
+                    "Admin",
+                    "Certificate Verification"
+                ],
+                "summary": "Approve a certificate",
+                "description": "Verify (approve) a certificate.",
+                "operationId": "adminVerifyCertificate",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "notes": {
+                                        "type": "string",
+                                        "example": "تم التحقق يدوياً"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Certificate verified"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/certificates/{id}/reject": {
+            "put": {
+                "tags": [
+                    "Admin",
+                    "Certificate Verification"
+                ],
+                "summary": "Reject a certificate",
+                "description": "Reject a certificate.",
+                "operationId": "adminRejectCertificate",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "reason"
+                                ],
+                                "properties": {
+                                    "reason": {
+                                        "type": "string",
+                                        "example": "الشهادة غير صالحة أو مزورة"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Certificate rejected"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/certificates/{id}/reanalyze": {
+            "post": {
+                "tags": [
+                    "Admin",
+                    "Certificate Verification"
+                ],
+                "summary": "Re-run AI analysis on a certificate",
+                "description": "Re-analyze a certificate with AI.",
+                "operationId": "adminReanalyzeCertificate",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "AI re-analysis queued"
                     }
                 },
                 "security": [
@@ -2901,10 +3194,11 @@
         "/cvs/{cvId}/certifications": {
             "post": {
                 "tags": [
-                    "CVs"
+                    "CVs",
+                    "Certifications"
                 ],
-                "summary": "Add certification to CV",
-                "description": "Add certification to CV",
+                "summary": "Add certification to CV (with optional file for AI verification)",
+                "description": "Adds a certification to the CV. If a certificate_file is uploaded, AI will automatically analyze it and notify admins.",
                 "operationId": "addCertification",
                 "parameters": [
                     {
@@ -2919,7 +3213,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "multipart/form-data": {
                             "schema": {
                                 "required": [
                                     "certificate_name"
@@ -2933,9 +3227,22 @@
                                         "type": "string",
                                         "example": "PMI"
                                     },
-                                    "is_verified": {
-                                        "type": "boolean",
-                                        "example": false
+                                    "credential_id": {
+                                        "type": "string",
+                                        "example": "ABC-123"
+                                    },
+                                    "credential_url": {
+                                        "type": "string",
+                                        "example": "https://verify.pmi.org/ABC-123"
+                                    },
+                                    "issue_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "certificate_file": {
+                                        "description": "Certificate file (PDF, max 5MB)",
+                                        "type": "string",
+                                        "format": "binary"
                                     }
                                 },
                                 "type": "object"
@@ -5715,6 +6022,10 @@
         {
             "name": "Admin",
             "description": "Admin"
+        },
+        {
+            "name": "Certificate Verification",
+            "description": "Certificate Verification"
         },
         {
             "name": "Company Verification",

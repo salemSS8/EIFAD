@@ -64,6 +64,7 @@ class CVController extends Controller
 
         if ($request->boolean('latest')) {
             $cv = $query->first();
+
             return response()->json(['data' => $cv ? [$cv] : []]);
         }
 
@@ -856,25 +857,32 @@ class CVController extends Controller
     // ==========================================
 
     /**
-     * Add certification to CV
+     * Add certification to CV with optional file upload for AI analysis.
      */
     #[OA\Post(
         path: '/cvs/{cvId}/certifications',
         operationId: 'addCertification',
-        tags: ['CVs'],
-        summary: 'Add certification to CV',
+        tags: ['CVs', 'Certifications'],
+        summary: 'Add certification to CV (with optional file for AI verification)',
+        description: 'Adds a certification to the CV. If a certificate_file is uploaded, AI will automatically analyze it and notify admins.',
         security: [['bearerAuth' => []]]
     )]
     #[OA\Parameter(name: 'cvId', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
     #[OA\RequestBody(
         required: true,
-        content: new OA\JsonContent(
-            required: ['certificate_name'],
-            properties: [
-                new OA\Property(property: 'certificate_name', type: 'string', example: 'PMP Certification'),
-                new OA\Property(property: 'issuing_organization', type: 'string', example: 'PMI'),
-                new OA\Property(property: 'is_verified', type: 'boolean', example: false),
-            ]
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(
+                required: ['certificate_name'],
+                properties: [
+                    new OA\Property(property: 'certificate_name', type: 'string', example: 'PMP Certification'),
+                    new OA\Property(property: 'issuing_organization', type: 'string', example: 'PMI'),
+                    new OA\Property(property: 'credential_id', type: 'string', example: 'ABC-123'),
+                    new OA\Property(property: 'credential_url', type: 'string', example: 'https://verify.pmi.org/ABC-123'),
+                    new OA\Property(property: 'issue_date', type: 'string', format: 'date'),
+                    new OA\Property(property: 'certificate_file', type: 'string', format: 'binary', description: 'Certificate file (PDF, max 5MB)'),
+                ]
+            )
         )
     )]
     #[OA\Response(response: 201, description: 'Certification added successfully')]
@@ -888,20 +896,38 @@ class CVController extends Controller
         $validated = $request->validate([
             'certificate_name' => 'required|string|max:255',
             'issuing_organization' => 'nullable|string|max:255',
-            'is_verified' => 'nullable|boolean',
+            'credential_id' => 'nullable|string|max:255',
+            'credential_url' => 'nullable|url|max:500',
             'issue_date' => 'nullable|date',
+            'certificate_file' => 'nullable|file|mimes:pdf|max:5120',
         ]);
+
+        // Handle file upload
+        $filePath = null;
+        if ($request->hasFile('certificate_file')) {
+            $filePath = $request->file('certificate_file')->store(
+                'certifications/'.$jobSeekerProfile->JobSeekerID,
+                'local'
+            );
+        }
 
         $certification = CVCertification::create([
             'CVID' => $cv->CVID,
             'CertificateName' => $validated['certificate_name'],
             'IssuingOrganization' => $validated['issuing_organization'] ?? null,
-            'IsVerified' => $validated['is_verified'] ?? false,
+            'IsVerified' => false,
             'IssueDate' => $validated['issue_date'] ?? null,
+            'FilePath' => $filePath,
+            'CredentialID' => $validated['credential_id'] ?? null,
+            'CredentialURL' => $validated['credential_url'] ?? null,
+            'VerificationStatus' => 'pending',
         ]);
 
+        // Auto-trigger AI analysis
+        \App\Jobs\AnalyzeCertificateJob::dispatch($certification, 'job_seeker');
+
         return response()->json([
-            'message' => 'Certification added successfully',
+            'message' => 'Certification added successfully. AI analysis has been queued.',
             'data' => $certification,
         ], 201);
     }

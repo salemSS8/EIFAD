@@ -2,6 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Application\Models\JobApplication;
+use App\Domain\Communication\Models\Notification;
+use App\Domain\Company\Models\CompanyProfile;
+use App\Domain\CV\Models\CVCertification;
+use App\Domain\Job\Models\JobAd;
 use App\Domain\User\Models\Role;
 use App\Domain\User\Models\User;
 use App\Http\Controllers\Controller;
@@ -46,6 +51,7 @@ class AdminController extends Controller
     #[OA\Parameter(name: 'search', in: 'query', description: 'Search by name or email', required: false, schema: new OA\Schema(type: 'string'))]
     #[OA\Parameter(name: 'role', in: 'query', description: 'Filter by role (JobSeeker, Employer, Admin)', required: false, schema: new OA\Schema(type: 'string'))]
     #[OA\Parameter(name: 'status', in: 'query', description: 'Filter by status (active, blocked, unverified)', required: false, schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'verification_status', in: 'query', description: 'Filter by verification status (verified, pending, rejected)', required: false, schema: new OA\Schema(type: 'string'))]
     #[OA\Response(response: 200, description: 'List of users')]
     public function index(Request $request): JsonResponse
     {
@@ -76,6 +82,32 @@ class AdminController extends Controller
                 $query->where('IsBlocked', false)->where('IsVerified', true);
             } elseif ($request->input('status') === 'unverified') {
                 $query->where('IsVerified', false);
+            }
+        }
+
+        // Filter by verification status
+        if ($request->filled('verification_status')) {
+            $vStatus = $request->input('verification_status');
+            if ($vStatus === 'verified') {
+                $query->where(function ($q) {
+                    $q->whereHas('companyProfile', function ($q2) {
+                        $q2->where('VerificationStatus', 'Verified');
+                    })->orWhere(function ($q3) {
+                        $q3->doesntHave('companyProfile')->where('IsVerified', true);
+                    });
+                });
+            } elseif ($vStatus === 'pending') {
+                $query->where(function ($q) {
+                    $q->whereHas('companyProfile', function ($q2) {
+                        $q2->where('VerificationStatus', 'Pending');
+                    })->orWhere(function ($q3) {
+                        $q3->doesntHave('companyProfile')->where('IsVerified', false);
+                    });
+                });
+            } elseif ($vStatus === 'rejected') {
+                $query->whereHas('companyProfile', function ($q) {
+                    $q->where('VerificationStatus', 'Rejected');
+                });
             }
         }
 
@@ -346,29 +378,118 @@ class AdminController extends Controller
     }
 
     /**
-     * Get user statistics.
+     * Get admin dashboard statistics.
      */
     #[OA\Get(
         path: '/admin/users/statistics',
         operationId: 'getStatistics',
         tags: ['Admin'],
-        summary: 'Get system statistics',
+        summary: 'Get admin dashboard statistics',
+        description: 'Returns total job seekers, companies, active job ads, applications with monthly growth percentages, plus pending verifications, certificate reviews, and AI alert counts.',
         security: [['bearerAuth' => []]]
     )]
-    #[OA\Response(response: 200, description: 'System statistics')]
+    #[OA\Response(
+        response: 200,
+        description: 'Dashboard statistics',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'data', type: 'object', properties: [
+                    new OA\Property(property: 'total_job_seekers', type: 'object', properties: [
+                        new OA\Property(property: 'count', type: 'integer', example: 12458),
+                        new OA\Property(property: 'growth_percentage', type: 'number', example: 12),
+                    ]),
+                    new OA\Property(property: 'total_companies', type: 'object', properties: [
+                        new OA\Property(property: 'count', type: 'integer', example: 3247),
+                        new OA\Property(property: 'growth_percentage', type: 'number', example: 8),
+                    ]),
+                    new OA\Property(property: 'active_job_ads', type: 'object', properties: [
+                        new OA\Property(property: 'count', type: 'integer', example: 1892),
+                        new OA\Property(property: 'growth_percentage', type: 'number', example: 15),
+                    ]),
+                    new OA\Property(property: 'total_applications', type: 'object', properties: [
+                        new OA\Property(property: 'count', type: 'integer', example: 28456),
+                        new OA\Property(property: 'growth_percentage', type: 'number', example: 23),
+                    ]),
+                    new OA\Property(property: 'pending_company_verifications', type: 'integer', example: 24),
+                    new OA\Property(property: 'pending_certificate_reviews', type: 'integer', example: 18),
+                    new OA\Property(property: 'ai_alerts_count', type: 'integer', example: 7),
+                ]),
+            ]
+        )
+    )]
     public function statistics(Request $request): JsonResponse
     {
         $this->ensureIsAdmin($request);
-        $stats = [
-            'total_users' => User::count(),
-            'job_seekers' => User::whereHas('roles', fn ($q) => $q->where('RoleName', 'JobSeeker'))->count(),
-            'employers' => User::whereHas('roles', fn ($q) => $q->where('RoleName', 'Employer'))->count(),
-            'verified_users' => User::where('IsVerified', true)->count(),
-            'blocked_users' => User::where('IsBlocked', true)->count(),
-            'new_users_today' => User::whereDate('CreatedAt', today())->count(),
-            'new_users_this_week' => User::whereBetween('CreatedAt', [now()->startOfWeek(), now()])->count(),
-        ];
 
-        return response()->json(['data' => $stats]);
+        $currentMonthStart = now()->startOfMonth();
+        $lastMonthStart = now()->subMonth()->startOfMonth();
+        $lastMonthEnd = now()->subMonth()->endOfMonth();
+
+        // Row 1: Total Job Seekers (with growth)
+        $totalJobSeekers = User::whereHas('roles', fn ($q) => $q->where('RoleName', 'JobSeeker'))->count();
+        $jobSeekersThisMonth = User::whereHas('roles', fn ($q) => $q->where('RoleName', 'JobSeeker'))
+            ->where('CreatedAt', '>=', $currentMonthStart)->count();
+        $jobSeekersLastMonth = User::whereHas('roles', fn ($q) => $q->where('RoleName', 'JobSeeker'))
+            ->whereBetween('CreatedAt', [$lastMonthStart, $lastMonthEnd])->count();
+
+        // Row 1: Total Companies (with growth)
+        $totalCompanies = CompanyProfile::count();
+        $companiesThisMonth = CompanyProfile::whereHas('user', fn ($q) => $q->where('CreatedAt', '>=', $currentMonthStart))->count();
+        $companiesLastMonth = CompanyProfile::whereHas('user', fn ($q) => $q->whereBetween('CreatedAt', [$lastMonthStart, $lastMonthEnd]))->count();
+
+        // Row 1: Active Job Ads (with growth)
+        $activeJobAds = JobAd::where('Status', 'Active')->count();
+        $jobAdsThisMonth = JobAd::where('PostedAt', '>=', $currentMonthStart)->count();
+        $jobAdsLastMonth = JobAd::whereBetween('PostedAt', [$lastMonthStart, $lastMonthEnd])->count();
+
+        // Row 1: Total Applications (with growth)
+        $totalApplications = JobApplication::count();
+        $applicationsThisMonth = JobApplication::where('AppliedAt', '>=', $currentMonthStart)->count();
+        $applicationsLastMonth = JobApplication::whereBetween('AppliedAt', [$lastMonthStart, $lastMonthEnd])->count();
+
+        // Row 2: Pending actions
+        $pendingVerifications = CompanyProfile::where('VerificationStatus', 'Pending')->count();
+        $pendingCertificates = CVCertification::whereIn('VerificationStatus', ['pending', 'ai_reviewed'])->count();
+
+        // Row 2: AI Alerts — unread notifications of type 'ai_alert' sent to admin users
+        $adminUserIds = User::whereHas('roles', fn ($q) => $q->where('RoleName', 'Admin'))->pluck('UserID');
+        $aiAlertsCount = Notification::whereIn('UserID', $adminUserIds)
+            ->where('Type', 'ai_alert')
+            ->where('IsRead', false)
+            ->count();
+
+        return response()->json(['data' => [
+            'total_job_seekers' => [
+                'count' => $totalJobSeekers,
+                'growth_percentage' => $this->calculateGrowthPercentage($jobSeekersThisMonth, $jobSeekersLastMonth),
+            ],
+            'total_companies' => [
+                'count' => $totalCompanies,
+                'growth_percentage' => $this->calculateGrowthPercentage($companiesThisMonth, $companiesLastMonth),
+            ],
+            'active_job_ads' => [
+                'count' => $activeJobAds,
+                'growth_percentage' => $this->calculateGrowthPercentage($jobAdsThisMonth, $jobAdsLastMonth),
+            ],
+            'total_applications' => [
+                'count' => $totalApplications,
+                'growth_percentage' => $this->calculateGrowthPercentage($applicationsThisMonth, $applicationsLastMonth),
+            ],
+            'pending_company_verifications' => $pendingVerifications,
+            'pending_certificate_reviews' => $pendingCertificates,
+            'ai_alerts_count' => $aiAlertsCount,
+        ]]);
+    }
+
+    /**
+     * Calculate growth percentage between current and previous period.
+     */
+    private function calculateGrowthPercentage(int $currentCount, int $previousCount): float
+    {
+        if ($previousCount === 0) {
+            return $currentCount > 0 ? 100.0 : 0.0;
+        }
+
+        return round((($currentCount - $previousCount) / $previousCount) * 100, 1);
     }
 }

@@ -13,26 +13,26 @@ use OpenApi\Attributes as OA;
  */
 class MarketTrendController extends Controller
 {
-    /**
-     * Trigger a direct sync of market trends.
-     */
-    #[OA\Post(
-        path: '/admin/market-trends/sync',
-        operationId: 'syncMarketTrendsAdmin',
-        tags: ['Admin', 'Market Trends'],
-        summary: 'Trigger direct sync',
-        description: 'Initiates a synchronous aggregation of market trends data. Restricted to Admins.',
-        security: [['bearerAuth' => []]]
-    )]
-    #[OA\Response(response: 200, description: 'Sync completed')]
-    public function sync(Request $request)
-    {
-        SyncMarketTrendsJob::dispatch(auth()->id());
-
-        return response()->json([
-            'message' => 'Market trends synchronization has been queued and will complete in the background.',
-        ]);
-    }
+    // /**
+    //  * Trigger a direct sync of market trends.
+    //  */
+    // #[OA\Post(
+    //     path: '/admin/market-trends/sync',
+    //     operationId: 'syncMarketTrendsAdmin',
+    //     tags: ['Admin', 'Market Trends'],
+    //     summary: 'Trigger direct sync',
+    //     description: 'Initiates a synchronous aggregation of market trends data. Restricted to Admins.',
+    //     security: [['bearerAuth' => []]]
+    // )]
+    // #[OA\Response(response: 200, description: 'Sync completed')]
+    // public function sync(Request $request)
+    // {
+    //     SyncMarketTrendsJob::dispatch(auth()->id());
+    //
+    //     return response()->json([
+    //         'message' => 'Market trends synchronization has been queued and will complete in the background.',
+    //     ]);
+    // }
 
     /**
      * Get the recent sync logs.

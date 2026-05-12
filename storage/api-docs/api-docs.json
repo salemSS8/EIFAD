@@ -387,8 +387,7 @@
         "/admin/certificates": {
             "get": {
                 "tags": [
-                    "Admin",
-                    "Certificate Verification"
+                    "Admin Certificate Verification"
                 ],
                 "summary": "List all certificates for admin review",
                 "description": "Returns a paginated list of all certificates (pending, ai_reviewed, verified, rejected). Use ?status= to filter.",
@@ -431,8 +430,7 @@
         "/admin/certificates/{id}": {
             "get": {
                 "tags": [
-                    "Admin",
-                    "Certificate Verification"
+                    "Admin Certificate Verification"
                 ],
                 "summary": "Get certificate details with AI results",
                 "description": "Show certificate details with AI analysis results.",
@@ -465,8 +463,7 @@
         "/admin/certificates/{id}/verify": {
             "put": {
                 "tags": [
-                    "Admin",
-                    "Certificate Verification"
+                    "Admin Certificate Verification"
                 ],
                 "summary": "Approve a certificate",
                 "description": "Verify (approve) a certificate.",
@@ -512,8 +509,7 @@
         "/admin/certificates/{id}/reject": {
             "put": {
                 "tags": [
-                    "Admin",
-                    "Certificate Verification"
+                    "Admin Certificate Verification"
                 ],
                 "summary": "Reject a certificate",
                 "description": "Reject a certificate.",
@@ -562,8 +558,7 @@
         "/admin/certificates/{id}/reanalyze": {
             "post": {
                 "tags": [
-                    "Admin",
-                    "Certificate Verification"
+                    "Admin Certificate Verification"
                 ],
                 "summary": "Re-run AI analysis on a certificate",
                 "description": "Re-analyze a certificate with AI.",
@@ -593,8 +588,7 @@
         "/admin/companies": {
             "get": {
                 "tags": [
-                    "Admin",
-                    "Company Verification"
+                    "Admin Company Verification"
                 ],
                 "summary": "Get all companies for management",
                 "description": "Returns a paginated list of companies including their verification status.",
@@ -634,8 +628,7 @@
         "/admin/companies/{id}/verify": {
             "put": {
                 "tags": [
-                    "Admin",
-                    "Company Verification"
+                    "Admin Company Verification"
                 ],
                 "summary": "Verify or reject a company",
                 "description": "Update company verification status.",
@@ -690,8 +683,7 @@
         "/admin/companies/{id}/documents/{index}": {
             "get": {
                 "tags": [
-                    "Admin",
-                    "Company Verification"
+                    "Admin Company Verification"
                 ],
                 "summary": "Get temporary document link",
                 "description": "Get a temporary link for a verification document.",
@@ -726,18 +718,154 @@
                 ]
             }
         },
-        "/admin/market-trends/sync": {
-            "post": {
+        "/admin/jobs": {
+            "get": {
                 "tags": [
-                    "Admin",
-                    "Market Trends"
+                    "Admin Jobs Management"
                 ],
-                "summary": "Trigger direct sync",
-                "description": "Initiates a synchronous aggregation of market trends data. Restricted to Admins.",
-                "operationId": "syncMarketTrendsAdmin",
+                "summary": "Get all job ads",
+                "description": "Returns a paginated list of all job ads, including deleted ones. Filters: status, search, company_id.",
+                "operationId": "adminGetJobs",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter by status (e.g., Active, Draft, Closed, Deleted)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by job title",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "company_id",
+                        "in": "query",
+                        "description": "Filter by company ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Sync completed"
+                        "description": "List of jobs"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/jobs/{id}": {
+            "get": {
+                "tags": [
+                    "Admin Jobs Management"
+                ],
+                "summary": "Get job details",
+                "description": "Get a single job's details.",
+                "operationId": "adminShowJob",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job details"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Admin Jobs Management"
+                ],
+                "summary": "Update a job ad",
+                "description": "Updates job ad fields. If status is updated to something other than Deleted, the job is restored. If updated to Deleted, it is soft-deleted.",
+                "operationId": "adminUpdateJob",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "status": {
+                                        "description": "Status can be Active, Draft, Closed, Deleted, etc.",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Job updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Admin Jobs Management"
+                ],
+                "summary": "Delete a job ad",
+                "description": "Soft deletes the job and changes its Status to \"Deleted\".",
+                "operationId": "adminDeleteJob",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job deleted successfully"
                     }
                 },
                 "security": [
@@ -5432,15 +5560,15 @@
                                                         },
                                                         "FullName": {
                                                             "type": "string",
-                                                            "example": "علوي الصبان"
+                                                            "example": "JobSeeker Full Name"
                                                         },
                                                         "Email": {
                                                             "type": "string",
-                                                            "example": "alwimoo@gmail.com"
+                                                            "example": "user@gmail.com"
                                                         },
                                                         "Phone": {
                                                             "type": "string",
-                                                            "example": "778928541"
+                                                            "example": "777777777"
                                                         },
                                                         "PersonalPhoto": {
                                                             "type": "string",
@@ -5448,11 +5576,11 @@
                                                         },
                                                         "Location": {
                                                             "type": "string",
-                                                            "example": "المكلا - الإنشاءات"
+                                                            "example": "Location"
                                                         },
                                                         "ProfileSummary": {
                                                             "type": "string",
-                                                            "example": "واحد يبغى صبر والله"
+                                                            "example": "Profile Summary"
                                                         }
                                                     },
                                                     "type": "object"
@@ -5470,7 +5598,7 @@
                                                     "properties": {
                                                         "FullName": {
                                                             "type": "string",
-                                                            "example": "اسم مدير الشركة"
+                                                            "example": "Company Manager Name"
                                                         },
                                                         "Phone": {
                                                             "type": "string",
@@ -5478,7 +5606,7 @@
                                                         },
                                                         "CompanyName": {
                                                             "type": "string",
-                                                            "example": "شركة المسار اللامع"
+                                                            "example": "Company Name"
                                                         },
                                                         "specializations": {
                                                             "type": "array",
@@ -6024,12 +6152,16 @@
             "description": "Admin"
         },
         {
-            "name": "Certificate Verification",
-            "description": "Certificate Verification"
+            "name": "Admin Certificate Verification",
+            "description": "Admin Certificate Verification"
         },
         {
-            "name": "Company Verification",
-            "description": "Company Verification"
+            "name": "Admin Company Verification",
+            "description": "Admin Company Verification"
+        },
+        {
+            "name": "Admin Jobs Management",
+            "description": "Admin Jobs Management"
         },
         {
             "name": "Market Trends",
@@ -6090,6 +6222,10 @@
         {
             "name": "Follow",
             "description": "Follow"
+        },
+        {
+            "name": "Company Verification",
+            "description": "Company Verification"
         },
         {
             "name": "Courses",

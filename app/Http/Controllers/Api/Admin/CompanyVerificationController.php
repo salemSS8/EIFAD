@@ -27,7 +27,7 @@ class CompanyVerificationController extends Controller
     #[OA\Get(
         path: '/admin/companies',
         operationId: 'adminGetCompanies',
-        tags: ['Admin', 'Company Verification'],
+        tags: ['Admin Company Verification'],
         summary: 'Get all companies for management',
         description: 'Returns a paginated list of companies including their verification status.',
         security: [['bearerAuth' => []]]
@@ -60,7 +60,7 @@ class CompanyVerificationController extends Controller
     #[OA\Put(
         path: '/admin/companies/{id}/verify',
         operationId: 'adminVerifyCompany',
-        tags: ['Admin', 'Company Verification'],
+        tags: ['Admin Company Verification'],
         summary: 'Verify or reject a company',
         security: [['bearerAuth' => []]]
     )]
@@ -116,7 +116,7 @@ class CompanyVerificationController extends Controller
     #[OA\Get(
         path: '/admin/companies/{id}/documents/{index}',
         operationId: 'adminGetCompanyDocument',
-        tags: ['Admin', 'Company Verification'],
+        tags: ['Admin Company Verification'],
         summary: 'Get temporary document link',
         security: [['bearerAuth' => []]]
     )]

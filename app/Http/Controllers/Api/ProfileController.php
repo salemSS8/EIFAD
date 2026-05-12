@@ -39,12 +39,12 @@ class ProfileController extends Controller
                         new OA\Property(property: 'type', type: 'string', example: 'job_seeker'),
                         new OA\Property(property: 'data', properties: [
                             new OA\Property(property: 'JobSeekerID', type: 'integer', example: 13),
-                            new OA\Property(property: 'FullName', type: 'string', example: 'علوي الصبان'),
-                            new OA\Property(property: 'Email', type: 'string', example: 'alwimoo@gmail.com'),
-                            new OA\Property(property: 'Phone', type: 'string', example: '778928541'),
+                            new OA\Property(property: 'FullName', type: 'string', example: 'JobSeeker Full Name'),
+                            new OA\Property(property: 'Email', type: 'string', example: 'user@gmail.com'),
+                            new OA\Property(property: 'Phone', type: 'string', example: '777777777'),
                             new OA\Property(property: 'PersonalPhoto', type: 'string', nullable: true),
-                            new OA\Property(property: 'Location', type: 'string', example: 'المكلا - الإنشاءات'),
-                            new OA\Property(property: 'ProfileSummary', type: 'string', example: 'واحد يبغى صبر والله'),
+                            new OA\Property(property: 'Location', type: 'string', example: 'Location'),
+                            new OA\Property(property: 'ProfileSummary', type: 'string', example: 'Profile Summary'),
                         ], type: 'object'),
                     ]
                 ),
@@ -53,9 +53,9 @@ class ProfileController extends Controller
                     properties: [
                         new OA\Property(property: 'type', type: 'string', example: 'company'),
                         new OA\Property(property: 'data', properties: [
-                            new OA\Property(property: 'FullName', type: 'string', example: 'اسم مدير الشركة'),
+                            new OA\Property(property: 'FullName', type: 'string', example: 'Company Manager Name'),
                             new OA\Property(property: 'Phone', type: 'string', example: '777000000'),
-                            new OA\Property(property: 'CompanyName', type: 'string', example: 'شركة المسار اللامع'),
+                            new OA\Property(property: 'CompanyName', type: 'string', example: 'Company Name'),
                             new OA\Property(property: 'specializations', type: 'array', items: new OA\Items(type: 'object')),
                         ], type: 'object'),
                     ]

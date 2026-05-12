@@ -27,7 +27,7 @@ class CertificateVerificationController extends Controller
     #[OA\Get(
         path: '/admin/certificates',
         operationId: 'adminListCertificates',
-        tags: ['Admin', 'Certificate Verification'],
+        tags: ['Admin Certificate Verification'],
         summary: 'List all certificates for admin review',
         description: 'Returns a paginated list of all certificates (pending, ai_reviewed, verified, rejected). Use ?status= to filter.',
         security: [['bearerAuth' => []]]
@@ -62,7 +62,7 @@ class CertificateVerificationController extends Controller
     #[OA\Get(
         path: '/admin/certificates/{id}',
         operationId: 'adminShowCertificate',
-        tags: ['Admin', 'Certificate Verification'],
+        tags: ['Admin Certificate Verification'],
         summary: 'Get certificate details with AI results',
         security: [['bearerAuth' => []]]
     )]
@@ -86,7 +86,7 @@ class CertificateVerificationController extends Controller
     #[OA\Put(
         path: '/admin/certificates/{id}/verify',
         operationId: 'adminVerifyCertificate',
-        tags: ['Admin', 'Certificate Verification'],
+        tags: ['Admin Certificate Verification'],
         summary: 'Approve a certificate',
         security: [['bearerAuth' => []]]
     )]
@@ -130,7 +130,7 @@ class CertificateVerificationController extends Controller
     #[OA\Put(
         path: '/admin/certificates/{id}/reject',
         operationId: 'adminRejectCertificate',
-        tags: ['Admin', 'Certificate Verification'],
+        tags: ['Admin Certificate Verification'],
         summary: 'Reject a certificate',
         security: [['bearerAuth' => []]]
     )]
@@ -175,7 +175,7 @@ class CertificateVerificationController extends Controller
     #[OA\Post(
         path: '/admin/certificates/{id}/reanalyze',
         operationId: 'adminReanalyzeCertificate',
-        tags: ['Admin', 'Certificate Verification'],
+        tags: ['Admin Certificate Verification'],
         summary: 'Re-run AI analysis on a certificate',
         security: [['bearerAuth' => []]]
     )]

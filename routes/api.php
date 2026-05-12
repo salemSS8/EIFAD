@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\CertificateVerificationController as AdminCertificateController;
+use App\Http\Controllers\Api\Admin\CompanyVerificationController as AdminCompanyVerificationController;
+use App\Http\Controllers\Api\Admin\JobController as AdminJobController;
 use App\Http\Controllers\Api\Admin\MarketTrendController as AdminMarketTrendController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AiAnalyticsController;
@@ -290,15 +292,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Company Verification Management
         Route::prefix('companies')->group(function () {
-            Route::get('/', [CompanyVerificationController::class, 'index']);
-            Route::put('/{id}/verify', [CompanyVerificationController::class, 'verify']);
-            Route::get('/{id}/documents/{index}', [CompanyVerificationController::class, 'getDocument']);
-            Route::get('/{id}/documents/{index}/serve', [CompanyVerificationController::class, 'serveDocument'])->name('admin.company.document.serve');
+            Route::get('/', [AdminCompanyVerificationController::class, 'index']);
+            Route::put('/{id}/verify', [AdminCompanyVerificationController::class, 'verify']);
+            Route::get('/{id}/documents/{index}', [AdminCompanyVerificationController::class, 'getDocument']);
+            Route::get('/{id}/documents/{index}/serve', [AdminCompanyVerificationController::class, 'serveDocument'])->name('admin.company.document.serve');
         });
 
         // Market Trends Management
         Route::prefix('market-trends')->group(function () {
-            Route::post('/sync', [AdminMarketTrendController::class, 'sync']);
+            // Route::post('/sync', [AdminMarketTrendController::class, 'sync']); // Temporarily disabled
             Route::get('/logs', [AdminMarketTrendController::class, 'logs']);
         });
 
@@ -309,6 +311,14 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/{id}/verify', [AdminCertificateController::class, 'verify']);
             Route::put('/{id}/reject', [AdminCertificateController::class, 'reject']);
             Route::post('/{id}/reanalyze', [AdminCertificateController::class, 'reanalyze']);
+        });
+
+        // Job Management
+        Route::prefix('jobs')->group(function () {
+            Route::get('/', [AdminJobController::class, 'index']);
+            Route::get('/{id}', [AdminJobController::class, 'show']);
+            Route::put('/{id}', [AdminJobController::class, 'update']);
+            Route::delete('/{id}', [AdminJobController::class, 'destroy']);
         });
     });
 

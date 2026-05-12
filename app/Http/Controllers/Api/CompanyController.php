@@ -29,12 +29,41 @@ class CompanyController extends Controller
     #[OA\Parameter(name: 'name', in: 'query', description: 'Filter by company name', required: false, schema: new OA\Schema(type: 'string'))]
     #[OA\Parameter(name: 'location', in: 'query', description: 'Filter by address/location', required: false, schema: new OA\Schema(type: 'string'))]
     #[OA\Parameter(name: 'field', in: 'query', description: 'Filter by job field/field of work', required: false, schema: new OA\Schema(type: 'string'))]
-    #[OA\Response(response: 200, description: 'List of companies')]
+    #[OA\Parameter(name: 'page', in: 'query', description: 'Page number for pagination', required: false, schema: new OA\Schema(type: 'integer', default: 1))]
+    #[OA\Response(
+        response: 200, 
+        description: 'Paginated list of companies',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'current_page', type: 'integer'),
+                new OA\Property(property: 'data', type: 'array', items: new OA\Items(type: 'object')),
+                new OA\Property(property: 'last_page', type: 'integer'),
+                new OA\Property(property: 'total', type: 'integer')
+            ]
+        )
+    )]
     public function index(Request $request): JsonResponse
     {
-        $filters = $request->only(['name', 'location', 'field']);
+        $query = CompanyProfile::where('VerificationStatus', 'Verified');
 
-        $companies = (new SearchCompaniesAction)->execute($filters);
+        if ($request->filled('name')) {
+            $query->where('CompanyName', 'like', '%' . $request->name . '%');
+        }
+
+        if ($request->filled('location')) {
+            // Note: The database column for location is usually 'Address' or 'Location', depending on the schema.
+            // Using a simple where logic based on standard practices:
+            $query->where(function ($q) use ($request) {
+                $q->where('Location', 'like', '%' . $request->location . '%')
+                  ->orWhere('Address', 'like', '%' . $request->location . '%');
+            });
+        }
+
+        if ($request->filled('field')) {
+            $query->where('FieldOfWork', 'like', '%' . $request->field . '%');
+        }
+
+        $companies = $query->paginate(15);
 
         return response()->json($companies);
     }

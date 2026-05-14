@@ -205,6 +205,60 @@ class GeminiAIService implements AIServiceInterface
         return $categoryName;
     }
 
+    /**
+     * Verify a certificate using AI - TEXT ONLY.
+     */
+    public function verifyCertificate(array $certificateData): array
+    {
+        $prompt = $this->buildCertificateVerificationPrompt($certificateData);
+        $inputHash = $this->generateInputHash(['cert' => $certificateData]);
+
+        $cached = $this->getCachedResponse($inputHash);
+        if ($cached) {
+            return $cached;
+        }
+
+        $response = $this->callGemini($prompt);
+        $result = $this->parseJsonResponse($response);
+
+        $result['_meta'] = [
+            'model' => $this->model,
+            'provider' => 'gemini',
+            'prompt_version' => self::PROMPT_VERSION,
+        ];
+
+        $this->cacheResponse($inputHash, $result);
+
+        return $result;
+    }
+
+    /**
+     * Screen an applicant against a job ad using AI.
+     */
+    public function screenApplicant(array $jobData, array $cvData): array
+    {
+        $prompt = $this->buildApplicantScreeningPrompt($jobData, $cvData);
+        $inputHash = $this->generateInputHash(['screen' => $jobData, 'cv' => $cvData]);
+
+        $cached = $this->getCachedResponse($inputHash);
+        if ($cached) {
+            return $cached;
+        }
+
+        $response = $this->callGemini($prompt);
+        $result = $this->parseJsonResponse($response);
+
+        $result['_meta'] = [
+            'model' => $this->model,
+            'provider' => 'gemini',
+            'prompt_version' => self::PROMPT_VERSION,
+        ];
+
+        $this->cacheResponse($inputHash, $result);
+
+        return $result;
+    }
+
     // =========================================================================
     // API CALL & RESPONSE HANDLING
     // =========================================================================

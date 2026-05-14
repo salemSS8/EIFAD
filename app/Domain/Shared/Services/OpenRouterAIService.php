@@ -16,7 +16,9 @@ class OpenRouterAIService implements AIServiceInterface
     use HasAiPrompts, ParsesAiResponses;
 
     private string $apiKey;
+
     private string $baseUrl;
+
     private string $model;
 
     public function __construct()
@@ -32,6 +34,7 @@ class OpenRouterAIService implements AIServiceInterface
         $response = $this->callOpenRouter($prompt);
         $result = $this->parseJsonResponse($response);
         $result['_meta'] = ['model' => $this->model, 'provider' => 'openrouter'];
+
         return $result;
     }
 
@@ -41,6 +44,7 @@ class OpenRouterAIService implements AIServiceInterface
         $response = $this->callOpenRouter($prompt);
         $result = $this->parseJsonResponse($response);
         $result['_meta'] = ['model' => $this->model, 'provider' => 'openrouter'];
+
         return $result;
     }
 
@@ -50,6 +54,7 @@ class OpenRouterAIService implements AIServiceInterface
         $response = $this->callOpenRouter($prompt);
         $result = $this->parseJsonResponse($response);
         $result['_meta'] = ['model' => $this->model, 'provider' => 'openrouter'];
+
         return $result;
     }
 
@@ -59,6 +64,36 @@ class OpenRouterAIService implements AIServiceInterface
         $response = $this->callOpenRouter($prompt);
         $result = $this->parseJsonResponse($response);
         $result['_meta'] = ['model' => $this->model, 'provider' => 'openrouter'];
+
+        return $result;
+    }
+
+    public function verifyCertificate(array $certificateData): array
+    {
+        $prompt = $this->buildCertificateVerificationPrompt($certificateData);
+        $response = $this->callOpenRouter($prompt);
+        $result = $this->parseJsonResponse($response);
+        $result['_meta'] = ['model' => $this->model, 'provider' => 'openrouter'];
+
+        return $result;
+    }
+
+    public function categorizeJobAd(array $jobData, array $existingIndustries): string
+    {
+        $prompt = $this->buildJobCategorizationPrompt($jobData, $existingIndustries);
+        $response = $this->callOpenRouter($prompt);
+        $result = $this->parseJsonResponse($response);
+
+        return $result['category_name'] ?? 'Other';
+    }
+
+    public function screenApplicant(array $jobData, array $cvData): array
+    {
+        $prompt = $this->buildApplicantScreeningPrompt($jobData, $cvData);
+        $response = $this->callOpenRouter($prompt);
+        $result = $this->parseJsonResponse($response);
+        $result['_meta'] = ['model' => $this->model, 'provider' => 'openrouter'];
+
         return $result;
     }
 
@@ -74,7 +109,7 @@ class OpenRouterAIService implements AIServiceInterface
         try {
             $response = Http::connectTimeout(60)->timeout(180)->withoutVerifying()
                 ->withHeaders([
-                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'Authorization' => 'Bearer '.$this->apiKey,
                     'HTTP-Referer' => config('app.url'),
                     'X-Title' => config('app.name'),
                 ])
@@ -95,6 +130,7 @@ class OpenRouterAIService implements AIServiceInterface
             }
 
             $data = $response->json();
+
             return $data['choices'][0]['message']['content'] ?? '';
         } catch (\Exception $e) {
             Log::error('OpenRouter API exception', ['error' => $e->getMessage()]);

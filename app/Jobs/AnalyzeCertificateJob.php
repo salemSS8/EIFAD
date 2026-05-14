@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Ai\Agents\CertificateVerifier;
 use App\Domain\Communication\Models\Notification;
 use App\Domain\CV\Models\CVCertification;
 use App\Domain\User\Models\UserRole;
@@ -30,7 +29,7 @@ class AnalyzeCertificateJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle(\App\Domain\Shared\Services\AiServiceOrchestrator $orchestrator): void
     {
         try {
             // Step 1: Extract text from file if available
@@ -43,31 +42,24 @@ class AnalyzeCertificateJob implements ShouldQueue
                 'ExtractedAt' => now(),
             ]);
 
-            // Step 3: Call AI Agent
-            $verifier = new CertificateVerifier(
-                certificateName: $this->certification->CertificateName,
-                issuingOrganization: $this->certification->IssuingOrganization,
-                extractedText: $extractedText,
-                sourceType: $this->sourceType,
-                credentialId: $this->certification->CredentialID,
-                credentialUrl: $this->certification->CredentialURL,
-            );
-
-            $aiResponse = $verifier->prompt('ابدأ تحليل الشهادة بناءً على التعليمات المعطاة لك.');
-
-            // Convert StructuredAgentResponse to array
-            $response = [
-                'confidence_score' => $aiResponse['confidence_score'] ?? 0,
-                'recommendation' => $aiResponse['recommendation'] ?? 'review',
-                'issuer_known' => $aiResponse['issuer_known'] ?? false,
-                'notes' => $aiResponse['notes'] ?? '',
-                'extracted_info' => $aiResponse['extracted_info'] ?? [],
+            // Step 3: Call AI with Failover (Gemini → Groq → OpenRouter)
+            $certificateData = [
+                'certificate_name' => $this->certification->CertificateName,
+                'issuing_organization' => $this->certification->IssuingOrganization,
+                'source_type' => $this->sourceType,
+                'credential_id' => $this->certification->CredentialID,
+                'credential_url' => $this->certification->CredentialURL,
+                'extracted_text' => $extractedText,
             ];
+
+            $response = $orchestrator->verifyCertificate($certificateData);
+
+            $aiModel = $response['_meta']['provider'] ?? 'unknown';
 
             // Step 4: Save AI results
             $this->certification->update([
                 'AiConfidenceScore' => $response['confidence_score'] ?? 0,
-                'AiModel' => 'gemini-2.5-flash',
+                'AiModel' => $aiModel,
                 'VerificationStatus' => 'ai_reviewed',
                 'VerificationNotes' => $response['notes'] ?? '',
                 'ExtractedData' => array_merge(
@@ -80,6 +72,7 @@ class AnalyzeCertificateJob implements ShouldQueue
                 'certification_id' => $this->certification->CertificationID,
                 'confidence' => $response['confidence_score'] ?? 0,
                 'recommendation' => $response['recommendation'] ?? 'unknown',
+                'provider' => $aiModel,
             ]);
 
             // Step 5: Notify all admins

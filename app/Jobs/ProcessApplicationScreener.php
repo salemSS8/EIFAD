@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
-use App\Ai\Agents\ApplicantScreener;
 use App\Domain\Application\Models\JobApplication;
+use App\Domain\Shared\Services\AiServiceOrchestrator;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +23,7 @@ class ProcessApplicationScreener implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle(AiServiceOrchestrator $orchestrator): void
     {
         try {
             // Eager load necessary relationships
@@ -44,13 +44,28 @@ class ProcessApplicationScreener implements ShouldQueue
                 return;
             }
 
-            // 1. تهيئة الوكيل الذكي
-            $screener = new ApplicantScreener($jobAd, $cv);
+            // 1. تحضير بيانات الوظيفة
+            $jobData = [
+                'Title' => $jobAd->Title,
+                'Description' => $jobAd->Description,
+                'Responsibilities' => $jobAd->Responsibilities,
+                'Requirements' => $jobAd->Requirements,
+            ];
 
-            // 2. استدعاء الذكاء الاصطناعي بالطريقة الرسمية الصحيحة
-            $response = $screener->prompt('ابدأ تحليل السيرة الذاتية بناءً على التعليمات المعطاة لك.');
+            // 2. تحضير بيانات السيرة الذاتية
+            $cvData = [
+                'Title' => $cv->Title,
+                'PersonalSummary' => $cv->PersonalSummary,
+                'Skills' => $cv->skills()->with('skill')->get()->map(fn ($s) => $s->skill->SkillName ?? '')->toArray(),
+                'Experience' => $cv->experiences->map(fn ($e) => "{$e->JobTitle} at {$e->CompanyName} ({$e->StartDate} to {$e->EndDate}): {$e->Responsibilities}")->toArray(),
+                'Education' => $cv->education->map(fn ($e) => "{$e->DegreeName} in {$e->Major} from {$e->Institution}")->toArray(),
+                'Languages' => $cv->languages()->with('language')->get()->map(fn ($l) => ($l->language->LanguageName ?? '')." ({$l->LanguageLevel})")->toArray(),
+            ];
 
-            // 3. ترتيب البيانات وحفظها (النتيجة تعود كمصفوفة بفضل HasStructuredOutput)
+            // 3. استدعاء الذكاء الاصطناعي مع Failover (Gemini → Groq → OpenRouter)
+            $response = $orchestrator->screenApplicant($jobData, $cvData);
+
+            // 4. ترتيب البيانات وحفظها
             DB::transaction(function () use ($response) {
                 $missingSkillsText = ! empty($response['missing_skills'])
                     ? "\nالمهارات الناقصة: ".implode('، ', $response['missing_skills'])

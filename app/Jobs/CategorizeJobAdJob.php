@@ -2,9 +2,9 @@
 
 namespace App\Jobs;
 
-use App\Domain\Job\Models\JobAd;
 use App\Domain\Job\Models\Industry;
-use App\Domain\Shared\Services\GeminiAIService;
+use App\Domain\Job\Models\JobAd;
+use App\Domain\Shared\Services\AiServiceOrchestrator;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -25,7 +25,7 @@ class CategorizeJobAdJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(GeminiAIService $aiService): void
+    public function handle(AiServiceOrchestrator $orchestrator): void
     {
         try {
             Log::info('CategorizeJobAdJob: Starting AI categorization', ['JobAdID' => $this->jobAd->JobAdID]);
@@ -39,7 +39,7 @@ class CategorizeJobAdJob implements ShouldQueue
                 'Responsibilities' => $this->jobAd->Responsibilities,
             ];
 
-            $categoryName = $aiService->categorizeJobAd($jobData, $existingIndustries);
+            $categoryName = $orchestrator->categorizeJobAd($jobData, $existingIndustries);
 
             if (! empty($categoryName)) {
                 $industry = Industry::firstOrCreate(['name' => trim($categoryName)]);

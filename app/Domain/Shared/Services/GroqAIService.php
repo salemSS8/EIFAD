@@ -5,7 +5,6 @@ namespace App\Domain\Shared\Services;
 use App\Domain\Shared\Contracts\AIServiceInterface;
 use App\Domain\Shared\Traits\HasAiPrompts;
 use App\Domain\Shared\Traits\ParsesAiResponses;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -17,7 +16,9 @@ class GroqAIService implements AIServiceInterface
     use HasAiPrompts, ParsesAiResponses;
 
     private string $apiKey;
+
     private string $baseUrl;
+
     private string $model;
 
     public function __construct()
@@ -33,6 +34,7 @@ class GroqAIService implements AIServiceInterface
         $response = $this->callGroq($prompt);
         $result = $this->parseJsonResponse($response);
         $result['_meta'] = ['model' => $this->model, 'provider' => 'groq'];
+
         return $result;
     }
 
@@ -42,6 +44,7 @@ class GroqAIService implements AIServiceInterface
         $response = $this->callGroq($prompt);
         $result = $this->parseJsonResponse($response);
         $result['_meta'] = ['model' => $this->model, 'provider' => 'groq'];
+
         return $result;
     }
 
@@ -51,6 +54,7 @@ class GroqAIService implements AIServiceInterface
         $response = $this->callGroq($prompt);
         $result = $this->parseJsonResponse($response);
         $result['_meta'] = ['model' => $this->model, 'provider' => 'groq'];
+
         return $result;
     }
 
@@ -60,6 +64,36 @@ class GroqAIService implements AIServiceInterface
         $response = $this->callGroq($prompt);
         $result = $this->parseJsonResponse($response);
         $result['_meta'] = ['model' => $this->model, 'provider' => 'groq'];
+
+        return $result;
+    }
+
+    public function verifyCertificate(array $certificateData): array
+    {
+        $prompt = $this->buildCertificateVerificationPrompt($certificateData);
+        $response = $this->callGroq($prompt);
+        $result = $this->parseJsonResponse($response);
+        $result['_meta'] = ['model' => $this->model, 'provider' => 'groq'];
+
+        return $result;
+    }
+
+    public function categorizeJobAd(array $jobData, array $existingIndustries): string
+    {
+        $prompt = $this->buildJobCategorizationPrompt($jobData, $existingIndustries);
+        $response = $this->callGroq($prompt);
+        $result = $this->parseJsonResponse($response);
+
+        return $result['category_name'] ?? 'Other';
+    }
+
+    public function screenApplicant(array $jobData, array $cvData): array
+    {
+        $prompt = $this->buildApplicantScreeningPrompt($jobData, $cvData);
+        $response = $this->callGroq($prompt);
+        $result = $this->parseJsonResponse($response);
+        $result['_meta'] = ['model' => $this->model, 'provider' => 'groq'];
+
         return $result;
     }
 
@@ -93,6 +127,7 @@ class GroqAIService implements AIServiceInterface
             }
 
             $data = $response->json();
+
             return $data['choices'][0]['message']['content'] ?? '';
         } catch (\Exception $e) {
             Log::error('Groq API exception', ['error' => $e->getMessage()]);

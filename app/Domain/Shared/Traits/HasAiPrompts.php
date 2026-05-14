@@ -153,4 +153,64 @@ PROMPT;
 }
 PROMPT;
     }
+
+    public function buildCertificateVerificationPrompt(array $certificateData): string
+    {
+        $certJson = json_encode($certificateData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        return <<<PROMPT
+أنت خبير تحقق من الشهادات المهنية والأكاديمية. مهمتك هي تحليل بيانات الشهادة المقدمة وتقييم مدى مصداقيتها.
+
+بيانات الشهادة:
+==============
+{$certJson}
+
+قم بتحليل الشهادة بناءً على المعايير التالية:
+1. هل اسم الشهادة واضح ومحدد؟ (شهادات بأسماء عامة جداً مثل "شهادة" بدون تفاصيل مشبوهة)
+2. هل الجهة المصدرة معروفة وموثوقة؟ (مثل Google, Microsoft, Coursera, Udemy, PMI, إلخ)
+3. هل يوجد رقم اعتماد (Credential ID) أو رابط تحقق (Credential URL)؟
+4. إذا تم استخراج نص من الملف، هل المحتوى متسق ومنطقي؟
+5. هل التواريخ المذكورة منطقية؟
+
+المطلوب: أرجع النتيجة بتنسيق JSON حصراً:
+{
+    "confidence_score": 85,
+    "recommendation": "approve",
+    "issuer_known": true,
+    "notes": "ملاحظات تفصيلية للأدمن باللغة العربية",
+    "extracted_info": {
+        "name": "اسم الشهادة المستخرج",
+        "issuer": "الجهة المصدرة المستخرجة",
+        "date": "تاريخ الإصدار المستخرج",
+        "credential_id": "رقم الاعتماد المستخرج"
+    }
+}
+PROMPT;
+    }
+
+    public function buildApplicantScreeningPrompt(array $jobData, array $cvData): string
+    {
+        $jobJson = json_encode($jobData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $cvJson = json_encode($cvData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        return <<<PROMPT
+أنت خبير توظيف ذكي (Expert HR Recruiter). مهمتك هي تحليل السيرة الذاتية (CV) للمتقدم ومقارنتها بدقة مع متطلبات الوظيفة (Job Advertisement) المعروضة.
+
+تفاصيل الوظيفة:
+=============
+{$jobJson}
+
+السيرة الذاتية للمتقدم:
+======================
+{$cvJson}
+
+قم بتحليل مهارات المتقدم، خبراته، وتعليمه وقارنها مع متطلبات الوظيفة ومسؤولياتها.
+المطلوب منك إرجاع البيانات التالية بصيغة JSON حصراً:
+{
+    "match_score": 75,
+    "missing_skills": ["مهارة 1", "مهارة 2"],
+    "notes": "تحليل قصير وتوصية عملية لصاحب العمل"
+}
+PROMPT;
+    }
 }

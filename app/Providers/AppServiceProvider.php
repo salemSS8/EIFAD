@@ -21,6 +21,10 @@ class AppServiceProvider extends ServiceProvider
 
             return new \App\Domain\Shared\Services\AiServiceOrchestrator($providers);
         });
+
+        $this->app->singleton(\App\Domain\Shared\Services\AiServiceOrchestrator::class, function ($app) {
+            return $app->make(\App\Domain\Shared\Contracts\AIServiceInterface::class);
+        });
     }
 
     /**

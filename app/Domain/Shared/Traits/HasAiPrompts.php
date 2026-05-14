@@ -127,4 +127,30 @@ PROMPT;
 }
 PROMPT;
     }
+
+    public function buildJobCategorizationPrompt(array $jobData, array $existingIndustries): string
+    {
+        $jobJson = json_encode($jobData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $industriesJson = json_encode($existingIndustries, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        return <<<PROMPT
+أنت مساعد ذكي لتصنيف الوظائف (Job Categorization).
+مهمتك هي تحليل الوظيفة المعطاة وتصنيفها إلى القطاع المهني (Industry/Profession) الأنسب لها.
+
+قائمة القطاعات المتوفرة حالياً في النظام:
+{$industriesJson}
+
+بيانات الوظيفة:
+{$jobJson}
+
+تعليمات:
+1. اقرأ المسمى الوظيفي، الوصف، والمهارات.
+2. اختر أنسب قطاع من القائمة المتوفرة.
+3. إذا لم تجد أي قطاع مناسب من القائمة، اقترح اسماً لقطاع مهني جديد ومختصر (مثال: تقنية المعلومات، المحاسبة والمالية، الموارد البشرية، الطب والرعاية الصحية).
+4. أرجع النتيجة بتنسيق JSON حصراً كالتالي:
+{
+    "category_name": "اسم القطاع هنا"
+}
+PROMPT;
+    }
 }

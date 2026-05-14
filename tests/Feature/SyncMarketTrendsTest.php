@@ -19,7 +19,7 @@ class SyncMarketTrendsTest extends TestCase
 
     public function test_sync_job_aggregates_data_correctly(): void
     {
-        // 1. Create User and Company
+        // 1. Create User, Company and Industry
         $user = User::create([
             'FullName' => 'Test Company',
             'Email' => 'company@example.com',
@@ -32,9 +32,12 @@ class SyncMarketTrendsTest extends TestCase
             'FieldOfWork' => 'Technology',
         ]);
 
+        $industry = \App\Domain\Job\Models\Industry::create(['name' => 'Information Technology']);
+
         // 2. Create Job Ad
         JobAd::create([
             'CompanyID' => $company->CompanyID,
+            'industry_id' => $industry->id,
             'Title' => 'Laravel Developer',
             'Location' => 'Riyadh',
             'Status' => 'Active',
@@ -51,15 +54,11 @@ class SyncMarketTrendsTest extends TestCase
         $this->assertDatabaseHas('jobdemandsnapshot', [
             'JobTitle' => 'Laravel Developer',
             'city_name' => 'Riyadh',
+            'industry_id' => $industry->id,
             'PostCount' => 1,
         ]);
 
-        // 5. Assert Industry was created
-        $this->assertDatabaseHas('industries', [
-            'name' => 'Technology',
-        ]);
-
-        // 6. Assert sync log
+        // 5. Assert sync log
         $this->assertDatabaseHas('sync_logs', [
             'status' => 'completed',
         ]);
@@ -67,7 +66,10 @@ class SyncMarketTrendsTest extends TestCase
 
     public function test_api_returns_filtered_trends(): void
     {
-        // 1. Seed some snapshots
+        // 1. Create user for authentication
+        $user = User::factory()->create();
+        
+        // 2. Seed some snapshots
         $industry = \App\Domain\Job\Models\Industry::create(['name' => 'Finance']);
         JobDemandSnapshot::create([
             'JobTitle' => 'Accountant',
@@ -77,10 +79,10 @@ class SyncMarketTrendsTest extends TestCase
             'SnapshotDate' => now()->toDateString(),
         ]);
 
-        // 2. Query API
-        $response = $this->getJson('/api/market-trends?industry_id=' . $industry->id . '&city_name=London');
+        // 3. Query API with authentication
+        $response = $this->actingAs($user)->getJson('/api/market-trends?industry_id=' . $industry->id . '&city_name=London');
 
-        // 3. Assertions
+        // 4. Assertions
         $response->assertStatus(200)
             ->assertJsonFragment(['labels' => ['Accountant']])
             ->assertJsonFragment(['values' => [5]]);

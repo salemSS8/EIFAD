@@ -21,6 +21,7 @@ class JobAd extends Model
 
     protected $fillable = [
         'CompanyID',
+        'industry_id',
         'Title',
         'Description',
         'Responsibilities',
@@ -56,6 +57,14 @@ class JobAd extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(\App\Domain\Company\Models\CompanyProfile::class, 'CompanyID', 'CompanyID');
+    }
+
+    /**
+     * Get the industry this job belongs to.
+     */
+    public function industry(): BelongsTo
+    {
+        return $this->belongsTo(\App\Domain\Job\Models\Industry::class, 'industry_id', 'id');
     }
 
     /**

@@ -42,7 +42,7 @@ class JobController extends Controller
     {
         $this->ensureIsAdmin($request);
 
-        $query = JobAd::withTrashed()->with('company');
+        $query = JobAd::withTrashed()->with('company')->withCount('applications');
 
         if ($request->filled('status')) {
             $query->where('Status', $request->status);
@@ -53,7 +53,7 @@ class JobController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where('Title', 'like', '%' . $request->search . '%');
+            $query->where('Title', 'like', '%'.$request->search.'%');
         }
 
         $jobs = $query->orderByDesc('PostedAt')->paginate(15);
@@ -122,7 +122,7 @@ class JobController extends Controller
         // Handle Restore or Delete based on Status
         if ($status !== 'Deleted' && $job->trashed()) {
             $job->restore();
-        } elseif ($status === 'Deleted' && !$job->trashed()) {
+        } elseif ($status === 'Deleted' && ! $job->trashed()) {
             $job->delete();
         }
 
@@ -157,7 +157,7 @@ class JobController extends Controller
 
         $job = JobAd::withTrashed()->findOrFail($id);
 
-        if (!$job->trashed()) {
+        if (! $job->trashed()) {
             $job->delete();
         }
 

@@ -33,9 +33,24 @@ class JobSeekerController extends Controller
         $query = \App\Domain\User\Models\JobSeekerProfile::with('user:UserID,FullName,Email,Phone,Avatar');
 
         if ($search) {
-            $query->whereHas('user', function ($q) use ($search) {
-                $q->where('FullName', 'like', "%{$search}%")
-                    ->orWhere('Email', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                // Search by Name or Email
+                $q->whereHas('user', function ($userQuery) use ($search) {
+                    $userQuery->where('FullName', 'like', "%{$search}%")
+                        ->orWhere('Email', 'like', "%{$search}%");
+                })
+                // Or search in CV details
+                    ->orWhereHas('cvs', function ($cvQuery) use ($search) {
+                        $cvQuery->where('Title', 'like', "%{$search}%")
+                            // Or search in Experience Job Titles
+                            ->orWhereHas('experiences', function ($expQuery) use ($search) {
+                                $expQuery->where('JobTitle', 'like', "%{$search}%");
+                            })
+                            // Or search in Skills
+                            ->orWhereHas('skills.skill', function ($skillQuery) use ($search) {
+                                $skillQuery->where('SkillName', 'like', "%{$search}%");
+                            });
+                    });
             });
         }
 

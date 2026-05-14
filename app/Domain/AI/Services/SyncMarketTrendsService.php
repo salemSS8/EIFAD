@@ -21,6 +21,7 @@ class SyncMarketTrendsService
 
         if (! $lock->get()) {
             Log::warning('Market Trends Sync is already running.');
+
             return;
         }
 
@@ -33,86 +34,82 @@ class SyncMarketTrendsService
         try {
             $today = now()->toDateString();
 
-        // 1. Process Job Title Trends
-        $jobTrends = DB::table('jobad')
-            ->join('companyprofile', 'jobad.CompanyID', '=', 'companyprofile.CompanyID')
-            ->where('jobad.Status', 'Active')
-            ->whereNotNull('jobad.Title')
-            ->select(
-                'jobad.Title',
-                'jobad.Location',
-                'companyprofile.FieldOfWork as industry_name',
-                DB::raw('count(*) as post_count'),
-                DB::raw('AVG((SalaryMin + SalaryMax) / 2) as avg_salary')
-            )
-            ->groupBy('jobad.Title', 'jobad.Location', 'companyprofile.FieldOfWork')
-            ->get();
+            // 1. Process Job Title Trends
+            $jobTrends = DB::table('jobad')
+                ->where('jobad.Status', 'Active')
+                ->whereNotNull('jobad.Title')
+                ->whereNotNull('jobad.industry_id')
+                ->select(
+                    'jobad.Title',
+                    'jobad.Location',
+                    'jobad.industry_id',
+                    DB::raw('count(*) as post_count'),
+                    DB::raw('AVG(NULLIF((SalaryMin + SalaryMax) / 2, 0)) as avg_salary')
+                )
+                ->groupBy('jobad.Title', 'jobad.Location', 'jobad.industry_id')
+                ->get();
 
-        foreach ($jobTrends as $trend) {
-            $industryId = $this->getIndustryId($trend->industry_name);
+            foreach ($jobTrends as $trend) {
+                JobDemandSnapshot::updateOrCreate(
+                    [
+                        'JobTitle' => $trend->Title,
+                        'industry_id' => $trend->industry_id,
+                        'city_name' => $trend->Location,
+                        'SnapshotDate' => $today,
+                    ],
+                    [
+                        'AverageSalary' => $trend->avg_salary,
+                        'PostCount' => $trend->post_count,
+                    ]
+                );
+            }
 
-            JobDemandSnapshot::updateOrCreate(
-                [
-                    'JobTitle' => $trend->Title,
-                    'industry_id' => $industryId,
-                    'city_name' => $trend->Location,
-                    'SnapshotDate' => $today,
-                ],
-                [
-                    'AverageSalary' => $trend->avg_salary,
-                    'PostCount' => $trend->post_count,
-                ]
-            );
+            // 2. Process Skill Trends
+            $skillTrends = DB::table('jobskill')
+                ->join('jobad', 'jobskill.JobAdID', '=', 'jobad.JobAdID')
+                ->where('jobad.Status', 'Active')
+                ->whereNotNull('jobad.industry_id')
+                ->select(
+                    'jobskill.SkillID',
+                    'jobad.Location',
+                    'jobad.industry_id',
+                    DB::raw('count(*) as demand_count')
+                )
+                ->groupBy('jobskill.SkillID', 'jobad.Location', 'jobad.industry_id')
+                ->get();
+
+            foreach ($skillTrends as $trend) {
+                SkillDemandSnapshot::updateOrCreate(
+                    [
+                        'SkillID' => $trend->SkillID,
+                        'industry_id' => $trend->industry_id,
+                        'city_name' => $trend->Location,
+                        'SnapshotDate' => $today,
+                    ],
+                    [
+                        'DemandCount' => $trend->demand_count,
+                    ]
+                );
+            }
+
+            $syncLog->update([
+                'status' => 'completed',
+                'finished_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Market Trends Sync failed: '.$e->getMessage(), [
+                'exception' => $e,
+            ]);
+            $syncLog->update([
+                'status' => 'failed',
+                'finished_at' => now(),
+                'error_message' => $e->getMessage(),
+            ]);
+            throw $e;
+        } finally {
+            $lock->release();
         }
-
-        // 2. Process Skill Trends
-        $skillTrends = DB::table('jobskill')
-            ->join('jobad', 'jobskill.JobAdID', '=', 'jobad.JobAdID')
-            ->join('companyprofile', 'jobad.CompanyID', '=', 'companyprofile.CompanyID')
-            ->where('jobad.Status', 'Active')
-            ->select(
-                'jobskill.SkillID',
-                'jobad.Location',
-                'companyprofile.FieldOfWork as industry_name',
-                DB::raw('count(*) as demand_count')
-            )
-            ->groupBy('jobskill.SkillID', 'jobad.Location', 'companyprofile.FieldOfWork')
-            ->get();
-
-        foreach ($skillTrends as $trend) {
-            $industryId = $this->getIndustryId($trend->industry_name);
-
-            SkillDemandSnapshot::updateOrCreate(
-                [
-                    'SkillID' => $trend->SkillID,
-                    'industry_id' => $industryId,
-                    'city_name' => $trend->Location,
-                    'SnapshotDate' => $today,
-                ],
-                [
-                    'DemandCount' => $trend->demand_count,
-                ]
-            );
-        }
-
-        $syncLog->update([
-            'status' => 'completed',
-            'finished_at' => now(),
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Market Trends Sync failed: '.$e->getMessage(), [
-            'exception' => $e,
-        ]);
-        $syncLog->update([
-            'status' => 'failed',
-            'finished_at' => now(),
-            'error_message' => $e->getMessage(),
-        ]);
-        throw $e;
-    } finally {
-        $lock->release();
     }
-}
 
     /**
      * Map industry name to ID.

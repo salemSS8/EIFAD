@@ -29,6 +29,7 @@ use Illuminate\Support\Facades\Log;
 class GeminiAIService implements AIServiceInterface
 {
     use HasAiPrompts, ParsesAiResponses;
+
     private string $apiKey;
 
     private string $baseUrl;
@@ -178,6 +179,32 @@ class GeminiAIService implements AIServiceInterface
         return $result;
     }
 
+    /**
+     * Categorize Job Ad using AI - TEXT ONLY.
+     *
+     * Input: Job data and existing industries
+     * Output: The best matching industry name
+     */
+    public function categorizeJobAd(array $jobData, array $existingIndustries): string
+    {
+        $prompt = $this->buildJobCategorizationPrompt($jobData, $existingIndustries);
+        $inputHash = $this->generateInputHash(['job' => $jobData, 'industries' => $existingIndustries]);
+
+        $cached = $this->getCachedResponse($inputHash);
+        if ($cached && isset($cached['category_name'])) {
+            return $cached['category_name'];
+        }
+
+        $response = $this->callGemini($prompt);
+        $result = $this->parseJsonResponse($response);
+
+        $categoryName = $result['category_name'] ?? 'Other';
+
+        $this->cacheResponse($inputHash, ['category_name' => $categoryName]);
+
+        return $categoryName;
+    }
+
     // =========================================================================
     // API CALL & RESPONSE HANDLING
     // =========================================================================
@@ -238,7 +265,6 @@ class GeminiAIService implements AIServiceInterface
             throw $e;
         }
     }
-
 
     // =========================================================================
     // PROMPT BUILDERS (Explanation-Only - No Scoring)

@@ -70,12 +70,6 @@ Route::get('/languages', [SkillController::class, 'languages']);
 // Job Seekers Search
 Route::get('/job-seekers', [JobSeekerController::class, 'index']);
 
-// Market Trends (Public)
-Route::prefix('market-trends')->group(function () {
-    Route::get('/', [MarketTrendController::class, 'index']);
-    Route::get('/filters', [MarketTrendController::class, 'filters']);
-});
-
 // =========================================
 // Protected Routes (Require Authentication)
 // =========================================
@@ -179,8 +173,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // AI Analytics & Matching
     // =========================================
 
-    // Market Trends (Legacy replaced by public routes)
-    // Route::get('/market-trends', [AiAnalyticsController::class, 'marketTrends']);
+    // Market Trends
+    Route::prefix('market-trends')->group(function () {
+        Route::get('/', [MarketTrendController::class, 'index']);
+        Route::get('/filters', [MarketTrendController::class, 'filters']);
+    });
 
     // Job Matching
     Route::prefix('jobs')->group(function () {

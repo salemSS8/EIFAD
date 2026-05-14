@@ -268,7 +268,7 @@ class JobController extends Controller
         $user = $request->user();
         $jobSeekerProfile = $user->jobSeekerProfile;
 
-        if (!$jobSeekerProfile) {
+        if (! $jobSeekerProfile) {
             return response()->json(['message' => 'Only job seekers can access suggested jobs'], 403);
         }
 
@@ -279,11 +279,11 @@ class JobController extends Controller
             ->first();
 
         // 2. التحقق من الشرطين (عدم وجود سيرة أو سيرة بدون مهارات)
-        if (!$latestCv || $latestCv->skills->isEmpty()) {
+        if (! $latestCv || $latestCv->skills->isEmpty()) {
             // إرجاع استجابة فارغة (قائمة مهارات فارغة)
             return response()->json([
                 'data' => [],
-                'message' => 'Please update your CV and add skills to get suggestions.'
+                'message' => 'Please update your CV and add skills to get suggestions.',
             ]);
         }
 
@@ -292,9 +292,31 @@ class JobController extends Controller
 
         $jobs = JobAd::with(['company'])
             ->where('Status', 'Active')
-            ->whereHas('skills', function ($q) use ($skillIds) {
-                $q->whereIn('SkillID', $skillIds);
+            ->where(function ($query) use ($skillIds, $latestCv) {
+                // Option 1: Overlapping skills
+                $query->whereHas('skills', function ($q) use ($skillIds) {
+                    $q->whereIn('SkillID', $skillIds);
+                })
+                // Option 3: AI Match Score >= 60
+                    ->orWhereHas('cvMatches', function ($q) use ($latestCv) {
+                        $q->where('CVID', $latestCv->CVID)
+                            ->where('MatchScore', '>=', 60);
+                    });
             })
+            // Add a count for matching skills (Option 1)
+            ->withCount(['skills as matching_skills_count' => function ($query) use ($skillIds) {
+                $query->whereIn('SkillID', $skillIds);
+            }])
+            // Add AI Match Score as a calculated column (Option 3)
+            ->addSelect([
+                'ai_match_score' => \App\Domain\AI\Models\CVJobMatch::select('MatchScore')
+                    ->whereColumn('JobAdID', 'jobad.JobAdID')
+                    ->where('CVID', $latestCv->CVID)
+                    ->limit(1),
+            ])
+            // Order by AI Match Score first, then matching skills count, then newest
+            ->orderByDesc('ai_match_score')
+            ->orderByDesc('matching_skills_count')
             ->orderByDesc('PostedAt')
             ->paginate(15);
 
@@ -430,6 +452,8 @@ class JobController extends Controller
                 ]);
             }
         }
+
+        \App\Jobs\CategorizeJobAdJob::dispatch($job);
 
         return response()->json([
             'message' => 'Job created successfully',
@@ -691,7 +715,7 @@ class JobController extends Controller
         }
 
         return response()->json([
-            'message' => 'AI Ranking triggered for ' . count($applications) . ' applicants. Please refresh the AI tab in a moment.',
+            'message' => 'AI Ranking triggered for '.count($applications).' applicants. Please refresh the AI tab in a moment.',
             'count' => count($applications),
         ]);
     }

@@ -23,6 +23,7 @@ class JobSeekerProfile extends Model
     protected $fillable = [
         'JobSeekerID',
         'PersonalPhoto',
+        'Status',
         'Location',
         'ProfileSummary',
     ];

@@ -50,8 +50,9 @@ class AdminController extends Controller
     )]
     #[OA\Parameter(name: 'search', in: 'query', description: 'Search by name or email', required: false, schema: new OA\Schema(type: 'string'))]
     #[OA\Parameter(name: 'role', in: 'query', description: 'Filter by role (JobSeeker, Employer, Admin)', required: false, schema: new OA\Schema(type: 'string'))]
-    #[OA\Parameter(name: 'status', in: 'query', description: 'Filter by status (active, blocked, unverified)', required: false, schema: new OA\Schema(type: 'string'))]
-    #[OA\Parameter(name: 'verification_status', in: 'query', description: 'Filter by verification status (verified, pending, rejected)', required: false, schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'account_status', in: 'query', description: 'Filter by account status (active, blocked, inactive)', required: false, schema: new OA\Schema(type: 'string', enum: ['active', 'blocked', 'inactive']))]
+    #[OA\Parameter(name: 'user_status', in: 'query', description: 'Filter by user status (trusted, nottrusted)', required: false, schema: new OA\Schema(type: 'string', enum: ['trusted', 'nottrusted']))]
+    #[OA\Parameter(name: 'verification_status', in: 'query', description: 'Filter by verification status for companies (verified, pending, rejected)', required: false, schema: new OA\Schema(type: 'string', enum: ['verified', 'pending', 'rejected']))]
     #[OA\Response(response: 200, description: 'List of users')]
     public function index(Request $request): JsonResponse
     {
@@ -74,35 +75,51 @@ class AdminController extends Controller
             });
         }
 
-        // Filter by status
-        if ($request->filled('status')) {
-            if ($request->input('status') === 'blocked') {
+        // Filter by Account Status (active, blocked, inactive)
+        if ($request->filled('account_status')) {
+            $status = $request->input('account_status');
+            if ($status === 'blocked') {
                 $query->where('IsBlocked', true);
-            } elseif ($request->input('status') === 'active') {
+            } elseif ($status === 'active') {
                 $query->where('IsBlocked', false)->where('IsVerified', true);
-            } elseif ($request->input('status') === 'unverified') {
-                $query->where('IsVerified', false);
+            } elseif ($status === 'inactive') {
+                $query->where('IsBlocked', false)->where('IsVerified', false);
             }
         }
 
-        // Filter by verification status
-        if ($request->filled('verification_status')) {
-            $vStatus = $request->input('verification_status');
-            if ($vStatus === 'verified') {
+        // Filter by User Status (trusted, nottrusted)
+        // This includes VerificationStatus for companies and Status for job seekers
+        if ($request->filled('user_status')) {
+            $status = $request->input('user_status');
+            if ($status === 'trusted') {
                 $query->where(function ($q) {
                     $q->whereHas('companyProfile', function ($q2) {
                         $q2->where('VerificationStatus', 'Verified');
-                    })->orWhere(function ($q3) {
-                        $q3->doesntHave('companyProfile')->where('IsVerified', true);
+                    })->orWhereHas('jobSeekerProfile', function ($q2) {
+                        $q2->where('Status', 'trusted');
                     });
                 });
-            } elseif ($vStatus === 'pending') {
+            } elseif ($status === 'nottrusted') {
                 $query->where(function ($q) {
                     $q->whereHas('companyProfile', function ($q2) {
                         $q2->where('VerificationStatus', 'Pending');
-                    })->orWhere(function ($q3) {
-                        $q3->doesntHave('companyProfile')->where('IsVerified', false);
+                    })->orWhereHas('jobSeekerProfile', function ($q2) {
+                        $q2->where('Status', 'notrusted');
                     });
+                });
+            }
+        }
+
+        // Filter by specific verification status (verified, pending, rejected)
+        if ($request->filled('verification_status')) {
+            $vStatus = $request->input('verification_status');
+            if ($vStatus === 'verified') {
+                $query->whereHas('companyProfile', function ($q) {
+                    $q->where('VerificationStatus', 'Verified');
+                });
+            } elseif ($vStatus === 'pending') {
+                $query->whereHas('companyProfile', function ($q) {
+                    $q->where('VerificationStatus', 'Pending');
                 });
             } elseif ($vStatus === 'rejected') {
                 $query->whereHas('companyProfile', function ($q) {
@@ -245,6 +262,7 @@ class AdminController extends Controller
                 new OA\Property(property: 'email', type: 'string'),
                 new OA\Property(property: 'phone', type: 'string'),
                 new OA\Property(property: 'is_verified', type: 'boolean'),
+                new OA\Property(property: 'status', type: 'string', enum: ['trusted', 'notrusted'], description: 'Only for JobSeekers'),
             ]
         )
     )]
@@ -282,9 +300,26 @@ class AdminController extends Controller
 
         $user->save();
 
+        // Update JobSeeker status if provided and user is JobSeeker
+        if ($request->has('status') && $user->hasRole('JobSeeker')) {
+            $newStatus = $request->input('status');
+            $user->jobSeekerProfile()->update(['Status' => $newStatus]);
+
+            // Notify user if status changed to trusted
+            if ($newStatus === 'trusted') {
+                Notification::create([
+                    'UserID' => $user->UserID,
+                    'Type' => 'account_update',
+                    'Content' => '🎉 تهانينا! تم توثيق حسابك كباحث عن عمل موثوق (Trusted). سيظهر ملفك بشكل أفضل لأصحاب العمل الآن.',
+                    'IsRead' => false,
+                    'CreatedAt' => now(),
+                ]);
+            }
+        }
+
         return response()->json([
             'message' => 'تم تحديث بيانات المستخدم بنجاح',
-            'data' => $user->fresh()->load('roles'),
+            'data' => $user->fresh()->load(['roles', 'jobSeekerProfile', 'companyProfile']),
         ]);
     }
 
@@ -339,6 +374,61 @@ class AdminController extends Controller
         return response()->json([
             'message' => 'تم حظر المستخدم بنجاح',
             'data' => $user->fresh(),
+        ]);
+    }
+
+    /**
+     * Verify or Unverify a Job Seeker.
+     */
+    #[OA\Post(
+        path: '/admin/users/{id}/verify-jobseeker',
+        operationId: 'verifyJobSeeker',
+        tags: ['Admin'],
+        summary: 'Verify or Unverify a Job Seeker',
+        description: 'Toggles the trusted status of a job seeker profile.',
+        security: [['bearerAuth' => []]]
+    )]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['status'],
+            properties: [
+                new OA\Property(property: 'status', type: 'string', enum: ['trusted', 'notrusted']),
+            ]
+        )
+    )]
+    #[OA\Response(response: 200, description: 'Status updated successfully')]
+    public function verifyJobSeeker(Request $request, int $id): JsonResponse
+    {
+        $this->ensureIsAdmin($request);
+        $user = User::where('UserID', $id)->firstOrFail();
+
+        if (! $user->hasRole('JobSeeker')) {
+            return response()->json(['message' => 'المستخدم ليس باحث عن عمل'], 422);
+        }
+
+        $request->validate(['status' => 'required|in:trusted,notrusted']);
+
+        $newStatus = $request->input('status');
+        $user->jobSeekerProfile()->update(['Status' => $newStatus]);
+
+        // Notify user
+        $message = $newStatus === 'trusted'
+            ? '🎉 تهانينا! تم توثيق حسابك كباحث عن عمل موثوق (Trusted). سيظهر ملفك بشكل أفضل لأصحاب العمل الآن.'
+            : 'تم تحديث حالة ملفك الشخصي من قبل الإدارة.';
+
+        Notification::create([
+            'UserID' => $user->UserID,
+            'Type' => 'account_update',
+            'Content' => $message,
+            'IsRead' => false,
+            'CreatedAt' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'تم تحديث حالة الباحث عن عمل بنجاح',
+            'data' => $user->fresh()->load('jobSeekerProfile'),
         ]);
     }
 
@@ -411,6 +501,7 @@ class AdminController extends Controller
                         new OA\Property(property: 'growth_percentage', type: 'number', example: 23),
                     ]),
                     new OA\Property(property: 'pending_company_verifications', type: 'integer', example: 24),
+                    new OA\Property(property: 'trusted_job_seekers', type: 'integer', example: 8500),
                     new OA\Property(property: 'pending_certificate_reviews', type: 'integer', example: 18),
                     new OA\Property(property: 'ai_alerts_count', type: 'integer', example: 7),
                 ]),
@@ -447,8 +538,9 @@ class AdminController extends Controller
         $applicationsThisMonth = JobApplication::where('AppliedAt', '>=', $currentMonthStart)->count();
         $applicationsLastMonth = JobApplication::whereBetween('AppliedAt', [$lastMonthStart, $lastMonthEnd])->count();
 
-        // Row 2: Pending actions
+        // Row 2: Pending actions and Trust levels
         $pendingVerifications = CompanyProfile::where('VerificationStatus', 'Pending')->count();
+        $trustedJobSeekers = \App\Domain\User\Models\JobSeekerProfile::where('Status', 'trusted')->count();
         $pendingCertificates = CVCertification::whereIn('VerificationStatus', ['pending', 'ai_reviewed'])->count();
 
         // Row 2: AI Alerts — unread notifications of type 'ai_alert' sent to admin users
@@ -476,6 +568,7 @@ class AdminController extends Controller
                 'growth_percentage' => $this->calculateGrowthPercentage($applicationsThisMonth, $applicationsLastMonth),
             ],
             'pending_company_verifications' => $pendingVerifications,
+            'trusted_job_seekers' => $trustedJobSeekers,
             'pending_certificate_reviews' => $pendingCertificates,
             'ai_alerts_count' => $aiAlertsCount,
         ]]);

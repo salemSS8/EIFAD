@@ -2,9 +2,9 @@
 
 namespace App\Domain\Job\Jobs;
 
-use App\Domain\Job\Models\JobAd;
-use App\Domain\CV\Models\CV;
 use App\Domain\AI\Models\CVJobMatch;
+use App\Domain\CV\Models\CV;
+use App\Domain\Job\Models\JobAd;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -14,14 +14,14 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Job: Compute Match Score using Rule-Based Weighted Algorithm (NO AI).
- * 
+ *
  * This job calculates match scores between a CV and multiple jobs
  * using deterministic weighted algorithms.
- * 
+ *
  * Output:
  * - match_score: 0-100
  * - detailed_breakdown: skills, experience, education weights
- * 
+ *
  * NO AI is used in this job.
  */
 class ComputeMatchScoreJob implements ShouldQueue
@@ -29,6 +29,7 @@ class ComputeMatchScoreJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $backoff = 30;
 
     /**
@@ -57,7 +58,7 @@ class ComputeMatchScoreJob implements ShouldQueue
 
             // Get jobs to match against
             $jobs = JobAd::whereIn('JobAdID', $this->jobIds)
-                ->orWhere(fn($q) => empty($this->jobIds) && $q->where('Status', 'Active'))
+                ->orWhere(fn ($q) => empty($this->jobIds) && $q->where('Status', 'Active'))
                 ->with('skills.skill')
                 ->take(50)
                 ->get();
@@ -73,7 +74,7 @@ class ComputeMatchScoreJob implements ShouldQueue
             }
 
             // Sort by match score descending
-            usort($results, fn($a, $b) => $b['match_score'] - $a['match_score']);
+            usort($results, fn ($a, $b) => $b['match_score'] - $a['match_score']);
 
             Log::info('ComputeMatchScoreJob: Matches computed', [
                 'cv_id' => $this->cv->CVID,
@@ -88,7 +89,7 @@ class ComputeMatchScoreJob implements ShouldQueue
         } catch (\Exception $e) {
             Log::error('ComputeMatchScoreJob failed', [
                 'cv_id' => $this->cv->CVID,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -118,10 +119,15 @@ class ComputeMatchScoreJob implements ShouldQueue
             ($experienceRelevanceScore * self::WEIGHTS['experience_relevance'] / 100) +
             ($educationScore * self::WEIGHTS['education'] / 100);
 
+        // Deep Integration: Trust Boost (+10 points for trusted users)
+        if (($this->cv->jobSeeker->Status ?? 'notrusted') === 'trusted') {
+            $totalScore += 10;
+        }
+
         return [
             'job_id' => $job->JobAdID,
             'job_title' => $job->Title,
-            'match_score' => (int) round($totalScore),
+            'match_score' => (int) min(100, round($totalScore)),
             'breakdown' => [
                 'skills_exact' => [
                     'score' => $skillsExactScore,
@@ -153,12 +159,12 @@ class ComputeMatchScoreJob implements ShouldQueue
     private function calculateExactSkillsMatch(JobAd $job): int
     {
         $jobSkills = $job->skills->pluck('skill.SkillName')
-            ->map(fn($s) => strtolower(trim($s)))
+            ->map(fn ($s) => strtolower(trim($s)))
             ->filter()
             ->toArray();
 
         $cvSkills = $this->cv->skills->pluck('skill.SkillName')
-            ->map(fn($s) => strtolower(trim($s)))
+            ->map(fn ($s) => strtolower(trim($s)))
             ->filter()
             ->toArray();
 
@@ -167,6 +173,7 @@ class ComputeMatchScoreJob implements ShouldQueue
         }
 
         $matched = count(array_intersect($jobSkills, $cvSkills));
+
         return (int) round(($matched / count($jobSkills)) * 100);
     }
 
@@ -193,6 +200,7 @@ class ComputeMatchScoreJob implements ShouldQueue
         }
 
         $matched = count(array_intersect($cvSkillCategories, $jobSkillCategories));
+
         return (int) round(($matched / count($jobSkillCategories)) * 100);
     }
 
@@ -213,11 +221,22 @@ class ComputeMatchScoreJob implements ShouldQueue
             }
         }
 
-        if ($totalYears >= 10) return 100;
-        if ($totalYears >= 7) return 90;
-        if ($totalYears >= 5) return 75;
-        if ($totalYears >= 3) return 60;
-        if ($totalYears >= 1) return 40;
+        if ($totalYears >= 10) {
+            return 100;
+        }
+        if ($totalYears >= 7) {
+            return 90;
+        }
+        if ($totalYears >= 5) {
+            return 75;
+        }
+        if ($totalYears >= 3) {
+            return 60;
+        }
+        if ($totalYears >= 1) {
+            return 40;
+        }
+
         return 20;
     }
 

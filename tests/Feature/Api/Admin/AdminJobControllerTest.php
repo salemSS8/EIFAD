@@ -4,7 +4,8 @@ namespace Tests\Feature\Api\Admin;
 
 use App\Domain\Company\Models\CompanyProfile;
 use App\Domain\Job\Models\JobAd;
-use App\Models\User;
+use App\Domain\User\Models\Role;
+use App\Domain\User\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -14,35 +15,27 @@ class AdminJobControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $companyUser;
+
     private CompanyProfile $companyProfile;
+
     private JobAd $jobAd;
 
     protected function setUp(): void
     {
         parent::setUp();
+        Role::create(['RoleName' => 'Admin']);
+        Role::create(['RoleName' => 'Employer']);
+        Role::create(['RoleName' => 'JobSeeker']);
 
         // 1. Create an Admin user
-        $this->admin = User::factory()->create([
-            'Email' => 'admin_test_jobs@example.com',
-        ]);
-        $adminRole = \App\Models\Role::firstOrCreate(['RoleName' => 'Admin']);
-        \App\Models\UserRole::create([
-            'UserID' => $this->admin->UserID,
-            'RoleID' => $adminRole->RoleID,
-            'AssignedAt' => now(),
-        ]);
+        $this->admin = User::factory()->create();
+        $this->admin->roles()->attach(Role::where('RoleName', 'Admin')->first(), ['AssignedAt' => now()]);
 
         // 2. Create a Company user & profile
-        $this->companyUser = User::factory()->create([
-            'Email' => 'company_test_jobs@example.com',
-        ]);
-        $companyRole = \App\Models\Role::firstOrCreate(['RoleName' => 'Employer']);
-        \App\Models\UserRole::create([
-            'UserID' => $this->companyUser->UserID,
-            'RoleID' => $companyRole->RoleID,
-            'AssignedAt' => now(),
-        ]);
+        $this->companyUser = User::factory()->create();
+        $this->companyUser->roles()->attach(Role::where('RoleName', 'Employer')->first(), ['AssignedAt' => now()]);
 
         $this->companyProfile = CompanyProfile::create([
             'CompanyID' => $this->companyUser->UserID,
@@ -72,7 +65,7 @@ class AdminJobControllerTest extends TestCase
 
     public function test_admin_can_filter_jobs_by_status()
     {
-        Sanctum::actingAs($this->admin, ['*']);
+        $this->actingAs($this->admin);
 
         JobAd::create([
             'CompanyID' => $this->companyProfile->CompanyID,
@@ -90,9 +83,9 @@ class AdminJobControllerTest extends TestCase
 
     public function test_admin_can_view_job_details()
     {
-        Sanctum::actingAs($this->admin, ['*']);
+        $this->actingAs($this->admin);
 
-        $response = $this->getJson('/api/admin/jobs/' . $this->jobAd->JobAdID);
+        $response = $this->getJson('/api/admin/jobs/'.$this->jobAd->JobAdID);
 
         $response->assertStatus(200)
             ->assertJsonPath('data.Title', 'Backend Developer')
@@ -101,7 +94,7 @@ class AdminJobControllerTest extends TestCase
 
     public function test_admin_can_update_job_status_and_restore()
     {
-        Sanctum::actingAs($this->admin, ['*']);
+        $this->actingAs($this->admin);
 
         // First, soft delete the job and set status to Deleted
         $this->jobAd->update(['Status' => 'Deleted']);
@@ -111,7 +104,7 @@ class AdminJobControllerTest extends TestCase
         $this->assertTrue($this->jobAd->trashed());
 
         // Update to Active
-        $response = $this->putJson('/api/admin/jobs/' . $this->jobAd->JobAdID, [
+        $response = $this->putJson('/api/admin/jobs/'.$this->jobAd->JobAdID, [
             'status' => 'Active',
             'title' => 'Restored Developer',
         ]);
@@ -125,9 +118,9 @@ class AdminJobControllerTest extends TestCase
 
     public function test_admin_can_delete_job()
     {
-        Sanctum::actingAs($this->admin, ['*']);
+        $this->actingAs($this->admin);
 
-        $response = $this->deleteJson('/api/admin/jobs/' . $this->jobAd->JobAdID);
+        $response = $this->deleteJson('/api/admin/jobs/'.$this->jobAd->JobAdID);
 
         $response->assertStatus(200)
             ->assertJsonPath('message', 'Job deleted successfully');
@@ -139,12 +132,12 @@ class AdminJobControllerTest extends TestCase
 
     public function test_non_admin_cannot_access_job_management()
     {
-        Sanctum::actingAs($this->companyUser, ['*']);
+        $this->actingAs($this->companyUser);
 
         $response = $this->getJson('/api/admin/jobs');
         $response->assertStatus(403);
 
-        $response = $this->deleteJson('/api/admin/jobs/' . $this->jobAd->JobAdID);
+        $response = $this->deleteJson('/api/admin/jobs/'.$this->jobAd->JobAdID);
         $response->assertStatus(403);
     }
 }

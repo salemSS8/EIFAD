@@ -65,7 +65,7 @@ class AnalyzeCertificateJobTest extends TestCase
     {
         // The job works even without a file — AI will analyze text-based data only
         $job = new AnalyzeCertificateJob($this->certification, 'job_seeker');
-        $job->handle();
+        app()->call([$job, 'handle']);
 
         $this->certification->refresh();
 

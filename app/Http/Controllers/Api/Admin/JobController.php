@@ -18,7 +18,7 @@ class JobController extends Controller
      */
     private function ensureIsAdmin(Request $request)
     {
-        if (! $request->user()->roles()->where('RoleName', 'Admin')->exists()) {
+        if (! $request->user()->isAdmin()) {
             abort(403, 'Unauthorized access');
         }
     }

@@ -40,21 +40,44 @@
                         }
                     },
                     {
-                        "name": "status",
+                        "name": "account_status",
                         "in": "query",
-                        "description": "Filter by status (active, blocked, unverified)",
+                        "description": "Filter by account status (active, blocked, inactive)",
                         "required": false,
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "enum": [
+                                "active",
+                                "blocked",
+                                "inactive"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "user_status",
+                        "in": "query",
+                        "description": "Filter by user status (trusted, nottrusted)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "trusted",
+                                "nottrusted"
+                            ]
                         }
                     },
                     {
                         "name": "verification_status",
                         "in": "query",
-                        "description": "Filter by verification status (verified, pending, rejected)",
+                        "description": "Filter by verification status for companies (verified, pending, rejected)",
                         "required": false,
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "enum": [
+                                "verified",
+                                "pending",
+                                "rejected"
+                            ]
                         }
                     }
                 ],
@@ -189,6 +212,14 @@
                                     },
                                     "is_verified": {
                                         "type": "boolean"
+                                    },
+                                    "status": {
+                                        "description": "Only for JobSeekers",
+                                        "type": "string",
+                                        "enum": [
+                                            "trusted",
+                                            "notrusted"
+                                        ]
                                     }
                                 },
                                 "type": "object"
@@ -247,6 +278,58 @@
                 "responses": {
                     "200": {
                         "description": "User blocked successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/users/{id}/verify-jobseeker": {
+            "post": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Verify or Unverify a Job Seeker",
+                "description": "Toggles the trusted status of a job seeker profile.",
+                "operationId": "verifyJobSeeker",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "trusted",
+                                            "notrusted"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Status updated successfully"
                     }
                 },
                 "security": [
@@ -358,6 +441,10 @@
                                                 "pending_company_verifications": {
                                                     "type": "integer",
                                                     "example": 24
+                                                },
+                                                "trusted_job_seekers": {
+                                                    "type": "integer",
+                                                    "example": 8500
                                                 },
                                                 "pending_certificate_reviews": {
                                                     "type": "integer",
@@ -5304,6 +5391,19 @@
                         }
                     },
                     {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter by status (trusted, notrusted)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "trusted",
+                                "notrusted"
+                            ]
+                        }
+                    },
+                    {
                         "name": "per_page",
                         "in": "query",
                         "description": "Items per page (default 15)",
@@ -5583,6 +5683,13 @@
                                                         "PersonalPhoto": {
                                                             "type": "string",
                                                             "nullable": true
+                                                        },
+                                                        "Status": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "trusted",
+                                                                "notrusted"
+                                                            ]
                                                         },
                                                         "Location": {
                                                             "type": "string",

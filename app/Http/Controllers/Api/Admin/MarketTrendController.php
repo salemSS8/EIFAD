@@ -30,7 +30,7 @@ class MarketTrendController extends Controller
     //     SyncMarketTrendsJob::dispatch(auth()->id());
     //
     //     return response()->json([
-    //         'message' => 'Market trends synchronization has been queued and will complete in the background.',
+    //         'message' => 'Market trends sync completed successfully.',
     //     ]);
     // }
 

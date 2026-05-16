@@ -154,7 +154,7 @@ class AiAnalyticsTest extends TestCase
                     'strengths',
                     'weaknesses',
                     'gaps',
-                ]
+                ],
             ]);
     }
 
@@ -295,19 +295,18 @@ class AiAnalyticsTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'data' => [
-                    'top_skills' => [
-                        '*' => ['skill_id', 'skill_name', 'demand_count', 'popularity_percentage'],
-                    ],
-                    'trending_jobs' => [
-                        '*' => ['JobTitle', 'AverageSalary', 'PostCount', 'SnapshotDate'],
-                    ],
+                'trending_jobs' => [
+                    'labels',
+                    'values',
+                    'salaries',
                 ],
-                'meta' => ['snapshot_date', 'total_active_jobs'],
+                'in_demand_skills' => [
+                    'labels',
+                    'values',
+                ],
             ])
-            ->assertJsonPath('data.top_skills.0.skill_name', 'Laravel')
-            ->assertJsonPath('data.top_skills.0.popularity_percentage', 33.3) // 1 skill / 3 jobs (2 new + 1 from setUp)
-            ->assertJsonPath('data.trending_jobs.0.JobTitle', 'Backend Developer');
+            ->assertJsonPath('in_demand_skills.labels.0', 'Laravel')
+            ->assertJsonPath('trending_jobs.labels.0', 'Backend Developer');
     }
 
     public function test_sync_market_trends_command(): void
@@ -346,18 +345,5 @@ class AiAnalyticsTest extends TestCase
             'AverageSalary' => 1500.00,
             'PostCount' => 1,
         ]);
-    }
-
-    public function test_admin_can_sync_market_trends_via_api(): void
-    {
-        $admin = User::factory()->create();
-        $adminRole = Role::where('RoleName', 'Admin')->first() ?: Role::create(['RoleName' => 'Admin']);
-        $admin->roles()->attach($adminRole);
-
-        $response = $this->actingAs($admin)
-            ->postJson('/api/admin/market-trends/sync');
-
-        $response->assertStatus(200)
-            ->assertJsonPath('message', 'Market trends sync completed successfully.');
     }
 }

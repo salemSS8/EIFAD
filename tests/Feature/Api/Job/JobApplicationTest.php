@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\Api\Job;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use App\Domain\User\Models\User;
 use App\Domain\User\Models\Role;
+use App\Domain\User\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\TestCase;
 
 class JobApplicationTest extends TestCase
 {
@@ -112,7 +112,7 @@ class JobApplicationTest extends TestCase
         $jobId = DB::table('jobad')->insertGetId([
             'CompanyID' => $employer->UserID,
             'Title' => 'Job 1',
-            'Status' => 'Active'
+            'Status' => 'Active',
         ]);
 
         $seeker = User::factory()->create();
@@ -126,6 +126,7 @@ class JobApplicationTest extends TestCase
             'JobSeekerID' => $seeker->UserID,
             'CVID' => $cvId,
             'AppliedAt' => now(),
+            'Status' => 'Pending',
         ]);
 
         // Second attempt
@@ -175,7 +176,7 @@ class JobApplicationTest extends TestCase
         $jobId = DB::table('jobad')->insertGetId([
             'CompanyID' => $employer->UserID,
             'Title' => 'Job 1',
-            'Status' => 'Active'
+            'Status' => 'Active',
         ]);
 
         // Application
@@ -188,6 +189,7 @@ class JobApplicationTest extends TestCase
             'JobSeekerID' => $seeker->UserID,
             'CVID' => $cvId,
             'AppliedAt' => now(),
+            'Status' => 'Pending',
         ]);
 
         $response = $this->actingAs($employer)->getJson("/api/employer/jobs/{$jobId}/applications");
@@ -196,13 +198,8 @@ class JobApplicationTest extends TestCase
             dump($response->json());
         } else {
             $data = $response->json('data');
-            if (empty($data) || is_null($data[0]['job_seeker'])) {
-                dump("JobSeeker is null. App ID:", $data[0]['ApplicationID']);
-                dump("App JobSeekerID:", $data[0]['JobSeekerID']);
-                dump("Profile Exists?", \App\Domain\User\Models\JobSeekerProfile::where('JobSeekerID', $data[0]['JobSeekerID'])->exists());
-                // Direct relation check
-                $app = \App\Domain\Application\Models\JobApplication::find($data[0]['ApplicationID']);
-                dump("Relation jobSeeker:", $app->jobSeeker);
+            if (empty($data)) {
+                dump('Applications list is empty for JobID: '.$jobId);
             }
         }
 
@@ -219,7 +216,7 @@ class JobApplicationTest extends TestCase
         $jobId = DB::table('jobad')->insertGetId([
             'CompanyID' => $employer->UserID,
             'Title' => 'Job 1',
-            'Status' => 'Active'
+            'Status' => 'Active',
         ]);
 
         $seeker = User::factory()->create();

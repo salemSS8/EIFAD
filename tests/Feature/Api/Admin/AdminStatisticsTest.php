@@ -42,6 +42,7 @@ class AdminStatisticsTest extends TestCase
                 'active_job_ads' => ['count', 'growth_percentage'],
                 'total_applications' => ['count', 'growth_percentage'],
                 'pending_company_verifications',
+                'trusted_job_seekers',
                 'pending_certificate_reviews',
                 'ai_alerts_count',
             ]]);
@@ -167,6 +168,36 @@ class AdminStatisticsTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonPath('data.pending_company_verifications', 2);
+    }
+
+    public function test_statistics_counts_trusted_job_seekers(): void
+    {
+        $jobSeekerRole = Role::where('RoleName', 'JobSeeker')->first();
+
+        // 3 trusted
+        for ($i = 0; $i < 3; $i++) {
+            $user = User::factory()->create();
+            $user->roles()->attach($jobSeekerRole);
+            DB::table('jobseekerprofile')->insert([
+                'JobSeekerID' => $user->UserID,
+                'Status' => 'trusted',
+            ]);
+        }
+
+        // 2 nottrusted (should NOT count)
+        for ($i = 0; $i < 2; $i++) {
+            $user = User::factory()->create();
+            $user->roles()->attach($jobSeekerRole);
+            DB::table('jobseekerprofile')->insert([
+                'JobSeekerID' => $user->UserID,
+                'Status' => 'notrusted',
+            ]);
+        }
+
+        $response = $this->actingAs($this->admin)->getJson('/api/admin/users/statistics');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.trusted_job_seekers', 3);
     }
 
     public function test_statistics_counts_pending_certificate_reviews(): void

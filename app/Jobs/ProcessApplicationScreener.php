@@ -60,6 +60,7 @@ class ProcessApplicationScreener implements ShouldQueue
                 'Experience' => $cv->experiences->map(fn ($e) => "{$e->JobTitle} at {$e->CompanyName} ({$e->StartDate} to {$e->EndDate}): {$e->Responsibilities}")->toArray(),
                 'Education' => $cv->education->map(fn ($e) => "{$e->DegreeName} in {$e->Major} from {$e->Institution}")->toArray(),
                 'Languages' => $cv->languages()->with('language')->get()->map(fn ($l) => ($l->language->LanguageName ?? '')." ({$l->LanguageLevel})")->toArray(),
+                'VerificationStatus' => $cv->jobSeeker->Status ?? 'notrusted',
             ];
 
             // 3. استدعاء الذكاء الاصطناعي مع Failover (Gemini → Groq → OpenRouter)

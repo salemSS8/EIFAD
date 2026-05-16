@@ -34,6 +34,7 @@ class CandidateRecommendationResource extends JsonResource
                 'email' => $this->cv->jobSeeker->user->Email,
                 'phone' => $this->cv->jobSeeker->user->Phone,
                 'avatar' => $this->cv->jobSeeker->user->Avatar,
+                'status' => $this->cv->jobSeeker->Status ?? 'notrusted',
                 'location' => $this->cv->jobSeeker->Location,
             ],
         ];

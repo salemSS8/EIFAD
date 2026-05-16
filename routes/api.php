@@ -285,6 +285,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/{id}', [AdminController::class, 'update']);
             Route::post('/{id}/block', [AdminController::class, 'block']);
             Route::post('/{id}/unblock', [AdminController::class, 'unblock']);
+            Route::post('/{id}/verify-jobseeker', [AdminController::class, 'verifyJobSeeker']);
         });
 
         // Company Verification Management

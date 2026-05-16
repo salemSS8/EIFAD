@@ -22,6 +22,7 @@ class JobSeekerController extends Controller
     )]
     #[OA\Parameter(name: 'search', in: 'query', description: 'Search by name or email', required: false, schema: new OA\Schema(type: 'string'))]
     #[OA\Parameter(name: 'location', in: 'query', description: 'Filter by location', required: false, schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'status', in: 'query', description: 'Filter by status (trusted, notrusted)', required: false, schema: new OA\Schema(type: 'string', enum: ['trusted', 'notrusted']))]
     #[OA\Parameter(name: 'per_page', in: 'query', description: 'Items per page (default 15)', required: false, schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(response: 200, description: 'Paginated list of job seekers')]
     public function index(Request $request): JsonResponse
@@ -56,6 +57,10 @@ class JobSeekerController extends Controller
 
         if ($location) {
             $query->where('Location', 'like', "%{$location}%");
+        }
+
+        if ($request->filled('status')) {
+            $query->where('Status', $request->input('status'));
         }
 
         $jobSeekers = $query->paginate($perPage);

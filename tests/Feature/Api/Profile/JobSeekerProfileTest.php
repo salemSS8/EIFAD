@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\Api\Profile;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use App\Domain\User\Models\User;
 use App\Domain\User\Models\Role;
+use App\Domain\User\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\TestCase;
 
 class JobSeekerProfileTest extends TestCase
 {
@@ -38,7 +38,8 @@ class JobSeekerProfileTest extends TestCase
                 'data' => [
                     'Location' => 'Yemen',
                     'ProfileSummary' => 'Software Engineer',
-                ]
+                    'Status' => 'notrusted',
+                ],
             ]);
     }
 
@@ -60,7 +61,7 @@ class JobSeekerProfileTest extends TestCase
                 'data' => [
                     'Location' => 'Aden',
                     'ProfileSummary' => 'Updated Summary',
-                ]
+                ],
             ]);
 
         $this->assertDatabaseHas('jobseekerprofile', [

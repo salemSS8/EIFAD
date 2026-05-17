@@ -3428,6 +3428,42 @@
                 "requestBody": {
                     "required": true,
                     "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "certificate_name"
+                                ],
+                                "properties": {
+                                    "certificate_name": {
+                                        "type": "string",
+                                        "example": "PMP Certification"
+                                    },
+                                    "issuing_organization": {
+                                        "type": "string",
+                                        "example": "PMI"
+                                    },
+                                    "credential_id": {
+                                        "type": "string",
+                                        "example": "ABC-123"
+                                    },
+                                    "credential_url": {
+                                        "type": "string",
+                                        "example": "https://verify.pmi.org/ABC-123"
+                                    },
+                                    "issue_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "cloudinary_url": {
+                                        "description": "Cloudinary Secure URL (direct client upload)",
+                                        "type": "string",
+                                        "format": "uri",
+                                        "example": "https://res.cloudinary.com/drspmn3gd/image/upload/v12345/my_cert.pdf"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
                         "multipart/form-data": {
                             "schema": {
                                 "required": [
@@ -4108,6 +4144,28 @@
                 "requestBody": {
                     "required": true,
                     "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "document_urls": {
+                                        "description": "Array of Cloudinary secure URLs indexed 0, 1, 2",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "uri"
+                                        }
+                                    },
+                                    "document_names": {
+                                        "description": "Array of file names indexed 0, 1, 2",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
                         "multipart/form-data": {
                             "schema": {
                                 "properties": {

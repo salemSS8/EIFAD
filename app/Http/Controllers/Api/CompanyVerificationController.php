@@ -25,16 +25,37 @@ class CompanyVerificationController extends Controller
     )]
     #[OA\RequestBody(
         required: true,
-        content: new OA\MediaType(
-            mediaType: 'multipart/form-data',
-            schema: new OA\Schema(
-                properties: [
-                    new OA\Property(property: 'document_0', type: 'string', format: 'binary', description: 'Commercial Register (Index 0)'),
-                    new OA\Property(property: 'document_1', type: 'string', format: 'binary', description: 'Tax Card (Index 1)'),
-                    new OA\Property(property: 'document_2', type: 'string', format: 'binary', description: 'Additional/ID (Index 2)'),
-                ]
-            )
-        )
+        content: [
+            new OA\MediaType(
+                mediaType: 'application/json',
+                schema: new OA\Schema(
+                    properties: [
+                        new OA\Property(
+                            property: 'document_urls',
+                            type: 'array',
+                            items: new OA\Items(type: 'string', format: 'uri'),
+                            description: 'Array of Cloudinary secure URLs indexed 0, 1, 2'
+                        ),
+                        new OA\Property(
+                            property: 'document_names',
+                            type: 'array',
+                            items: new OA\Items(type: 'string'),
+                            description: 'Array of file names indexed 0, 1, 2'
+                        ),
+                    ]
+                )
+            ),
+            new OA\MediaType(
+                mediaType: 'multipart/form-data',
+                schema: new OA\Schema(
+                    properties: [
+                        new OA\Property(property: 'document_0', type: 'string', format: 'binary', description: 'Commercial Register (Index 0)'),
+                        new OA\Property(property: 'document_1', type: 'string', format: 'binary', description: 'Tax Card (Index 1)'),
+                        new OA\Property(property: 'document_2', type: 'string', format: 'binary', description: 'Additional/ID (Index 2)'),
+                    ]
+                )
+            ),
+        ]
     )]
     #[OA\Response(response: 200, description: 'Documents uploaded successfully')]
     public function upload(Request $request): JsonResponse
@@ -47,6 +68,16 @@ class CompanyVerificationController extends Controller
             'document_0' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
             'document_1' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
             'document_2' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:10240',
+
+            // Cloudinary direct-upload parameters
+            'document_urls' => 'nullable|array',
+            'document_urls.0' => 'nullable|url|max:500',
+            'document_urls.1' => 'nullable|url|max:500',
+            'document_urls.2' => 'nullable|url|max:500',
+            'document_names' => 'nullable|array',
+            'document_names.0' => 'nullable|string|max:255',
+            'document_names.1' => 'nullable|string|max:255',
+            'document_names.2' => 'nullable|string|max:255',
         ]);
 
         $user = $request->user();
@@ -57,28 +88,48 @@ class CompanyVerificationController extends Controller
         }
 
         $documents = $company->VerificationDocuments ?? [];
-        if (!is_array($documents)) { $documents = []; }
+        if (! is_array($documents)) {
+            $documents = [];
+        }
 
         $uploadedAny = false;
 
         foreach ([0, 1, 2] as $index) {
-            // Check both documents[index] and document_index for compatibility
-            $file = $request->file("documents.$index") ?? $request->file("document_$index");
+            // Check for Cloudinary URL first (client-side upload)
+            $cloudinaryUrl = $request->input("document_urls.$index");
+            $cloudinaryName = $request->input("document_names.$index") ?? "document_$index.pdf";
 
-            if ($file) {
-                // Delete old file if exists
-                if (isset($documents[$index]['path'])) {
+            if ($cloudinaryUrl) {
+                // If there was an old local file, delete it
+                if (isset($documents[$index]['path']) && filter_var($documents[$index]['path'], FILTER_VALIDATE_URL) === false) {
                     \Illuminate\Support\Facades\Storage::disk('local')->delete($documents[$index]['path']);
                 }
 
-                $path = $file->store('company_verifications/'.$company->CompanyID, 'local');
-                
                 $documents[$index] = [
-                    'name' => $file->getClientOriginalName(),
-                    'path' => $path,
+                    'name' => $cloudinaryName,
+                    'path' => $cloudinaryUrl,
                     'uploaded_at' => now()->toDateTimeString(),
                 ];
                 $uploadedAny = true;
+            } else {
+                // Check traditional file upload
+                $file = $request->file("documents.$index") ?? $request->file("document_$index");
+
+                if ($file) {
+                    // Delete old file if exists (and was a local file)
+                    if (isset($documents[$index]['path']) && filter_var($documents[$index]['path'], FILTER_VALIDATE_URL) === false) {
+                        \Illuminate\Support\Facades\Storage::disk('local')->delete($documents[$index]['path']);
+                    }
+
+                    $path = $file->store('company_verifications/'.$company->CompanyID, 'local');
+
+                    $documents[$index] = [
+                        'name' => $file->getClientOriginalName(),
+                        'path' => $path,
+                        'uploaded_at' => now()->toDateTimeString(),
+                    ];
+                    $uploadedAny = true;
+                }
             }
         }
 
@@ -136,16 +187,20 @@ class CompanyVerificationController extends Controller
         $result = [];
         foreach ([0, 1, 2] as $index) {
             if (isset($documents[$index])) {
+                $path = $documents[$index]['path'];
+                $isUrl = filter_var($path, FILTER_VALIDATE_URL) !== false;
+
                 $result[$index] = [
                     'index' => $index,
                     'name' => $documents[$index]['name'],
                     'uploaded_at' => $documents[$index]['uploaded_at'],
-                    'url' => route('employer.verify.documents.serve', ['index' => $index]),
+                    'url' => $isUrl ? $path : route('employer.verify.documents.serve', ['index' => $index]),
                 ];
             } else {
                 $result[$index] = null;
             }
         }
+
         return $result;
     }
 
@@ -177,6 +232,11 @@ class CompanyVerificationController extends Controller
         }
 
         $path = $documents[$index]['path'];
+        $isUrl = filter_var($path, FILTER_VALIDATE_URL) !== false;
+
+        if ($isUrl) {
+            return redirect()->away($path);
+        }
 
         if (! \Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
             abort(404, 'File not found on storage');

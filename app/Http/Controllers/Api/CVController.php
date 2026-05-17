@@ -870,20 +870,36 @@ class CVController extends Controller
     #[OA\Parameter(name: 'cvId', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
     #[OA\RequestBody(
         required: true,
-        content: new OA\MediaType(
-            mediaType: 'multipart/form-data',
-            schema: new OA\Schema(
-                required: ['certificate_name'],
-                properties: [
-                    new OA\Property(property: 'certificate_name', type: 'string', example: 'PMP Certification'),
-                    new OA\Property(property: 'issuing_organization', type: 'string', example: 'PMI'),
-                    new OA\Property(property: 'credential_id', type: 'string', example: 'ABC-123'),
-                    new OA\Property(property: 'credential_url', type: 'string', example: 'https://verify.pmi.org/ABC-123'),
-                    new OA\Property(property: 'issue_date', type: 'string', format: 'date'),
-                    new OA\Property(property: 'certificate_file', type: 'string', format: 'binary', description: 'Certificate file (PDF, max 5MB)'),
-                ]
-            )
-        )
+        content: [
+            new OA\MediaType(
+                mediaType: 'application/json',
+                schema: new OA\Schema(
+                    required: ['certificate_name'],
+                    properties: [
+                        new OA\Property(property: 'certificate_name', type: 'string', example: 'PMP Certification'),
+                        new OA\Property(property: 'issuing_organization', type: 'string', example: 'PMI'),
+                        new OA\Property(property: 'credential_id', type: 'string', example: 'ABC-123'),
+                        new OA\Property(property: 'credential_url', type: 'string', example: 'https://verify.pmi.org/ABC-123'),
+                        new OA\Property(property: 'issue_date', type: 'string', format: 'date'),
+                        new OA\Property(property: 'cloudinary_url', type: 'string', format: 'uri', example: 'https://res.cloudinary.com/drspmn3gd/image/upload/v12345/my_cert.pdf', description: 'Cloudinary Secure URL (direct client upload)'),
+                    ]
+                )
+            ),
+            new OA\MediaType(
+                mediaType: 'multipart/form-data',
+                schema: new OA\Schema(
+                    required: ['certificate_name'],
+                    properties: [
+                        new OA\Property(property: 'certificate_name', type: 'string', example: 'PMP Certification'),
+                        new OA\Property(property: 'issuing_organization', type: 'string', example: 'PMI'),
+                        new OA\Property(property: 'credential_id', type: 'string', example: 'ABC-123'),
+                        new OA\Property(property: 'credential_url', type: 'string', example: 'https://verify.pmi.org/ABC-123'),
+                        new OA\Property(property: 'issue_date', type: 'string', format: 'date'),
+                        new OA\Property(property: 'certificate_file', type: 'string', format: 'binary', description: 'Certificate file (PDF, max 5MB)'),
+                    ]
+                )
+            ),
+        ]
     )]
     #[OA\Response(response: 201, description: 'Certification added successfully')]
     public function addCertification(Request $request, int $cvId): JsonResponse
@@ -899,12 +915,15 @@ class CVController extends Controller
             'credential_id' => 'nullable|string|max:255',
             'credential_url' => 'nullable|url|max:500',
             'issue_date' => 'nullable|date',
+            'cloudinary_url' => 'nullable|url|max:500',
             'certificate_file' => 'nullable|file|mimes:pdf|max:5120',
         ]);
 
-        // Handle file upload
+        // Handle Cloudinary URL or local file upload
         $filePath = null;
-        if ($request->hasFile('certificate_file')) {
+        if (! empty($validated['cloudinary_url'])) {
+            $filePath = $validated['cloudinary_url'];
+        } elseif ($request->hasFile('certificate_file')) {
             $filePath = $request->file('certificate_file')->store(
                 'certifications/'.$jobSeekerProfile->JobSeekerID,
                 'local'

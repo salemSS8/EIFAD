@@ -7,6 +7,7 @@ use App\Domain\Communication\Models\Notification;
 use App\Domain\Company\Models\CompanyProfile;
 use App\Domain\CV\Models\CVCertification;
 use App\Domain\Job\Models\JobAd;
+use App\Domain\User\Models\JobSeekerProfile;
 use App\Domain\User\Models\Role;
 use App\Domain\User\Models\User;
 use App\Http\Controllers\Controller;
@@ -540,7 +541,7 @@ class AdminController extends Controller
 
         // Row 2: Pending actions and Trust levels
         $pendingVerifications = CompanyProfile::where('VerificationStatus', 'Pending')->count();
-        $trustedJobSeekers = \App\Domain\User\Models\JobSeekerProfile::where('Status', 'trusted')->count();
+        $trustedJobSeekers = JobSeekerProfile::where('Status', 'trusted')->count();
         $pendingCertificates = CVCertification::whereIn('VerificationStatus', ['pending', 'ai_reviewed'])->count();
 
         // Row 2: AI Alerts — unread notifications of type 'ai_alert' sent to admin users

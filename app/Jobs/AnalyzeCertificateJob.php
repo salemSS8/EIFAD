@@ -102,30 +102,94 @@ class AnalyzeCertificateJob implements ShouldQueue
             return null;
         }
 
-        $absolutePath = Storage::disk('local')->path($filePath);
+        $isUrl = filter_var($filePath, FILTER_VALIDATE_URL) !== false;
+        $tempFilePath = null;
+        $absolutePath = null;
 
-        if (! file_exists($absolutePath)) {
-            return null;
-        }
+        try {
+            if ($isUrl) {
+                // Download file content from secure URL statelessly with timeout
+                // 10MB limit and 10s timeout
+                $response = \Illuminate\Support\Facades\Http::timeout(10)
+                    ->withHeaders([
+                        'Range' => 'bytes=0-10485760',
+                    ])
+                    ->get($filePath);
 
-        $extension = strtolower(pathinfo($absolutePath, PATHINFO_EXTENSION));
+                if (! $response->successful()) {
+                    Log::warning('AnalyzeCertificateJob: Failed to download remote certificate file', [
+                        'url' => $filePath,
+                        'status' => $response->status(),
+                    ]);
 
-        if ($extension === 'pdf') {
-            try {
+                    return null;
+                }
+
+                $content = $response->body();
+
+                // Double check content size
+                if (strlen($content) > 10485760) {
+                    Log::warning('AnalyzeCertificateJob: Remote certificate exceeds 10MB limit', [
+                        'url' => $filePath,
+                        'size' => strlen($content),
+                    ]);
+
+                    return null;
+                }
+
+                // Create temporary file
+                $tempFilePath = tempnam(sys_get_temp_dir(), 'cert_');
+                if ($tempFilePath === false) {
+                    Log::warning('AnalyzeCertificateJob: Failed to create temporary file');
+
+                    return null;
+                }
+
+                // Append .pdf extension
+                $absolutePath = $tempFilePath.'.pdf';
+                if (file_put_contents($absolutePath, $content) === false) {
+                    Log::warning('AnalyzeCertificateJob: Failed to write to temporary PDF file', [
+                        'temp_path' => $absolutePath,
+                    ]);
+
+                    return null;
+                }
+            } else {
+                // Local file fallback
+                $absolutePath = Storage::disk('local')->path($filePath);
+            }
+
+            if (! file_exists($absolutePath)) {
+                return null;
+            }
+
+            $extension = strtolower(pathinfo($absolutePath, PATHINFO_EXTENSION));
+
+            if ($extension === 'pdf') {
                 $parser = new \Smalot\PdfParser\Parser;
                 $pdf = $parser->parseFile($absolutePath);
 
                 return $pdf->getText();
-            } catch (\Exception $e) {
-                Log::warning('AnalyzeCertificateJob: PDF parsing failed', [
-                    'error' => $e->getMessage(),
-                ]);
+            }
 
-                return null;
+            return null;
+        } catch (\Exception $e) {
+            Log::warning('AnalyzeCertificateJob: PDF parsing failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        } finally {
+            // Always clean up temporary files to avoid storage leaking
+            if ($isUrl && $tempFilePath) {
+                if (file_exists($tempFilePath)) {
+                    @unlink($tempFilePath);
+                }
+                if ($absolutePath && file_exists($absolutePath) && $absolutePath !== $tempFilePath) {
+                    @unlink($absolutePath);
+                }
             }
         }
-
-        return null;
     }
 
     /**

@@ -135,6 +135,14 @@ class CompanyVerificationController extends Controller
         }
 
         $path = $documents[$index]['path'];
+        $isUrl = filter_var($path, FILTER_VALIDATE_URL) !== false;
+
+        if ($isUrl) {
+            return response()->json([
+                'url' => $path,
+                'name' => $documents[$index]['name'],
+            ]);
+        }
 
         if (! Storage::disk('local')->exists($path)) {
             return response()->json(['message' => 'File not found on storage'], 404);
@@ -165,6 +173,11 @@ class CompanyVerificationController extends Controller
         }
 
         $path = $documents[$index]['path'];
+        $isUrl = filter_var($path, FILTER_VALIDATE_URL) !== false;
+
+        if ($isUrl) {
+            return redirect()->away($path);
+        }
 
         return Storage::disk('local')->response($path);
     }

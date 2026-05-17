@@ -113,4 +113,25 @@ class AnalyzeCertificateJobTest extends TestCase
         $this->certification->update(['VerificationStatus' => 'rejected', 'IsVerified' => false]);
         $this->assertTrue($this->certification->isRejected());
     }
+
+    public function test_job_handles_remote_file_download_and_parsing_gracefully(): void
+    {
+        // Set the FilePath to a mock Cloudinary URL
+        $this->certification->update([
+            'FilePath' => 'https://res.cloudinary.com/demo/image/upload/v12345/register.pdf',
+        ]);
+
+        // Fake the HTTP request to return a fake PDF content
+        \Illuminate\Support\Facades\Http::fake([
+            'https://res.cloudinary.com/*' => \Illuminate\Support\Facades\Http::response('%PDF-1.4 ... mock pdf content', 200),
+        ]);
+
+        $job = new AnalyzeCertificateJob($this->certification, 'job_seeker');
+        app()->call([$job, 'handle']);
+
+        $this->certification->refresh();
+
+        // The job should run without throwing exceptions and transition verification status
+        $this->assertContains($this->certification->VerificationStatus, ['pending', 'ai_reviewed']);
+    }
 }

@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Api;
 
-use App\Domain\User\Models\User;
-use App\Domain\User\Models\Role;
 use App\Domain\Company\Models\CompanyProfile;
+use App\Domain\User\Models\Role;
+use App\Domain\User\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -30,16 +30,16 @@ class CompanyVerificationTest extends TestCase
         $response = $this->actingAs($user)->postJson('/api/employer/verify/documents', [
             'documents' => [
                 UploadedFile::fake()->create('id_card.pdf', 500, 'application/pdf'),
-                UploadedFile::fake()->create('license.jpg', 500, 'image/jpeg')
-            ]
+                UploadedFile::fake()->create('license.jpg', 500, 'image/jpeg'),
+            ],
         ]);
 
         $response->assertStatus(200);
-        
+
         $company->refresh();
         $this->assertEquals('Pending', $company->VerificationStatus);
         $this->assertCount(2, $company->VerificationDocuments);
-        
+
         Storage::disk('local')->assertExists($company->VerificationDocuments[0]['path']);
     }
 
@@ -50,19 +50,44 @@ class CompanyVerificationTest extends TestCase
 
         $employer = User::factory()->create();
         $company = CompanyProfile::create([
-            'CompanyID' => $employer->UserID, 
+            'CompanyID' => $employer->UserID,
             'CompanyName' => 'Test',
-            'VerificationStatus' => 'Pending'
+            'VerificationStatus' => 'Pending',
         ]);
 
         $response = $this->actingAs($admin)->putJson("/api/admin/companies/{$company->CompanyID}/verify", [
-            'status' => 'Verified'
+            'status' => 'Verified',
         ]);
 
         $response->assertStatus(200);
-        
+
         $company->refresh();
         $this->assertEquals('Verified', $company->VerificationStatus);
         $this->assertTrue($company->IsCompanyVerified);
+    }
+
+    public function test_company_can_upload_verification_documents_via_cloudinary_urls(): void
+    {
+        $user = User::factory()->create();
+        $company = CompanyProfile::create(['CompanyID' => $user->UserID, 'CompanyName' => 'Verify Me']);
+
+        $response = $this->actingAs($user)->postJson('/api/employer/verify/documents', [
+            'document_urls' => [
+                0 => 'https://res.cloudinary.com/demo/image/upload/v12345/register.pdf',
+                1 => 'https://res.cloudinary.com/demo/image/upload/v12345/tax.pdf',
+            ],
+            'document_names' => [
+                0 => 'commercial_register.pdf',
+                1 => 'tax_card.pdf',
+            ],
+        ]);
+
+        $response->assertStatus(200);
+
+        $company->refresh();
+        $this->assertEquals('Pending', $company->VerificationStatus);
+        $this->assertCount(2, $company->VerificationDocuments);
+        $this->assertEquals('https://res.cloudinary.com/demo/image/upload/v12345/register.pdf', $company->VerificationDocuments[0]['path']);
+        $this->assertEquals('commercial_register.pdf', $company->VerificationDocuments[0]['name']);
     }
 }

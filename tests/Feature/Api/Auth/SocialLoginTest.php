@@ -3,10 +3,9 @@
 namespace Tests\Feature\Api\Auth;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use Laravel\Socialite\Facades\Socialite;
 use Mockery;
-use App\Domain\User\Models\User;
+use Tests\TestCase;
 
 class SocialLoginTest extends TestCase
 {
@@ -44,12 +43,18 @@ class SocialLoginTest extends TestCase
         $response = $this->get('/api/auth/login/google/callback');
 
         $response->assertStatus(302);
-        $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173/dashboard');
-        $this->assertStringContainsString($frontendUrl, $response->headers->get('Location'));
+
+        $location = $response->headers->get('Location');
+
+        $this->assertStringContainsString(config('app.frontend_url'), $location);
+        $this->assertStringContainsString('token=', $location);
+        $this->assertStringContainsString('social_login=true', $location);
+        $this->assertStringContainsString('email=social%40example.com', $location);
+
         $this->assertDatabaseHas('user', [
             'Email' => 'social@example.com',
             'ProviderID' => '123456',
-            'AuthProvider' => 'google'
+            'AuthProvider' => 'google',
         ]);
     }
 }

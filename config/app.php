@@ -56,6 +56,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Frontend URL
+    |--------------------------------------------------------------------------
+    |
+    | The URL of the frontend application. Used for social login callbacks
+    | and other redirects to the frontend.
+    |
+    */
+
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173/authPage'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

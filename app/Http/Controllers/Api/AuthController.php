@@ -417,7 +417,7 @@ class AuthController extends Controller
     )]
     public function handleProviderCallback(Request $request, $provider, SocialLoginAction $action): RedirectResponse
     {
-        $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173/dashboard');
+        $frontendUrl = config('app.frontend_url');
 
         // Check if provider returned an error (e.g. user denied passing code)
         if ($request->has('error')) {

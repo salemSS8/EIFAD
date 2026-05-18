@@ -56,27 +56,14 @@
                     {
                         "name": "user_status",
                         "in": "query",
-                        "description": "Filter by user status (trusted, nottrusted)",
+                        "description": "Filter by user status (trusted, nottrusted, pending)",
                         "required": false,
                         "schema": {
                             "type": "string",
                             "enum": [
                                 "trusted",
-                                "nottrusted"
-                            ]
-                        }
-                    },
-                    {
-                        "name": "verification_status",
-                        "in": "query",
-                        "description": "Filter by verification status for companies (verified, pending, rejected)",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "verified",
-                                "pending",
-                                "rejected"
+                                "nottrusted",
+                                "pending"
                             ]
                         }
                     }

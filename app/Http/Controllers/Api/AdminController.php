@@ -53,7 +53,6 @@ class AdminController extends Controller
     #[OA\Parameter(name: 'role', in: 'query', description: 'Filter by role (JobSeeker, Employer, Admin)', required: false, schema: new OA\Schema(type: 'string'))]
     #[OA\Parameter(name: 'account_status', in: 'query', description: 'Filter by account status (active, blocked, inactive)', required: false, schema: new OA\Schema(type: 'string', enum: ['active', 'blocked', 'inactive']))]
     #[OA\Parameter(name: 'user_status', in: 'query', description: 'Filter by user status (trusted, nottrusted, pending)', required: false, schema: new OA\Schema(type: 'string', enum: ['trusted', 'nottrusted', 'pending']))]
-    #[OA\Parameter(name: 'verification_status', in: 'query', description: 'Filter by verification status for companies (verified, pending, rejected)', required: false, schema: new OA\Schema(type: 'string', enum: ['verified', 'pending', 'rejected']))]
     #[OA\Response(response: 200, description: 'List of users')]
     public function index(Request $request): JsonResponse
     {

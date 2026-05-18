@@ -56,5 +56,12 @@ class SocialLoginTest extends TestCase
             'ProviderID' => '123456',
             'AuthProvider' => 'google',
         ]);
+
+        $cookies = $response->headers->getCookies();
+        $cookieNames = array_map(fn ($c) => $c->getName(), $cookies);
+
+        $this->assertContains('auth_token', $cookieNames, 'auth_token cookie should be set');
+        $this->assertContains('user_role', $cookieNames, 'user_role cookie should be set');
+        $this->assertContains('user_name', $cookieNames, 'user_name cookie should be set');
     }
 }

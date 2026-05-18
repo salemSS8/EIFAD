@@ -452,7 +452,9 @@ class AuthController extends Controller
             ]);
 
             return redirect()->away($frontendUrl.'?'.$queryParams)
-                ->withCookie(cookie('auth_token', $result->sanctumToken, 10080, '/', null, null, true, false, 'Lax'));
+                ->withCookie(cookie('auth_token', $result->sanctumToken, 10080, '/', null, null, true, false, 'Lax'))
+                ->withCookie(cookie('user_role', $result->role ?? '', 10080, '/', null, null, false, false, 'Lax'))
+                ->withCookie(cookie('user_name', $result->name ?? '', 10080, '/', null, null, false, false, 'Lax'));
         } catch (\Exception $e) {
             return redirect()->away($frontendUrl.'?error='.urlencode('Authentication failed: '.$e->getMessage()));
         }

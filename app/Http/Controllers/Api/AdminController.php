@@ -134,7 +134,7 @@ class AdminController extends Controller
         //     }
         // }
 
-        $users = $query->orderByDesc('CreatedAt')->paginate(20);
+        $users = $query->with('companyProfile','jobSeekerProfile')->orderByDesc('CreatedAt')->paginate(20);
 
         return response()->json($users);
     }

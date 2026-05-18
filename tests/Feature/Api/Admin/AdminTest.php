@@ -74,6 +74,50 @@ class AdminTest extends TestCase
             ->assertJsonPath('data.0.UserID', $user1->UserID);
     }
 
+    public function test_admin_can_filter_employers_by_trust_status()
+    {
+        $admin = User::factory()->create();
+        $admin->roles()->attach(Role::where('RoleName', 'Admin')->first());
+
+        $employerRole = Role::where('RoleName', 'Employer')->first();
+
+        // 1 trusted company (Verified)
+        $user1 = User::factory()->create();
+        $user1->roles()->attach($employerRole);
+        DB::table('companyprofile')->insert([
+            'CompanyID' => $user1->UserID,
+            'CompanyName' => 'Test Company 1',
+            'VerificationStatus' => 'Verified',
+        ]);
+
+        // 1 pending company (Pending)
+        $user2 = User::factory()->create();
+        $user2->roles()->attach($employerRole);
+        DB::table('companyprofile')->insert([
+            'CompanyID' => $user2->UserID,
+            'CompanyName' => 'Test Company 2',
+            'VerificationStatus' => 'Pending',
+        ]);
+
+        // Test Filter trusted
+        $response = $this->actingAs($admin)->getJson('/api/admin/users?user_status=trusted');
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.UserID', $user1->UserID);
+
+        // Test Filter nottrusted
+        $response = $this->actingAs($admin)->getJson('/api/admin/users?user_status=nottrusted');
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.UserID', $user2->UserID);
+
+        // Test Filter pending
+        $response = $this->actingAs($admin)->getJson('/api/admin/users?user_status=pending');
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.UserID', $user2->UserID);
+    }
+
     public function test_admin_can_verify_jobseeker_status()
     {
         $admin = User::factory()->create();

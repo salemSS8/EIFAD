@@ -52,7 +52,7 @@ class AdminController extends Controller
     #[OA\Parameter(name: 'search', in: 'query', description: 'Search by name or email', required: false, schema: new OA\Schema(type: 'string'))]
     #[OA\Parameter(name: 'role', in: 'query', description: 'Filter by role (JobSeeker, Employer, Admin)', required: false, schema: new OA\Schema(type: 'string'))]
     #[OA\Parameter(name: 'account_status', in: 'query', description: 'Filter by account status (active, blocked, inactive)', required: false, schema: new OA\Schema(type: 'string', enum: ['active', 'blocked', 'inactive']))]
-    #[OA\Parameter(name: 'user_status', in: 'query', description: 'Filter by user status (trusted, nottrusted)', required: false, schema: new OA\Schema(type: 'string', enum: ['trusted', 'nottrusted']))]
+    #[OA\Parameter(name: 'user_status', in: 'query', description: 'Filter by user status (trusted, nottrusted, pending)', required: false, schema: new OA\Schema(type: 'string', enum: ['trusted', 'nottrusted', 'pending']))]
     #[OA\Parameter(name: 'verification_status', in: 'query', description: 'Filter by verification status for companies (verified, pending, rejected)', required: false, schema: new OA\Schema(type: 'string', enum: ['verified', 'pending', 'rejected']))]
     #[OA\Response(response: 200, description: 'List of users')]
     public function index(Request $request): JsonResponse
@@ -108,26 +108,32 @@ class AdminController extends Controller
                         $q2->where('Status', 'notrusted');
                     });
                 });
+            } elseif ($status === 'pending') {
+                $query->where(function ($q) {
+                    $q->whereHas('companyProfile', function ($q2) {
+                        $q2->where('VerificationStatus', 'Pending');
+                    });
+                });
             }
         }
 
         // Filter by specific verification status (verified, pending, rejected)
-        if ($request->filled('verification_status')) {
-            $vStatus = $request->input('verification_status');
-            if ($vStatus === 'verified') {
-                $query->whereHas('companyProfile', function ($q) {
-                    $q->where('VerificationStatus', 'Verified');
-                });
-            } elseif ($vStatus === 'pending') {
-                $query->whereHas('companyProfile', function ($q) {
-                    $q->where('VerificationStatus', 'Pending');
-                });
-            } elseif ($vStatus === 'rejected') {
-                $query->whereHas('companyProfile', function ($q) {
-                    $q->where('VerificationStatus', 'Rejected');
-                });
-            }
-        }
+        // if ($request->filled('verification_status')) {
+        //     $vStatus = $request->input('verification_status');
+        //     if ($vStatus === 'verified') {
+        //         $query->whereHas('companyProfile', function ($q) {
+        //             $q->where('VerificationStatus', 'Verified');
+        //         });
+        //     } elseif ($vStatus === 'pending') {
+        //         $query->whereHas('companyProfile', function ($q) {
+        //             $q->where('VerificationStatus', 'Pending');
+        //         });
+        //     } elseif ($vStatus === 'rejected') {
+        //         $query->whereHas('companyProfile', function ($q) {
+        //             $q->where('VerificationStatus', 'Rejected');
+        //         });
+        //     }
+        // }
 
         $users = $query->orderByDesc('CreatedAt')->paginate(20);
 

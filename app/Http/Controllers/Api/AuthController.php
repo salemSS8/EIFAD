@@ -304,6 +304,15 @@ class AuthController extends Controller
             ], 401);
         }
 
+        // Check if account is blocked
+        if ($user->IsBlocked) {
+            return response()->json([
+                'message' => 'تم حظر حسابك من قبل الإدارة. السبب: '.($user->BlockReason ?? 'غير محدد'),
+                'is_blocked' => true,
+                'block_reason' => $user->BlockReason,
+            ], 403);
+        }
+
         // Check if account is verified (User Story: Login - معيار القبول #2)
         if (! $user->IsVerified) {
             return response()->json([

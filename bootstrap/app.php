@@ -19,6 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\AddAuthHeaderFromCookie::class,
         ]);
+        $middleware->alias([
+            'blocked' => \App\Http\Middleware\CheckIfBlocked::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

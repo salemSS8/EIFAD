@@ -74,7 +74,7 @@ Route::get('/job-seekers', [JobSeekerController::class, 'index']);
 // Protected Routes (Require Authentication)
 // =========================================
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'blocked'])->group(function () {
 
     // ------- Skills & Languages (Creation) -------
     Route::post('/skills', [SkillController::class, 'store']);

@@ -3,11 +3,11 @@
 namespace App\Domain\Auth\Actions;
 
 use App\Domain\Auth\DTOs\AuthenticatedUserDTO;
-use App\Domain\User\Models\User;
-use App\Domain\User\Models\Role;
-use App\Domain\User\Models\JobSeekerProfile;
 use App\Domain\Company\Models\CompanyProfile;
 use App\Domain\Shared\Contracts\ActionInterface;
+use App\Domain\User\Models\JobSeekerProfile;
+use App\Domain\User\Models\Role;
+use App\Domain\User\Models\User;
 use Illuminate\Support\Facades\DB;
 use Laravel\Socialite\Contracts\User as SocialUser;
 
@@ -19,10 +19,8 @@ class SocialLoginAction implements ActionInterface
     /**
      * Execute the social login logic.
      *
-     * @param SocialUser $socialUser
-     * @param string $provider (google, linkedin)
-     * @param string|null $requestedRole Optional role to assign (JobSeeker, Employer)
-     * @return AuthenticatedUserDTO
+     * @param  string  $provider  (google, linkedin)
+     * @param  string|null  $requestedRole  Optional role to assign (JobSeeker, Employer)
      */
     public function execute(SocialUser $socialUser, string $provider, ?string $requestedRole = null): AuthenticatedUserDTO
     {
@@ -30,7 +28,7 @@ class SocialLoginAction implements ActionInterface
         $user = User::where('ProviderID', $socialUser->getId())->first();
 
         // 2. If not found, try by email
-        if (!$user) {
+        if (! $user) {
             $user = User::where('Email', $socialUser->getEmail())->first();
 
             if ($user) {
@@ -39,13 +37,18 @@ class SocialLoginAction implements ActionInterface
                     'ProviderID' => $socialUser->getId(),
                     'AuthProvider' => $provider,
                     'Avatar' => $user->Avatar ?? $socialUser->getAvatar(),
-                    'IsVerified' => true // Assume social login verifies email (mostly true)
+                    'IsVerified' => true, // Assume social login verifies email (mostly true)
                 ]);
             }
         }
 
+        // Check if account is blocked
+        if ($user && $user->IsBlocked) {
+            throw new \Exception('تم حظر حسابك من قبل الإدارة. السبب: '.($user->BlockReason ?? 'غير محدد'));
+        }
+
         // 3. If still not found, Create New User
-        if (!$user) {
+        if (! $user) {
             $user = DB::transaction(function () use ($socialUser, $provider, $requestedRole) {
                 $newUser = User::create([
                     'FullName' => $socialUser->getName(),

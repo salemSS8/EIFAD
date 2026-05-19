@@ -174,8 +174,8 @@ class CVController extends Controller
             'UpdatedAt' => now(),
         ]);
 
-        // Auto-trigger CV analysis pipeline (sync)
-        AnalyzeCVJob::dispatchSync($cv);
+        // Auto-trigger CV analysis pipeline in the background (Queue)
+        AnalyzeCVJob::dispatch($cv);
 
         return response()->json([
             'message' => 'CV created successfully',

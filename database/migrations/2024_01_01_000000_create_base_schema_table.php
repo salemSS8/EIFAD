@@ -57,7 +57,6 @@ return new class extends Migration
         if (! Schema::hasTable('jobseekerprofile')) {
             Schema::create('jobseekerprofile', function (Blueprint $table) {
                 $table->integer('JobSeekerID')->primary();
-                $table->enum('Status', ['trusted', 'notrusted'])->default('notrusted');
                 $table->string('PersonalPhoto')->nullable();
                 $table->string('Location')->nullable();
                 $table->text('ProfileSummary')->nullable();

@@ -19,7 +19,7 @@ class SearchCompaniesAction implements ActionInterface
      */
     public function execute(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = CompanyProfile::query()->where('IsCompanyVerified', true);
+        $query = CompanyProfile::query();
 
         $this->applyNameFilter($query, $filters);
         $this->applyLocationFilter($query, $filters);

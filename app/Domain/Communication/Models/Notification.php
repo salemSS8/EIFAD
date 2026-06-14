@@ -2,6 +2,7 @@
 
 namespace App\Domain\Communication\Models;
 
+use App\Domain\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -11,7 +12,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Notification extends Model
 {
     protected $table = 'notification';
+
     protected $primaryKey = 'NotificationID';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -35,6 +38,6 @@ class Notification extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(\App\Domain\User\Models\User::class, 'UserID', 'UserID');
+        return $this->belongsTo(User::class, 'UserID', 'UserID');
     }
 }

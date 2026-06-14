@@ -569,6 +569,9 @@ class JobController extends Controller
             'PostedAt' => now(),
         ]);
 
+        // Notify matching job seekers (database + email) in background
+        \App\Jobs\NotifyMatchingJobSeekersJob::dispatch($job);
+
         return response()->json([
             'message' => 'Job published successfully',
             'data' => $job->fresh(),

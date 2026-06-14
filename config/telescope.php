@@ -91,14 +91,12 @@ return [
     | the existing middleware. Or, you can simply stick with this list.
     |
     */
-
-    'middleware' => [
+    'middleware' => array_filter([
         'web',
-        'auth.basic',
-        \App\Http\Middleware\EnsureIsAdmin::class,
+        env('APP_ENV') === 'local' ? null : 'auth.basic',
+        env('APP_ENV') === 'local' ? null : \App\Http\Middleware\EnsureIsAdmin::class,
         Authorize::class,
-    ],
-
+    ]),
     /*
     |--------------------------------------------------------------------------
     | Allowed / Ignored Paths & Commands

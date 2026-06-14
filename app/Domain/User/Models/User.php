@@ -149,6 +149,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get user's notification setting.
+     */
+    public function notificationSetting(): HasOne
+    {
+        return $this->hasOne(\App\Domain\Communication\Models\NotificationSetting::class, 'UserID', 'UserID');
+    }
+
+    /**
      * Get user's analysis results.
      */
     public function analysisResults(): HasMany

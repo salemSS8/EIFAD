@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Domain\AI\Models\CVJobMatch;
 use App\Domain\Application\Models\JobApplication;
+use App\Domain\Communication\Models\Notification;
 use App\Domain\CV\Models\CV;
 use App\Domain\Job\Models\JobAd;
 use App\Http\Controllers\Controller;
@@ -192,7 +193,7 @@ class ApplicationController extends Controller
         ]);
 
         // Create Notification for the Employer
-        $notification = \App\Domain\Communication\Models\Notification::create([
+        $notification = Notification::create([
             'UserID' => $job->CompanyID, // CompanyID acts as UserID for employer
             'Type' => 'New Application',
             'Content' => "A new candidate applied for your job: {$job->Title}",
@@ -204,6 +205,24 @@ class ApplicationController extends Controller
             broadcast(new \App\Events\NotificationReceived($notification))->toOthers();
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning('Broadcast failed: '.$e->getMessage());
+        }
+
+        // Send email to employer if their settings allow it (default: allowed)
+        $employerUser = \App\Domain\User\Models\User::find($job->CompanyID);
+        if ($employerUser) {
+            $settings = \App\Domain\Communication\Models\NotificationSetting::where('UserID', $employerUser->UserID)->first();
+            $emailEnabled = $settings ? $settings->EmailNotifications : true;
+            $appUpdatesEnabled = $settings ? $settings->ApplicationUpdates : true;
+
+            if ($emailEnabled && $appUpdatesEnabled) {
+                try {
+                    $applicantName = $request->input('JobSeekerName') ?? $user->FullName ?? 'متقدم';
+                    \Illuminate\Support\Facades\Mail::to($employerUser->Email)
+                        ->send(new \App\Mail\NewApplicationReceivedMail($job, $applicantName));
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning('Failed to send application email: '.$e->getMessage());
+                }
+            }
         }
 
         // Dispatch AI Applicant Screener
@@ -292,7 +311,7 @@ class ApplicationController extends Controller
         ]);
 
         // Create Notification for the Employer
-        $notification = \App\Domain\Communication\Models\Notification::create([
+        $notification = Notification::create([
             'UserID' => $job->CompanyID,
             'Type' => 'New Application',
             'Content' => "A new candidate auto-applied for your job: {$job->Title}",
@@ -300,7 +319,28 @@ class ApplicationController extends Controller
             'CreatedAt' => now(),
         ]);
 
-        broadcast(new \App\Events\NotificationReceived($notification))->toOthers();
+        try {
+            broadcast(new \App\Events\NotificationReceived($notification))->toOthers();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Broadcast failed: '.$e->getMessage());
+        }
+
+        // Send email to employer if their settings allow it (default: allowed)
+        $employerUser = \App\Domain\User\Models\User::find($job->CompanyID);
+        if ($employerUser) {
+            $settings = \App\Domain\Communication\Models\NotificationSetting::where('UserID', $employerUser->UserID)->first();
+            $emailEnabled = $settings ? $settings->EmailNotifications : true;
+            $appUpdatesEnabled = $settings ? $settings->ApplicationUpdates : true;
+
+            if ($emailEnabled && $appUpdatesEnabled) {
+                try {
+                    \Illuminate\Support\Facades\Mail::to($employerUser->Email)
+                        ->send(new \App\Mail\NewApplicationReceivedMail($job, $user->FullName ?? 'متقدم'));
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning('Failed to send application email: '.$e->getMessage());
+                }
+            }
+        }
 
         // Dispatch AI Applicant Screener
         \App\Jobs\ProcessApplicationScreener::dispatch($application);
